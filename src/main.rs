@@ -13,6 +13,25 @@ struct Board {
     b_knights: u64,
 }
 
+struct Piece {
+    color: Color,
+    piece_type: PieceType,
+}
+
+enum Color {
+    White,
+    Black,
+}
+
+enum PieceType {
+    Pawn,
+    King,
+    Queen,
+    Rook,
+    Bishop,
+    Knight,
+}
+
 fn build_starting_board() -> Board {
     Board {
         w_pawns: 0b0000000000000000000000000000000000000000000000001111111100000000,
