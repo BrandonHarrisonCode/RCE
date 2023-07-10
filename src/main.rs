@@ -74,7 +74,57 @@ struct Piece {
 impl Eq for Piece {}
 impl fmt::Display for Piece {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {}", self.color, self.kind)
+        let piece_symbol = match *self {
+            Piece {
+                color: Color::White,
+                kind: PieceKind::Pawn,
+            } => "♟",
+            Piece {
+                color: Color::White,
+                kind: PieceKind::King,
+            } => "♚",
+            Piece {
+                color: Color::White,
+                kind: PieceKind::Queen,
+            } => "♛",
+            Piece {
+                color: Color::White,
+                kind: PieceKind::Rook,
+            } => "♜",
+            Piece {
+                color: Color::White,
+                kind: PieceKind::Bishop,
+            } => "♝",
+            Piece {
+                color: Color::White,
+                kind: PieceKind::Knight,
+            } => "♞",
+            Piece {
+                color: Color::Black,
+                kind: PieceKind::Pawn,
+            } => "♙",
+            Piece {
+                color: Color::Black,
+                kind: PieceKind::King,
+            } => "♔",
+            Piece {
+                color: Color::Black,
+                kind: PieceKind::Queen,
+            } => "♕",
+            Piece {
+                color: Color::Black,
+                kind: PieceKind::Rook,
+            } => "♖",
+            Piece {
+                color: Color::Black,
+                kind: PieceKind::Bishop,
+            } => "♗",
+            Piece {
+                color: Color::Black,
+                kind: PieceKind::Knight,
+            } => "♘",
+        };
+        write!(f, "{}", piece_symbol)
     }
 }
 
