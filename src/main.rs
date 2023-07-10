@@ -18,8 +18,19 @@ struct Board {
     b_bishops: u64,
     b_knights: u64,
 }
-
 impl Board {
+    // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
+    fn get_piece_at_coords(&self, rank: u8, file: u8) -> Option<Piece> {
+        let rank_mask: u64 = 0x00000000000000FF << 8 * (rank - 1);
+        let file_mask: u64 = 0x0101010101010101 << (8 - file);
+        for (kind, bb) in self.bitboard_map() {
+            if (bb & rank_mask & file_mask) >= 1 {
+                return Some(kind.clone());
+            }
+        }
+        None
+    }
+
     fn bitboard_map(&self) -> HashMap<Piece, u64> {
         HashMap::from([
             (build_piece(Color::White, PieceKind::Pawn), self.w_pawns),
@@ -35,6 +46,19 @@ impl Board {
             (build_piece(Color::Black, PieceKind::Bishop), self.b_bishops),
             (build_piece(Color::Black, PieceKind::Knight), self.b_knights),
         ])
+    }
+}
+impl fmt::Display for Board {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for i in 1..=8 {
+            for j in 1..=8 {
+                let piece = self.get_piece_at_coords(i, j);
+                if let Some(p) = piece {
+                    writeln!(f, "Piece at rank {}, file {} = {}", i, j, p,)?;
+                };
+            }
+        }
+        Ok(())
     }
 }
 
@@ -87,27 +111,8 @@ fn build_starting_board() -> Board {
     }
 }
 
-// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
-fn get_piece_at_coords(board: &Board, rank: u8, file: u8) -> Option<Piece> {
-    let rank_mask: u64 = 0x00000000000000FF << 8 * (rank - 1);
-    let file_mask: u64 = 0x0101010101010101 << (8 - file);
-    for (kind, bb) in board.bitboard_map() {
-        if (bb & rank_mask & file_mask) >= 1 {
-            return Some(kind.clone());
-        }
-    }
-    None
-}
-
 fn main() {
     let board = build_starting_board();
 
-    for i in 1..=8 {
-        for j in 1..=8 {
-            let piece = get_piece_at_coords(&board, i, j);
-            if let Some(p) = piece {
-                println!("Piece at rank {}, file {} = {}", i, j, p,);
-            };
-        }
-    }
+    println!("{}", board);
 }
