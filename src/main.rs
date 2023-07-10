@@ -50,13 +50,15 @@ impl Board {
 }
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in 1..=8 {
+        for i in (1..=8).rev() {
             for j in 1..=8 {
                 let piece = self.get_piece_at_coords(i, j);
-                if let Some(p) = piece {
-                    writeln!(f, "Piece at rank {}, file {} = {}", i, j, p,)?;
-                };
+                match piece {
+                    Some(p) => write!(f, "{}", p)?,
+                    None => write!(f, "-")?,
+                }
             }
+            writeln!(f, "")?;
         }
         Ok(())
     }
