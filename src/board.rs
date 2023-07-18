@@ -82,3 +82,55 @@ pub fn create_starting_board() -> Board {
         b_knights: 0b0100001000000000000000000000000000000000000000000000000000000000,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_piece_at_coords1() {
+        let board = create_starting_board();
+        assert_eq!(
+            board.get_piece_at_coords(1, 1).unwrap(),
+            Piece::new(Color::White, PieceKind::Rook)
+        );
+    }
+
+    #[test]
+    fn test_get_piece_at_coords2() {
+        let board = create_starting_board();
+        assert_eq!(
+            board.get_piece_at_coords(8, 8).unwrap(),
+            Piece::new(Color::Black, PieceKind::Rook)
+        );
+    }
+
+    #[test]
+    fn test_get_piece_at_coords3() {
+        let board = create_starting_board();
+        assert_eq!(
+            board.get_piece_at_coords(7, 8).unwrap(),
+            Piece::new(Color::Black, PieceKind::Pawn)
+        );
+    }
+
+    #[test]
+    fn test_get_piece_at_coords_none() {
+        let board = create_starting_board();
+        assert!(board.get_piece_at_coords(4, 4).is_none());
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_piece_at_coords_oob_rank() {
+        let board = create_starting_board();
+        board.get_piece_at_coords(9, 8).unwrap();
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_piece_at_coords_oob_file() {
+        let board = create_starting_board();
+        board.get_piece_at_coords(0, 9).unwrap();
+    }
+}
