@@ -3,7 +3,7 @@ use std::fmt;
 
 mod piece;
 
-use piece::{Color, Piece, PieceKind};
+use piece::{Color, PieceKind};
 
 pub struct Board {
     w_pawns: u64,
@@ -21,7 +21,7 @@ pub struct Board {
 }
 impl Board {
     // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
-    fn get_piece_at_coords(&self, rank: u8, file: u8) -> Option<Piece> {
+    fn get_piece_at_coords(&self, rank: u8, file: u8) -> Option<PieceKind> {
         let rank_mask: u64 = 0x00000000000000FF << 8 * (rank - 1);
         let file_mask: u64 = 0x0101010101010101 << (8 - file);
         for (kind, bb) in self.bitboard_map() {
@@ -32,21 +32,24 @@ impl Board {
         None
     }
 
-    fn bitboard_map(&self) -> HashMap<Piece, u64> {
-        HashMap::from([
-            (Piece::new(Color::White, PieceKind::Pawn), self.w_pawns),
-            (Piece::new(Color::White, PieceKind::King), self.w_king),
-            (Piece::new(Color::White, PieceKind::Queen), self.w_queens),
-            (Piece::new(Color::White, PieceKind::Rook), self.w_rooks),
-            (Piece::new(Color::White, PieceKind::Bishop), self.w_bishops),
-            (Piece::new(Color::White, PieceKind::Knight), self.w_knights),
-            (Piece::new(Color::Black, PieceKind::Pawn), self.b_pawns),
-            (Piece::new(Color::Black, PieceKind::King), self.b_king),
-            (Piece::new(Color::Black, PieceKind::Queen), self.b_queens),
-            (Piece::new(Color::Black, PieceKind::Rook), self.b_rooks),
-            (Piece::new(Color::Black, PieceKind::Bishop), self.b_bishops),
-            (Piece::new(Color::Black, PieceKind::Knight), self.b_knights),
-        ])
+    fn bitboard_map(&self) -> HashMap<PieceKind, u64> {
+        let mut output: HashMap<PieceKind, u64> = HashMap::new();
+
+        output.insert(PieceKind::Pawn(Color::White), self.w_pawns);
+        output.insert(PieceKind::King(Color::White), self.w_king);
+        output.insert(PieceKind::Queen(Color::White), self.w_queens);
+        output.insert(PieceKind::Rook(Color::White), self.w_rooks);
+        output.insert(PieceKind::Bishop(Color::White), self.w_bishops);
+        output.insert(PieceKind::Knight(Color::White), self.w_knights);
+
+        output.insert(PieceKind::Pawn(Color::Black), self.b_pawns);
+        output.insert(PieceKind::King(Color::Black), self.b_king);
+        output.insert(PieceKind::Queen(Color::Black), self.b_queens);
+        output.insert(PieceKind::Rook(Color::Black), self.b_rooks);
+        output.insert(PieceKind::Bishop(Color::Black), self.b_bishops);
+        output.insert(PieceKind::Knight(Color::Black), self.b_knights);
+
+        output
     }
 }
 
@@ -82,6 +85,8 @@ pub fn create_starting_board() -> Board {
         b_knights: 0b0100001000000000000000000000000000000000000000000000000000000000,
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {
