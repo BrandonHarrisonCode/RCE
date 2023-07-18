@@ -16,7 +16,7 @@ impl Piece for Rook {
         }
     }
 
-    fn get_all_moves<'a>(&self, _rank: u8, _file: u8) -> &'a Vec<u64> {
+    fn get_all_moves(_rank: u8, _file: u8) -> Vec<Move> {
         todo!();
     }
 }

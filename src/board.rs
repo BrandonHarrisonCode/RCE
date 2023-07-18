@@ -21,15 +21,24 @@ pub struct Board {
 }
 impl Board {
     // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
-    fn get_piece_at_coords(&self, rank: u8, file: u8) -> Option<PieceKind> {
-        let rank_mask: u64 = 0x00000000000000FF << 8 * (rank - 1);
-        let file_mask: u64 = 0x0101010101010101 << (8 - file);
+    pub fn get_piece_at_coords(&self, rank: u8, file: u8) -> Option<PieceKind> {
+        let rank_mask: u64 = 0x00000000000000FF << 8 * (rank);
+        let file_mask: u64 = 0x0101010101010101 << (8 - (file + 1));
         for (kind, bb) in self.bitboard_map() {
             if (bb & rank_mask & file_mask) >= 1 {
                 return Some(kind.clone());
             }
         }
         None
+    }
+
+    pub fn get_moves_for_piece_at_coords(&self, rank: u8, file: u8) -> Option<Vec<piece::Move>> {
+        let piece = self.get_piece_at_coords(rank, file);
+        dbg!(piece.clone());
+        match piece {
+            Some(p) => Some(p.get_all_moves(rank, file)),
+            None => None,
+        }
     }
 
     fn bitboard_map(&self) -> HashMap<PieceKind, u64> {
@@ -55,8 +64,8 @@ impl Board {
 
 impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for i in (1..=8).rev() {
-            for j in 1..=8 {
+        for i in (0..8).rev() {
+            for j in 0..8 {
                 let piece = self.get_piece_at_coords(i, j);
                 match piece {
                     Some(p) => write!(f, "{}", p)?,
@@ -96,7 +105,7 @@ mod tests {
     fn test_get_piece_at_coords1() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece_at_coords(1, 1).unwrap(),
+            board.get_piece_at_coords(0, 0).unwrap(),
             PieceKind::Rook(Color::White)
         );
     }
@@ -105,7 +114,7 @@ mod tests {
     fn test_get_piece_at_coords2() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece_at_coords(8, 8).unwrap(),
+            board.get_piece_at_coords(7, 7).unwrap(),
             PieceKind::Rook(Color::Black)
         );
     }
@@ -114,7 +123,7 @@ mod tests {
     fn test_get_piece_at_coords3() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece_at_coords(7, 8).unwrap(),
+            board.get_piece_at_coords(6, 7).unwrap(),
             PieceKind::Pawn(Color::Black)
         );
     }
@@ -129,13 +138,13 @@ mod tests {
     #[should_panic]
     fn test_get_piece_at_coords_oob_rank() {
         let board = create_starting_board();
-        board.get_piece_at_coords(9, 8).unwrap();
+        board.get_piece_at_coords(8, 7).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_get_piece_at_coords_oob_file() {
         let board = create_starting_board();
-        board.get_piece_at_coords(0, 9).unwrap();
+        board.get_piece_at_coords(0, 8).unwrap();
     }
 }

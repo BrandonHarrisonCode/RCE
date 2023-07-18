@@ -16,7 +16,19 @@ impl Piece for Pawn {
         }
     }
 
-    fn get_all_moves<'a>(&self, _rank: u8, _file: u8) -> &'a Vec<u64> {
-        todo!();
+    // Advances 1 square forward
+    // Advances 2 squares forward if on second rank
+    // Takes diagonally forward
+    // En passant
+    // Promotion
+    fn get_all_moves(rank: u8, file: u8) -> Vec<Move> {
+        let start: Square = Square::new(rank, file);
+
+        let mut output: Vec<Move> = Vec::new();
+        output.push(Move::new(
+            start.clone(),
+            start + Direction::North.unit_square(),
+        ));
+        output
     }
 }
