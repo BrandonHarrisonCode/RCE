@@ -59,42 +59,40 @@ mod tests {
     use super::*;
 
     #[test]
-    fn new_piece() {
-        let result = Piece::new(Color::Black, PieceKind::Rook);
-        assert_eq!(
-            result,
-            Piece {
-                color: Color::Black,
-                kind: PieceKind::Rook
-            }
-        );
+    fn display() {
+        PieceKind::Pawn(Color::White).to_string();
+        PieceKind::King(Color::White).to_string();
+        PieceKind::Queen(Color::White).to_string();
+        PieceKind::Rook(Color::White).to_string();
+        PieceKind::Bishop(Color::White).to_string();
+        PieceKind::Knight(Color::White).to_string();
     }
 
     #[test]
     fn check_eq() {
-        let piece1 = Piece::new(Color::White, PieceKind::Queen);
-        let piece2 = Piece::new(Color::White, PieceKind::Queen);
+        let piece1 = PieceKind::Pawn(Color::White);
+        let piece2 = PieceKind::Pawn(Color::White);
         assert_eq!(piece1, piece2);
     }
 
     #[test]
     fn check_ne_color() {
-        let piece1 = Piece::new(Color::White, PieceKind::Queen);
-        let piece2 = Piece::new(Color::Black, PieceKind::Queen);
+        let piece1 = PieceKind::Pawn(Color::White);
+        let piece2 = PieceKind::Pawn(Color::Black);
         assert_ne!(piece1, piece2);
     }
 
     #[test]
     fn check_ne_kind() {
-        let piece1 = Piece::new(Color::White, PieceKind::Queen);
-        let piece2 = Piece::new(Color::White, PieceKind::King);
+        let piece1 = PieceKind::Pawn(Color::White);
+        let piece2 = PieceKind::Queen(Color::White);
         assert_ne!(piece1, piece2);
     }
 
     #[test]
     fn check_ne_both() {
-        let piece1 = Piece::new(Color::White, PieceKind::Queen);
-        let piece2 = Piece::new(Color::Black, PieceKind::King);
+        let piece1 = PieceKind::Pawn(Color::White);
+        let piece2 = PieceKind::Queen(Color::Black);
         assert_ne!(piece1, piece2);
     }
 }

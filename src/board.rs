@@ -97,7 +97,7 @@ mod tests {
         let board = create_starting_board();
         assert_eq!(
             board.get_piece_at_coords(1, 1).unwrap(),
-            Piece::new(Color::White, PieceKind::Rook)
+            PieceKind::Rook(Color::White)
         );
     }
 
@@ -106,7 +106,7 @@ mod tests {
         let board = create_starting_board();
         assert_eq!(
             board.get_piece_at_coords(8, 8).unwrap(),
-            Piece::new(Color::Black, PieceKind::Rook)
+            PieceKind::Rook(Color::Black)
         );
     }
 
@@ -115,7 +115,7 @@ mod tests {
         let board = create_starting_board();
         assert_eq!(
             board.get_piece_at_coords(7, 8).unwrap(),
-            Piece::new(Color::Black, PieceKind::Pawn)
+            PieceKind::Pawn(Color::Black)
         );
     }
 
