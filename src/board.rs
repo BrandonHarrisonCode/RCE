@@ -34,54 +34,18 @@ impl Board {
 
     fn bitboard_map(&self) -> HashMap<Piece, u64> {
         HashMap::from([
-            (
-                piece::build_piece(Color::White, PieceKind::Pawn),
-                self.w_pawns,
-            ),
-            (
-                piece::build_piece(Color::White, PieceKind::King),
-                self.w_king,
-            ),
-            (
-                piece::build_piece(Color::White, PieceKind::Queen),
-                self.w_queens,
-            ),
-            (
-                piece::build_piece(Color::White, PieceKind::Rook),
-                self.w_rooks,
-            ),
-            (
-                piece::build_piece(Color::White, PieceKind::Bishop),
-                self.w_bishops,
-            ),
-            (
-                piece::build_piece(Color::White, PieceKind::Knight),
-                self.w_knights,
-            ),
-            (
-                piece::build_piece(Color::Black, PieceKind::Pawn),
-                self.b_pawns,
-            ),
-            (
-                piece::build_piece(Color::Black, PieceKind::King),
-                self.b_king,
-            ),
-            (
-                piece::build_piece(Color::Black, PieceKind::Queen),
-                self.b_queens,
-            ),
-            (
-                piece::build_piece(Color::Black, PieceKind::Rook),
-                self.b_rooks,
-            ),
-            (
-                piece::build_piece(Color::Black, PieceKind::Bishop),
-                self.b_bishops,
-            ),
-            (
-                piece::build_piece(Color::Black, PieceKind::Knight),
-                self.b_knights,
-            ),
+            (Piece::new(Color::White, PieceKind::Pawn), self.w_pawns),
+            (Piece::new(Color::White, PieceKind::King), self.w_king),
+            (Piece::new(Color::White, PieceKind::Queen), self.w_queens),
+            (Piece::new(Color::White, PieceKind::Rook), self.w_rooks),
+            (Piece::new(Color::White, PieceKind::Bishop), self.w_bishops),
+            (Piece::new(Color::White, PieceKind::Knight), self.w_knights),
+            (Piece::new(Color::Black, PieceKind::Pawn), self.b_pawns),
+            (Piece::new(Color::Black, PieceKind::King), self.b_king),
+            (Piece::new(Color::Black, PieceKind::Queen), self.b_queens),
+            (Piece::new(Color::Black, PieceKind::Rook), self.b_rooks),
+            (Piece::new(Color::Black, PieceKind::Bishop), self.b_bishops),
+            (Piece::new(Color::Black, PieceKind::Knight), self.b_knights),
         ])
     }
 }
