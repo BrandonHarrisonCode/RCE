@@ -101,4 +101,32 @@ mod tests {
             }
         );
     }
+
+    #[test]
+    fn check_eq() {
+        let piece1 = Piece::new(Color::White, PieceKind::Queen);
+        let piece2 = Piece::new(Color::White, PieceKind::Queen);
+        assert_eq!(piece1, piece2);
+    }
+
+    #[test]
+    fn check_ne_color() {
+        let piece1 = Piece::new(Color::White, PieceKind::Queen);
+        let piece2 = Piece::new(Color::Black, PieceKind::Queen);
+        assert_ne!(piece1, piece2);
+    }
+
+    #[test]
+    fn check_ne_kind() {
+        let piece1 = Piece::new(Color::White, PieceKind::Queen);
+        let piece2 = Piece::new(Color::White, PieceKind::King);
+        assert_ne!(piece1, piece2);
+    }
+
+    #[test]
+    fn check_ne_both() {
+        let piece1 = Piece::new(Color::White, PieceKind::Queen);
+        let piece2 = Piece::new(Color::Black, PieceKind::King);
+        assert_ne!(piece1, piece2);
+    }
 }
