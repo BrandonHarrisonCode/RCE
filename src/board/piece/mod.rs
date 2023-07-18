@@ -66,6 +66,13 @@ mod tests {
         PieceKind::Rook(Color::White).to_string();
         PieceKind::Bishop(Color::White).to_string();
         PieceKind::Knight(Color::White).to_string();
+
+        PieceKind::Pawn(Color::Black).to_string();
+        PieceKind::King(Color::Black).to_string();
+        PieceKind::Queen(Color::Black).to_string();
+        PieceKind::Rook(Color::Black).to_string();
+        PieceKind::Bishop(Color::Black).to_string();
+        PieceKind::Knight(Color::Black).to_string();
     }
 
     #[test]
