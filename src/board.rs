@@ -271,7 +271,7 @@ mod tests {
     fn test_get_piece1() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece(0, 0).unwrap(),
+            board.get_piece(&Square::new(0, 0)).unwrap(),
             PieceKind::Rook(Color::White)
         );
     }
@@ -280,7 +280,7 @@ mod tests {
     fn test_get_piece2() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece(7, 7).unwrap(),
+            board.get_piece(&Square::new(7, 7)).unwrap(),
             PieceKind::Rook(Color::Black)
         );
     }
@@ -289,7 +289,7 @@ mod tests {
     fn test_get_piece3() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece(6, 7).unwrap(),
+            board.get_piece(&Square::new(6, 7)).unwrap(),
             PieceKind::Pawn(Color::Black)
         );
     }
@@ -297,20 +297,20 @@ mod tests {
     #[test]
     fn test_get_piece_none() {
         let board = create_starting_board();
-        assert!(board.get_piece(4, 4).is_none());
+        assert!(board.get_piece(&Square::new(4, 4)).is_none());
     }
 
     #[test]
     #[should_panic]
     fn test_get_piece_oob_rank() {
         let board = create_starting_board();
-        board.get_piece(8, 7).unwrap();
+        board.get_piece(&Square::new(8, 7)).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_get_piece_oob_file() {
         let board = create_starting_board();
-        board.get_piece(0, 8).unwrap();
+        board.get_piece(&Square::new(0, 8)).unwrap();
     }
 }
