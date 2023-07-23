@@ -15,10 +15,10 @@ use pawn::Pawn;
 use queen::Queen;
 use rook::Rook;
 
-#[derive(Constructor, Clone, Debug)]
+#[derive(Constructor, Clone, Debug, Copy, PartialEq)]
 pub struct Square {
-    rank: u8,
-    file: u8,
+    pub rank: u8,
+    pub file: u8,
 }
 impl std::ops::Add<SquareDelta> for Square {
     type Output = Square;
@@ -42,14 +42,14 @@ pub struct SquareDelta {
     file_delta: i8,
 }
 
-#[derive(Constructor, Debug)]
+#[derive(Constructor, Debug, Clone, Copy)]
 pub struct Move {
-    starting_square: Square,
-    target_square: Square,
+    pub start: Square,
+    pub dest: Square,
 }
 impl fmt::Display for Move {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} -> {}", self.starting_square, self.target_square)
+        write!(f, "{} -> {}", self.start, self.dest)
     }
 }
 
@@ -104,13 +104,13 @@ impl Direction {
     }
 }
 
-#[derive(Clone, PartialEq, Hash, Display, Debug)]
+#[derive(Clone, Copy, PartialEq, Hash, Display, Debug)]
 pub enum Color {
     White,
     Black,
 }
 
-#[derive(Clone, PartialEq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Hash, Debug)]
 pub enum PieceKind {
     Pawn(Color),
     King(Color),
@@ -140,14 +140,14 @@ impl PieceKind {
         }
     }
 
-    pub fn get_all_moves(&self, rank: u8, file: u8) -> Vec<Move> {
+    pub fn get_all_moves(&self, square: &Square) -> Vec<Move> {
         match self {
-            PieceKind::Pawn(_c) => Pawn::get_all_moves(rank, file),
-            PieceKind::King(_c) => King::get_all_moves(rank, file),
-            PieceKind::Queen(_c) => Queen::get_all_moves(rank, file),
-            PieceKind::Rook(_c) => Rook::get_all_moves(rank, file),
-            PieceKind::Bishop(_c) => Bishop::get_all_moves(rank, file),
-            PieceKind::Knight(_c) => Knight::get_all_moves(rank, file),
+            PieceKind::Pawn(_c) => Pawn::get_all_moves(square),
+            PieceKind::King(_c) => King::get_all_moves(square),
+            PieceKind::Queen(_c) => Queen::get_all_moves(square),
+            PieceKind::Rook(_c) => Rook::get_all_moves(square),
+            PieceKind::Bishop(_c) => Bishop::get_all_moves(square),
+            PieceKind::Knight(_c) => Knight::get_all_moves(square),
         }
     }
 }
@@ -155,7 +155,7 @@ impl PieceKind {
 pub trait Piece: Clone + PartialEq + Eq {
     fn get_piece_symbol(color: &Color) -> &'static str;
     // Assumes always white?
-    fn get_all_moves(rank: u8, file: u8) -> Vec<Move>;
+    fn get_all_moves(square: &Square) -> Vec<Move>;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -21,13 +21,11 @@ impl Piece for Pawn {
     // Takes diagonally forward
     // En passant
     // Promotion
-    fn get_all_moves(rank: u8, file: u8) -> Vec<Move> {
-        let start: Square = Square::new(rank, file);
-
+    fn get_all_moves(square: &Square) -> Vec<Move> {
         let mut output: Vec<Move> = Vec::new();
         output.push(Move::new(
-            start.clone(),
-            start + Direction::North.unit_square(),
+            square.clone(),
+            square.clone() + Direction::North.unit_square(),
         ));
         output
     }
