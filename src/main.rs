@@ -13,12 +13,15 @@ fn main() {
 
     let mut board = board::create_starting_board();
 
-    let moves = board
-        .get_moves_for_piece(&board::piece::Square::new(1, 0))
-        .unwrap();
     println!("{}", board);
+
+    let moves = board.get_all_moves();
+
     println!("{:?}", moves);
 
-    board.make_move(moves[0]);
+    let test_moves = board
+        .get_moves_for_piece(&board::piece::Square::new(1, 0))
+        .unwrap();
+    board.make_move(test_moves[0]);
     println!("{}", board);
 }

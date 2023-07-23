@@ -7,6 +7,7 @@ use piece::{Color, Move, PieceKind, Square};
 
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 pub struct Board {
+    is_white_turn: bool,
     w_pawns: u64,
     w_king: u64,
     w_queens: u64,
@@ -67,6 +68,28 @@ impl Board {
             Some(p) => Some(p.get_all_moves(square)),
             None => None,
         }
+    }
+
+    /// Returns a list of all potential moves for the current side
+    ///
+    /// # Examples
+    /// ```
+    /// let board = create_starting_board();
+    /// let movelist = board.get_all_moves(Square::new(1,0));
+    /// ```
+    pub fn get_all_moves(&self) -> Vec<Move> {
+        let mut all_moves = Vec::new();
+        for i in (0..8).rev() {
+            for j in 0..8 {
+                let square = &Square::new(i, j);
+                if let Some(piece) = self.get_piece(square) {
+                    if !self.is_white_turn ^ (piece.get_color() == Color::White) {
+                        all_moves.append(&mut piece.get_all_moves(square));
+                    }
+                }
+            }
+        }
+        all_moves
     }
 
     /// Returns a HashMap of PieceKinds to a reference of their corresponding bitboard
@@ -246,6 +269,7 @@ impl fmt::Display for Board {
 /// Creates a new board object that represents the starting board state in a normal game
 pub fn create_starting_board() -> Board {
     Board {
+        is_white_turn: true,
         w_pawns: 0b0000000000000000000000000000000000000000000000001111111100000000,
         w_king: 0b0000000000000000000000000000000000000000000000000000000000001000,
         w_queens: 0b0000000000000000000000000000000000000000000000000000000000010000,

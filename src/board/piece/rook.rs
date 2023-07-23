@@ -17,6 +17,6 @@ impl Piece for Rook {
     }
 
     fn get_all_moves(_square: &Square) -> Vec<Move> {
-        todo!();
+        Vec::new()
     }
 }

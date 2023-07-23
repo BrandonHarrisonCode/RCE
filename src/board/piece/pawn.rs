@@ -16,11 +16,11 @@ impl Piece for Pawn {
         }
     }
 
-    // Advances 1 square forward
-    // Advances 2 squares forward if on second rank
-    // Takes diagonally forward
-    // En passant
-    // Promotion
+    /// [X] Advances 1 square forward
+    /// [ ] Advances 2 squares forward if on second rank
+    /// [ ] Takes diagonally forward
+    /// [ ] En passant
+    /// [ ] Promotion
     fn get_all_moves(square: &Square) -> Vec<Move> {
         let mut output: Vec<Move> = Vec::new();
         output.push(Move::new(

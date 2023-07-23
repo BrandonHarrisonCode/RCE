@@ -129,6 +129,17 @@ impl fmt::Display for PieceKind {
 }
 
 impl PieceKind {
+    pub fn get_color(&self) -> Color {
+        match self {
+            PieceKind::Pawn(c) => *c,
+            PieceKind::King(c) => *c,
+            PieceKind::Queen(c) => *c,
+            PieceKind::Rook(c) => *c,
+            PieceKind::Bishop(c) => *c,
+            PieceKind::Knight(c) => *c,
+        }
+    }
+
     pub fn get_piece_symbol(&self) -> &'static str {
         match self {
             PieceKind::Pawn(c) => Pawn::get_piece_symbol(c),
