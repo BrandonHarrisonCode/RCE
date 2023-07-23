@@ -34,8 +34,8 @@ impl Board {
     /// # Examples
     /// ```
     /// let board = create_starting_board();
-    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new(0,0));
-    /// assert_eq!(None, board.get_piece(Square::new(3,0));
+    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new(0,0)));
+    /// assert_eq!(None, board.get_piece(Square::new(3,0)));
     /// ```
     pub fn get_piece(&self, square: &Square) -> Option<PieceKind> {
         let mask = mask_for_coord(square);
