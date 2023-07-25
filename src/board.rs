@@ -5,9 +5,12 @@ pub mod piece;
 
 use piece::{Color, Move, PieceKind, Square};
 
+const NUM_PIECES: usize = 32;
+
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 pub struct Board {
     is_white_turn: bool,
+
     w_pawns: u64,
     w_king: u64,
     w_queens: u64,
@@ -20,9 +23,76 @@ pub struct Board {
     b_rooks: u64,
     b_bishops: u64,
     b_knights: u64,
+
+    captures: Vec<PieceKind>,
 }
 
 impl Board {
+    /// Returns a new board given starting bitboards
+    ///
+    /// # Arguments
+    ///
+    /// * `w_pawns` - A u64 bitboard representing white pawns
+    ///
+    /// * `w_king` - A u64 bitboard representing the white king
+    ///
+    /// * `w_queens` - A u64 bitboard representing white queens
+    ///
+    /// * `w_rooks` - A u64 bitboard representing white rooks
+    ///
+    /// * `w_bishops` - A u64 bitboard representing white bishops
+    ///
+    /// * `w_knights` - A u64 bitboard representing white knights
+    ///
+    /// * `b_pawns` - A u64 bitboard representing black pawns
+    ///
+    /// * `b_king` - A u64 bitboard representing the black king
+    ///
+    /// * `b_queens` - A u64 bitboard representing black queens
+    ///
+    /// * `b_rooks` - A u64 bitboard representing black rooks
+    ///
+    /// * `b_bishops` - A u64 bitboard representing black bishops
+    ///
+    /// * `b_knights` - A u64 bitboard representing black knights
+    ///
+    /// # Examples
+    /// ```
+    /// // Create empty board
+    /// let board = Board::new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /// ```
+    pub fn new(
+        w_pawns: u64,
+        w_king: u64,
+        w_queens: u64,
+        w_rooks: u64,
+        w_bishops: u64,
+        w_knights: u64,
+        b_pawns: u64,
+        b_king: u64,
+        b_queens: u64,
+        b_rooks: u64,
+        b_bishops: u64,
+        b_knights: u64,
+    ) -> Board {
+        Board {
+            is_white_turn: true,
+            captures: Vec::with_capacity(NUM_PIECES),
+            w_pawns,
+            w_king,
+            w_queens,
+            w_rooks,
+            w_bishops,
+            w_knights,
+            b_pawns,
+            b_king,
+            b_queens,
+            b_rooks,
+            b_bishops,
+            b_knights,
+        }
+    }
+
     /// Returns a PieceKind Option of the piece currently occupying `square`
     ///
     /// # Arguments
@@ -268,21 +338,23 @@ impl fmt::Display for Board {
 
 /// Creates a new board object that represents the starting board state in a normal game
 pub fn create_starting_board() -> Board {
-    Board {
-        is_white_turn: true,
-        w_pawns: 0b0000000000000000000000000000000000000000000000001111111100000000,
-        w_king: 0b0000000000000000000000000000000000000000000000000000000000001000,
-        w_queens: 0b0000000000000000000000000000000000000000000000000000000000010000,
-        w_rooks: 0b0000000000000000000000000000000000000000000000000000000010000001,
-        w_bishops: 0b0000000000000000000000000000000000000000000000000000000000100100,
-        w_knights: 0b0000000000000000000000000000000000000000000000000000000001000010,
-        b_pawns: 0b0000000011111111000000000000000000000000000000000000000000000000,
-        b_king: 0b0000100000000000000000000000000000000000000000000000000000000000,
-        b_queens: 0b0001000000000000000000000000000000000000000000000000000000000000,
-        b_rooks: 0b1000000100000000000000000000000000000000000000000000000000000000,
-        b_bishops: 0b0010010000000000000000000000000000000000000000000000000000000000,
-        b_knights: 0b0100001000000000000000000000000000000000000000000000000000000000,
-    }
+    let w_pawns = 0b0000000000000000000000000000000000000000000000001111111100000000;
+    let w_king = 0b0000000000000000000000000000000000000000000000000000000000001000;
+    let w_queens = 0b0000000000000000000000000000000000000000000000000000000000010000;
+    let w_rooks = 0b0000000000000000000000000000000000000000000000000000000010000001;
+    let w_bishops = 0b0000000000000000000000000000000000000000000000000000000000100100;
+    let w_knights = 0b0000000000000000000000000000000000000000000000000000000001000010;
+    let b_pawns = 0b0000000011111111000000000000000000000000000000000000000000000000;
+    let b_king = 0b0000100000000000000000000000000000000000000000000000000000000000;
+    let b_queens = 0b0001000000000000000000000000000000000000000000000000000000000000;
+    let b_rooks = 0b1000000100000000000000000000000000000000000000000000000000000000;
+    let b_bishops = 0b0010010000000000000000000000000000000000000000000000000000000000;
+    let b_knights = 0b0100001000000000000000000000000000000000000000000000000000000000;
+
+    Board::new(
+        w_pawns, w_king, w_queens, w_rooks, w_bishops, w_knights, b_pawns, b_king, b_queens,
+        b_rooks, b_bishops, b_knights,
+    )
 }
 
 ///////////////////////////////////////////////////////////////////////////////

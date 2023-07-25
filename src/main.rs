@@ -19,9 +19,8 @@ fn main() {
 
     println!("{:?}", moves);
 
-    let test_moves = board
-        .get_moves_for_piece(&board::piece::Square::new(1, 0))
-        .unwrap();
-    board.make_move(test_moves[0]);
-    println!("{}", board);
+    for pmove in moves {
+        board.make_move(pmove);
+        println!("{}", board);
+    }
 }
