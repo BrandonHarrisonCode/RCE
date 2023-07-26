@@ -294,11 +294,40 @@ impl Board {
     /// board.make_move(Move::new(Square::new(1, 0), Square::new(2, 0)));
     /// ```
     pub fn make_move(&mut self, new_move: Move) {
-        let piece_kind = self.get_piece(&new_move.start).unwrap();
+        let start_piece_kind = self.get_piece(&new_move.start).unwrap();
 
-        self.clear_piece(&new_move.dest);
-        self.add_piece(&new_move.dest, &piece_kind);
-        self.remove_piece(&new_move.start, &piece_kind);
+        // If capture, save the dest piece to the captures stack
+        if let Some(dest_piece_kind) = self.get_piece(&new_move.dest) {
+            self.remove_piece(&new_move.dest, &dest_piece_kind);
+            self.captures.push(dest_piece_kind.clone());
+        }
+
+        self.add_piece(&new_move.dest, &start_piece_kind);
+        self.remove_piece(&new_move.start, &start_piece_kind);
+    }
+
+    /// Unmakes a half-move on this board
+    ///
+    /// # Arguments
+    ///
+    /// * `old_move` - A Move that holds the origin and destination square of the move.
+    ///
+    /// # Examples
+    /// ```
+    /// ```
+    pub fn unmake_move(&mut self, old_move: Move) {
+        let piece_kind = self.get_piece(&old_move.dest).unwrap();
+
+        // Start is guaranteed to be empty since the piece we're moving back was at the start last
+        // move
+        self.add_piece(&old_move.start, &piece_kind);
+        self.remove_piece(&old_move.dest, &piece_kind);
+
+        // If capture, save the dest piece to the captures stack
+        if let Some(dest_piece_kind) = self.get_piece(&new_move.dest) {
+            self.remove_piece(&new_move.dest, &dest_piece_kind);
+            self.captures.push(dest_piece_kind.clone());
+        }
     }
 }
 
