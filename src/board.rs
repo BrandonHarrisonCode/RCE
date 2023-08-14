@@ -24,7 +24,7 @@ pub struct Board {
     b_bishops: u64,
     b_knights: u64,
 
-    captures: Vec<PieceKind>,
+    captures: Vec<Option<PieceKind>>,
 }
 
 impl Board {
@@ -299,7 +299,9 @@ impl Board {
         // If capture, save the dest piece to the captures stack
         if let Some(dest_piece_kind) = self.get_piece(&new_move.dest) {
             self.remove_piece(&new_move.dest, &dest_piece_kind);
-            self.captures.push(dest_piece_kind.clone());
+            self.captures.push(Some(dest_piece_kind.clone()));
+        } else {
+            self.captures.push(None);
         }
 
         self.add_piece(&new_move.dest, &start_piece_kind);
@@ -323,10 +325,8 @@ impl Board {
         self.add_piece(&old_move.start, &piece_kind);
         self.remove_piece(&old_move.dest, &piece_kind);
 
-        // If capture, save the dest piece to the captures stack
-        if let Some(dest_piece_kind) = self.get_piece(&new_move.dest) {
-            self.remove_piece(&new_move.dest, &dest_piece_kind);
-            self.captures.push(dest_piece_kind.clone());
+        if let Some(capture_piece) = self.captures.pop().unwrap() {
+            self.add_piece(&old_move.dest, &capture_piece);
         }
     }
 }

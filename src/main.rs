@@ -22,5 +22,14 @@ fn main() {
     for pmove in moves {
         board.make_move(pmove);
         println!("{}", board);
+        println!("Iterating moves...");
+        let mut new_moves = board.get_all_moves();
+        for npmove in new_moves {
+            board.make_move(npmove);
+            println!("{}", board);
+            board.unmake_move(npmove);
+        }
+        println!("Ending iteration...");
+        board.unmake_move(pmove);
     }
 }
