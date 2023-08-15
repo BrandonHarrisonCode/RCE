@@ -135,7 +135,7 @@ impl Board {
     pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Move>> {
         let piece = self.get_piece(square);
         match piece {
-            Some(p) => Some(p.get_all_moves(square)),
+            Some(p) => Some(p.get_all_legal_moves(square)),
             None => None,
         }
     }
@@ -154,7 +154,7 @@ impl Board {
                 let square = &Square::new(i, j);
                 if let Some(piece) = self.get_piece(square) {
                     if !self.is_white_turn ^ (piece.get_color() == Color::White) {
-                        all_moves.append(&mut piece.get_all_moves(square));
+                        all_moves.append(&mut piece.get_all_legal_moves(square));
                     }
                 }
             }
@@ -313,6 +313,9 @@ impl Board {
     /// # Arguments
     ///
     /// * `old_move` - A Move that holds the origin and destination square of the move.
+    ///
+    /// # Panics
+    /// Will panic if there is no piece at the destination square.
     ///
     /// # Examples
     /// ```

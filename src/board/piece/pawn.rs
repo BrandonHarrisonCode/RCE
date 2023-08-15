@@ -21,7 +21,7 @@ impl Piece for Pawn {
     /// [ ] Takes diagonally forward
     /// [ ] En passant
     /// [ ] Promotion
-    fn get_all_moves(square: &Square) -> Vec<Move> {
+    fn get_moveset(square: &Square) -> Vec<Move> {
         let mut output: Vec<Move> = Vec::new();
         output.push(Move::new(
             square.clone(),

@@ -25,15 +25,19 @@ impl std::ops::Add<SquareDelta> for Square {
 
     fn add(self, other: SquareDelta) -> Square {
         Square {
-            rank: self.rank.saturating_add_signed(other.rank_delta),
-            file: self.file.saturating_add_signed(other.file_delta),
+            rank: (self.rank as i16 + other.rank_delta as i16) as u8,
+            file: (self.file as i16 + other.file_delta as i16) as u8,
         }
     }
 }
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let filechar: char = (65 + self.rank) as char;
-        write!(f, "{}{}", filechar, self.rank)
+        if self.file >= 8 || self.rank >= 8 {
+            write!(f, "Invalid range: {}, {}", self.rank, self.file)
+        } else {
+            let filechar: char = (97 + self.file) as char;
+            write!(f, "{}{}", filechar, self.rank + 1)
+        }
     }
 }
 
@@ -93,8 +97,8 @@ impl Direction {
                 file_delta: -1,
             },
             Self::West => SquareDelta {
-                rank_delta: -1,
-                file_delta: 0,
+                rank_delta: 0,
+                file_delta: -1,
             },
             Self::NorthWest => SquareDelta {
                 rank_delta: 1,
@@ -151,22 +155,35 @@ impl PieceKind {
         }
     }
 
-    pub fn get_all_moves(&self, square: &Square) -> Vec<Move> {
+    fn get_moveset(&self, square: &Square) -> Vec<Move> {
         match self {
-            PieceKind::Pawn(_c) => Pawn::get_all_moves(square),
-            PieceKind::King(_c) => King::get_all_moves(square),
-            PieceKind::Queen(_c) => Queen::get_all_moves(square),
-            PieceKind::Rook(_c) => Rook::get_all_moves(square),
-            PieceKind::Bishop(_c) => Bishop::get_all_moves(square),
-            PieceKind::Knight(_c) => Knight::get_all_moves(square),
+            PieceKind::Pawn(_c) => Pawn::get_moveset(square),
+            PieceKind::King(_c) => King::get_moveset(square),
+            PieceKind::Queen(_c) => Queen::get_moveset(square),
+            PieceKind::Rook(_c) => Rook::get_moveset(square),
+            PieceKind::Bishop(_c) => Bishop::get_moveset(square),
+            PieceKind::Knight(_c) => Knight::get_moveset(square),
         }
+    }
+
+    pub fn get_all_legal_moves(&self, square: &Square) -> Vec<Move> {
+        self.get_moveset(square)
+            .into_iter()
+            .filter(|mv| {
+                mv.start.rank < 8
+                    && mv.start.file < 8
+                    && mv.dest.rank < 8
+                    && mv.dest.file < 8
+                    && mv.start != mv.dest
+            })
+            .collect()
     }
 }
 
 pub trait Piece: Clone + PartialEq + Eq {
     fn get_piece_symbol(color: &Color) -> &'static str;
     // Assumes always white?
-    fn get_all_moves(square: &Square) -> Vec<Move>;
+    fn get_moveset(square: &Square) -> Vec<Move>;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
