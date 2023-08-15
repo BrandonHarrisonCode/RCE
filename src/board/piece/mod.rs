@@ -15,7 +15,7 @@ use pawn::Pawn;
 use queen::Queen;
 use rook::Rook;
 
-#[derive(Constructor, Clone, Debug, Copy, PartialEq)]
+#[derive(Constructor, Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub struct Square {
     pub rank: u8,
     pub file: u8,
@@ -46,7 +46,7 @@ pub struct SquareDelta {
     file_delta: i8,
 }
 
-#[derive(Constructor, Debug, Clone, Copy, PartialEq)]
+#[derive(Constructor, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Move {
     pub start: Square,
     pub dest: Square,

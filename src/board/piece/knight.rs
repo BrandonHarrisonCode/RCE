@@ -1,6 +1,7 @@
 use super::*;
+use std::collections::HashSet;
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Knight;
 
 const WHITE_SYMBOL: &str = "♞";
@@ -107,5 +108,181 @@ impl Piece for Knight {
         }
 
         output
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_knight_derived_traits() {
+        let piece = Knight {};
+        dbg!(&piece);
+
+        assert_eq!(piece, piece.clone());
+    }
+
+    #[test]
+    fn test_knight_display_white() {
+        let output = super::WHITE_SYMBOL;
+        let correct = "♞";
+
+        assert_eq!(output, correct);
+    }
+
+    #[test]
+    fn test_knight_display_black() {
+        let output = super::BLACK_SYMBOL;
+        let correct = "♘";
+
+        assert_eq!(output, correct);
+    }
+
+    #[test]
+    fn test_knight_get_piece_symbol_white() {
+        let piece = PieceKind::Knight(Color::White);
+        let correct = "♞";
+
+        assert_eq!(piece.get_piece_symbol(), correct);
+    }
+
+    #[test]
+    fn test_knight_get_piece_symbol_black() {
+        let piece = PieceKind::Knight(Color::Black);
+        let correct = "♘";
+
+        assert_eq!(piece.get_piece_symbol(), correct);
+    }
+
+    #[test]
+    fn test_knight_eq() {
+        let left = PieceKind::Knight(Color::White);
+        let right = PieceKind::Knight(Color::White);
+
+        assert_eq!(left, right);
+    }
+
+    #[test]
+    fn test_knight_neq() {
+        let left = PieceKind::Knight(Color::White);
+        let right = PieceKind::Knight(Color::Black);
+
+        assert_ne!(left, right);
+    }
+
+    #[test]
+    fn test_knight_neq_rev() {
+        // Test if addition is commutative
+        let right = PieceKind::Knight(Color::White);
+        let left = PieceKind::Knight(Color::Black);
+
+        assert_ne!(left, right);
+    }
+
+    #[test]
+    fn test_knight_get_moveset_white_b0() {
+        let piece = PieceKind::Knight(Color::White);
+        let start_square = Square::new(0, 1);
+
+        let result = piece.get_moveset(&start_square);
+        let mut correct = Vec::new();
+        correct.push(Move::new(start_square, Square::new(2, 0)));
+        correct.push(Move::new(start_square, Square::new(2, 2)));
+        correct.push(Move::new(start_square, Square::new(1, 3)));
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_knight_get_moveset_white_d4() {
+        let piece = PieceKind::Knight(Color::White);
+        let start_square = Square::new(3, 3);
+
+        let result = piece.get_moveset(&start_square);
+        let mut correct = Vec::new();
+        correct.push(Move::new(start_square, Square::new(1, 2))); // Down 2, Left 1
+        correct.push(Move::new(start_square, Square::new(1, 4))); // Down 2, Right 1
+        correct.push(Move::new(start_square, Square::new(5, 2))); // Up 2, Left 1
+        correct.push(Move::new(start_square, Square::new(5, 4))); // Up 2, Right 1
+        correct.push(Move::new(start_square, Square::new(4, 1))); // Left 2, Up 1
+        correct.push(Move::new(start_square, Square::new(2, 1))); // Left 2, Down 1
+        correct.push(Move::new(start_square, Square::new(4, 5))); // Right 2, Up 1
+        correct.push(Move::new(start_square, Square::new(2, 5))); // Right 2, Down 1
+
+        let result_set: HashSet<Move> = result.into_iter().collect();
+        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_knight_get_moveset_white_h6() {
+        let piece = PieceKind::Knight(Color::White);
+        let start_square = Square::new(5, 7);
+
+        let result = piece.get_moveset(&start_square);
+        let mut correct = Vec::new();
+        correct.push(Move::new(start_square, Square::new(3, 6))); // Down 2, Left 1
+        correct.push(Move::new(start_square, Square::new(7, 6))); // Up 2, Left 1
+        correct.push(Move::new(start_square, Square::new(6, 5))); // Left 2, Up 1
+        correct.push(Move::new(start_square, Square::new(4, 5))); // Left 2, Down 1
+
+        let result_set: HashSet<Move> = result.into_iter().collect();
+        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_knight_get_moveset_black_b0() {
+        let piece = PieceKind::Knight(Color::Black);
+        let start_square = Square::new(0, 1);
+
+        let result = piece.get_moveset(&start_square);
+        let mut correct = Vec::new();
+        correct.push(Move::new(start_square, Square::new(2, 0)));
+        correct.push(Move::new(start_square, Square::new(2, 2)));
+        correct.push(Move::new(start_square, Square::new(1, 3)));
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_knight_get_moveset_black_d4() {
+        let piece = PieceKind::Knight(Color::Black);
+        let start_square = Square::new(3, 3);
+
+        let result = piece.get_moveset(&start_square);
+        let mut correct = Vec::new();
+        correct.push(Move::new(start_square, Square::new(1, 2))); // Down 2, Left 1
+        correct.push(Move::new(start_square, Square::new(1, 4))); // Down 2, Right 1
+        correct.push(Move::new(start_square, Square::new(5, 2))); // Up 2, Left 1
+        correct.push(Move::new(start_square, Square::new(5, 4))); // Up 2, Right 1
+        correct.push(Move::new(start_square, Square::new(4, 1))); // Left 2, Up 1
+        correct.push(Move::new(start_square, Square::new(2, 1))); // Left 2, Down 1
+        correct.push(Move::new(start_square, Square::new(4, 5))); // Right 2, Up 1
+        correct.push(Move::new(start_square, Square::new(2, 5))); // Right 2, Down 1
+
+        let result_set: HashSet<Move> = result.into_iter().collect();
+        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_knight_get_moveset_black_h6() {
+        let piece = PieceKind::Knight(Color::Black);
+        let start_square = Square::new(5, 7);
+
+        let result = piece.get_moveset(&start_square);
+        let mut correct = Vec::new();
+        correct.push(Move::new(start_square, Square::new(3, 6))); // Down 2, Left 1
+        correct.push(Move::new(start_square, Square::new(7, 6))); // Up 2, Left 1
+        correct.push(Move::new(start_square, Square::new(6, 5))); // Left 2, Up 1
+        correct.push(Move::new(start_square, Square::new(4, 5))); // Left 2, Down 1
+
+        let result_set: HashSet<Move> = result.into_iter().collect();
+        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
     }
 }
