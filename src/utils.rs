@@ -25,6 +25,13 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_debug_bitboard_no_panic() {
+        let bb = 0b0000000000000000000000000000000000000000000000001111111100000000;
+
+        debug_bitboard(&bb);
+    }
+
+    #[test]
     fn test_debug_bitboard1() {
         let bb = 0b0000000000000000000000000000000000000000000000001111111100000000;
 

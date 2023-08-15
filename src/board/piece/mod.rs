@@ -46,7 +46,7 @@ pub struct SquareDelta {
     file_delta: i8,
 }
 
-#[derive(Constructor, Debug, Clone, Copy)]
+#[derive(Constructor, Debug, Clone, Copy, PartialEq)]
 pub struct Move {
     pub start: Square,
     pub dest: Square,
