@@ -1,5 +1,3 @@
-use indoc::indoc;
-
 #[allow(dead_code)]
 pub fn debug_bitboard(bitboard: &u64) {
     let output = debug_bitboard_helper(bitboard);
@@ -23,6 +21,7 @@ pub fn debug_bitboard_helper(bitboard: &u64) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use indoc::indoc;
 
     #[test]
     fn test_debug_bitboard_no_panic() {

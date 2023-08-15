@@ -21,9 +21,9 @@ impl Piece for Pawn {
     /// [ ] Takes diagonally forward
     /// [ ] En passant
     /// [ ] Promotion
-    fn get_moveset(square: &Square) -> Vec<Move> {
-        let mut output: Vec<Move> = Vec::new();
-        output.push(Move::new(
+    fn get_moveset(square: &Square) -> Vec<Ply> {
+        let mut output: Vec<Ply> = Vec::new();
+        output.push(Ply::new(
             square.clone(),
             square.clone() + Direction::North.unit_square(),
         ));
@@ -110,7 +110,7 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, dest_square));
+        correct.push(Ply::new(start_square, dest_square));
 
         assert_eq!(result, correct);
     }
@@ -123,7 +123,7 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, dest_square));
+        correct.push(Ply::new(start_square, dest_square));
 
         assert_eq!(result, correct);
     }
@@ -136,7 +136,7 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, dest_square));
+        correct.push(Ply::new(start_square, dest_square));
 
         assert_eq!(result, correct);
     }

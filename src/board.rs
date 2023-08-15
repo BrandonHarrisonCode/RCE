@@ -2,8 +2,12 @@ use std::collections::HashMap;
 use std::fmt;
 
 pub mod piece;
+mod ply;
+mod square;
 
-use piece::{Color, Move, PieceKind, Square};
+use piece::{Color, PieceKind};
+use ply::Ply;
+use square::Square;
 
 const NUM_PIECES: usize = 32;
 
@@ -118,7 +122,7 @@ impl Board {
         None
     }
 
-    /// Returns an optional list of Moves for the piece at a given square
+    /// Returns an optional list of Plys for the piece at a given square
     ///
     /// # Arguments
     ///
@@ -132,7 +136,7 @@ impl Board {
     /// let board = create_starting_board();
     /// let movelist = board.get_moves_for_piece(Square::new(1,0));
     /// ```
-    pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Move>> {
+    pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Ply>> {
         let piece = self.get_piece(square);
         match piece {
             Some(p) => Some(p.get_all_legal_moves(square)),
@@ -147,7 +151,7 @@ impl Board {
     /// let board = create_starting_board();
     /// let movelist = board.get_all_moves(Square::new(1,0));
     /// ```
-    pub fn get_all_moves(&self) -> Vec<Move> {
+    pub fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
         for i in (0..8).rev() {
             for j in 0..8 {
@@ -285,15 +289,15 @@ impl Board {
     ///
     /// # Arguments
     ///
-    /// * `new_move` - A Move that holds the origin and destination square of the move.
+    /// * `new_move` - A Ply that holds the origin and destination square of the move.
     ///
     /// # Examples
     /// ```
     /// let board = create_starting_board();
-    /// // Move the a pawn one square forward
-    /// board.make_move(Move::new(Square::new(1, 0), Square::new(2, 0)));
+    /// // Ply the a pawn one square forward
+    /// board.make_move(Ply::new(Square::new(1, 0), Square::new(2, 0)));
     /// ```
-    pub fn make_move(&mut self, new_move: Move) {
+    pub fn make_move(&mut self, new_move: Ply) {
         let start_piece_kind = self.get_piece(&new_move.start).unwrap();
 
         // If capture, save the dest piece to the captures stack
@@ -312,7 +316,7 @@ impl Board {
     ///
     /// # Arguments
     ///
-    /// * `old_move` - A Move that holds the origin and destination square of the move.
+    /// * `old_move` - A Ply that holds the origin and destination square of the move.
     ///
     /// # Panics
     /// Will panic if there is no piece at the destination square.
@@ -320,7 +324,7 @@ impl Board {
     /// # Examples
     /// ```
     /// ```
-    pub fn unmake_move(&mut self, old_move: Move) {
+    pub fn unmake_move(&mut self, old_move: Ply) {
         let piece_kind = self.get_piece(&old_move.dest).unwrap();
 
         // Start is guaranteed to be empty since the piece we're moving back was at the start last

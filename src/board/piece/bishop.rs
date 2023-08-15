@@ -16,7 +16,7 @@ impl Piece for Bishop {
         }
     }
 
-    fn get_moveset(_square: &Square) -> Vec<Move> {
+    fn get_moveset(_square: &Square) -> Vec<Ply> {
         Vec::new()
     }
 }

@@ -1,5 +1,4 @@
 use super::*;
-use std::collections::HashSet;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Knight;
@@ -17,9 +16,9 @@ impl Piece for Knight {
         }
     }
 
-    fn get_moveset(square: &Square) -> Vec<Move> {
-        let mut moveset: Vec<Move> = Vec::new();
-        moveset.push(Move::new(
+    fn get_moveset(square: &Square) -> Vec<Ply> {
+        let mut moveset: Vec<Ply> = Vec::new();
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::North.unit_square()
@@ -28,7 +27,7 @@ impl Piece for Knight {
         ));
         println!("1. {}", moveset[moveset.len() - 1]);
 
-        moveset.push(Move::new(
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::North.unit_square()
@@ -37,7 +36,7 @@ impl Piece for Knight {
         ));
         println!("2. {}", moveset[moveset.len() - 1]);
 
-        moveset.push(Move::new(
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::South.unit_square()
@@ -46,7 +45,7 @@ impl Piece for Knight {
         ));
         println!("3. {}", moveset[moveset.len() - 1]);
 
-        moveset.push(Move::new(
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::South.unit_square()
@@ -55,7 +54,7 @@ impl Piece for Knight {
         ));
         println!("4. {}", moveset[moveset.len() - 1]);
 
-        moveset.push(Move::new(
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::East.unit_square()
@@ -64,7 +63,7 @@ impl Piece for Knight {
         ));
         println!("5. {}", moveset[moveset.len() - 1]);
 
-        moveset.push(Move::new(
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::East.unit_square()
@@ -73,7 +72,7 @@ impl Piece for Knight {
         ));
         println!("6. {}", moveset[moveset.len() - 1]);
 
-        moveset.push(Move::new(
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::West.unit_square()
@@ -82,7 +81,7 @@ impl Piece for Knight {
         ));
         println!("7. {}", moveset[moveset.len() - 1]);
 
-        moveset.push(Move::new(
+        moveset.push(Ply::new(
             square.clone(),
             square.clone()
                 + Direction::West.unit_square()
@@ -116,6 +115,7 @@ impl Piece for Knight {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_knight_derived_traits() {
@@ -189,9 +189,9 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, Square::new(2, 0)));
-        correct.push(Move::new(start_square, Square::new(2, 2)));
-        correct.push(Move::new(start_square, Square::new(1, 3)));
+        correct.push(Ply::new(start_square, Square::new(2, 0)));
+        correct.push(Ply::new(start_square, Square::new(2, 2)));
+        correct.push(Ply::new(start_square, Square::new(1, 3)));
 
         assert_eq!(result, correct);
     }
@@ -203,17 +203,17 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, Square::new(1, 2))); // Down 2, Left 1
-        correct.push(Move::new(start_square, Square::new(1, 4))); // Down 2, Right 1
-        correct.push(Move::new(start_square, Square::new(5, 2))); // Up 2, Left 1
-        correct.push(Move::new(start_square, Square::new(5, 4))); // Up 2, Right 1
-        correct.push(Move::new(start_square, Square::new(4, 1))); // Left 2, Up 1
-        correct.push(Move::new(start_square, Square::new(2, 1))); // Left 2, Down 1
-        correct.push(Move::new(start_square, Square::new(4, 5))); // Right 2, Up 1
-        correct.push(Move::new(start_square, Square::new(2, 5))); // Right 2, Down 1
+        correct.push(Ply::new(start_square, Square::new(1, 2))); // Down 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(1, 4))); // Down 2, Right 1
+        correct.push(Ply::new(start_square, Square::new(5, 2))); // Up 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(5, 4))); // Up 2, Right 1
+        correct.push(Ply::new(start_square, Square::new(4, 1))); // Left 2, Up 1
+        correct.push(Ply::new(start_square, Square::new(2, 1))); // Left 2, Down 1
+        correct.push(Ply::new(start_square, Square::new(4, 5))); // Right 2, Up 1
+        correct.push(Ply::new(start_square, Square::new(2, 5))); // Right 2, Down 1
 
-        let result_set: HashSet<Move> = result.into_iter().collect();
-        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
         assert_eq!(result_set, correct_set);
     }
 
@@ -224,13 +224,13 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, Square::new(3, 6))); // Down 2, Left 1
-        correct.push(Move::new(start_square, Square::new(7, 6))); // Up 2, Left 1
-        correct.push(Move::new(start_square, Square::new(6, 5))); // Left 2, Up 1
-        correct.push(Move::new(start_square, Square::new(4, 5))); // Left 2, Down 1
+        correct.push(Ply::new(start_square, Square::new(3, 6))); // Down 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(7, 6))); // Up 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(6, 5))); // Left 2, Up 1
+        correct.push(Ply::new(start_square, Square::new(4, 5))); // Left 2, Down 1
 
-        let result_set: HashSet<Move> = result.into_iter().collect();
-        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
         assert_eq!(result_set, correct_set);
     }
 
@@ -241,9 +241,9 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, Square::new(2, 0)));
-        correct.push(Move::new(start_square, Square::new(2, 2)));
-        correct.push(Move::new(start_square, Square::new(1, 3)));
+        correct.push(Ply::new(start_square, Square::new(2, 0)));
+        correct.push(Ply::new(start_square, Square::new(2, 2)));
+        correct.push(Ply::new(start_square, Square::new(1, 3)));
 
         assert_eq!(result, correct);
     }
@@ -255,17 +255,17 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, Square::new(1, 2))); // Down 2, Left 1
-        correct.push(Move::new(start_square, Square::new(1, 4))); // Down 2, Right 1
-        correct.push(Move::new(start_square, Square::new(5, 2))); // Up 2, Left 1
-        correct.push(Move::new(start_square, Square::new(5, 4))); // Up 2, Right 1
-        correct.push(Move::new(start_square, Square::new(4, 1))); // Left 2, Up 1
-        correct.push(Move::new(start_square, Square::new(2, 1))); // Left 2, Down 1
-        correct.push(Move::new(start_square, Square::new(4, 5))); // Right 2, Up 1
-        correct.push(Move::new(start_square, Square::new(2, 5))); // Right 2, Down 1
+        correct.push(Ply::new(start_square, Square::new(1, 2))); // Down 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(1, 4))); // Down 2, Right 1
+        correct.push(Ply::new(start_square, Square::new(5, 2))); // Up 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(5, 4))); // Up 2, Right 1
+        correct.push(Ply::new(start_square, Square::new(4, 1))); // Left 2, Up 1
+        correct.push(Ply::new(start_square, Square::new(2, 1))); // Left 2, Down 1
+        correct.push(Ply::new(start_square, Square::new(4, 5))); // Right 2, Up 1
+        correct.push(Ply::new(start_square, Square::new(2, 5))); // Right 2, Down 1
 
-        let result_set: HashSet<Move> = result.into_iter().collect();
-        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
         assert_eq!(result_set, correct_set);
     }
 
@@ -276,13 +276,13 @@ mod tests {
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Move::new(start_square, Square::new(3, 6))); // Down 2, Left 1
-        correct.push(Move::new(start_square, Square::new(7, 6))); // Up 2, Left 1
-        correct.push(Move::new(start_square, Square::new(6, 5))); // Left 2, Up 1
-        correct.push(Move::new(start_square, Square::new(4, 5))); // Left 2, Down 1
+        correct.push(Ply::new(start_square, Square::new(3, 6))); // Down 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(7, 6))); // Up 2, Left 1
+        correct.push(Ply::new(start_square, Square::new(6, 5))); // Left 2, Up 1
+        correct.push(Ply::new(start_square, Square::new(4, 5))); // Left 2, Down 1
 
-        let result_set: HashSet<Move> = result.into_iter().collect();
-        let correct_set: HashSet<Move> = correct.into_iter().collect();
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
         assert_eq!(result_set, correct_set);
     }
 }
