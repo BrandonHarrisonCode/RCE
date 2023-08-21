@@ -10,8 +10,6 @@ const SHORT_TITLE: &str = "RCE";
 
 fn main() {
     println!("{TITLE} - {SHORT_TITLE}");
-    let bb = 0b0000000000000000000000000000000000000000000000001111111100000000;
-    utils::debug_bitboard(&bb);
 
     let mut board = board::create_starting_board();
 

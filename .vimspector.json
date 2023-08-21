@@ -1,0 +1,12 @@
+{
+  "configurations": {
+    "launch": {
+      "adapter": "CodeLLDB",
+      "filetypes": [ "rust" ],
+      "configuration": {
+        "request": "launch",
+        "program": "${workspaceRoot}/target/debug/deps/rust_chess_engine-a96177cded8d10b8"
+      }
+    }
+  }
+}
