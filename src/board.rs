@@ -137,10 +137,10 @@ impl Board {
     /// let movelist = board.get_moves_for_piece(Square::new(1,0));
     /// ```
     pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Ply>> {
-        let piece = self.get_piece(square);
-        match piece {
-            Some(p) => Some(p.get_all_legal_moves(square)),
-            None => None,
+        if let Some(piece) = self.get_piece(square) {
+            Some(piece.get_all_legal_moves(square))
+        } else {
+            None
         }
     }
 
@@ -254,6 +254,7 @@ impl Board {
     /// // Playing with rook odds
     /// board.clear_piece(&Square::new(0, 0));
     /// ```
+    #[allow(dead_code)]
     pub fn clear_piece(&mut self, square: &Square) {
         let mask = !mask_for_coord(square);
         for (_, bb) in self.bitboard_map_mut().iter_mut() {
@@ -360,10 +361,10 @@ impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in (0..8).rev() {
             for j in 0..8 {
-                let piece = self.get_piece(&Square::new(i, j));
-                match piece {
-                    Some(p) => write!(f, "{}", p)?,
-                    None => write!(f, "-")?,
+                if let Some(piece) = self.get_piece(&Square::new(i, j)) {
+                    write!(f, "{}", piece)?;
+                } else {
+                    write!(f, "-")?;
                 }
             }
             writeln!(f, "")?;
@@ -516,5 +517,108 @@ mod tests {
         let correct =
             "♖♘♗♕♔♗♘♖\n♙♙♙♙♙♙♙♙\n--------\n--------\n--------\n--------\n♟♟♟♟♟♟♟♟\n♜♞♝♛♚♝♞♜\n";
         assert_eq!(board.to_string(), correct);
+    }
+
+    #[test]
+    fn test_make_unmake_move_single() {
+        let mut board = create_starting_board();
+        let start = Square::new(1, 0);
+        let dest = Square::new(2, 0);
+        let ply = Ply::new(start, dest);
+
+        assert!(board.get_piece(&dest).is_none());
+        board.make_move(ply);
+        assert_eq!(
+            board.get_piece(&dest).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+
+        assert!(board.get_piece(&start).is_none());
+
+        board.unmake_move(ply);
+        assert_eq!(
+            board.get_piece(&start).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+
+        assert!(board.get_piece(&dest).is_none());
+    }
+
+    #[test]
+    fn test_make_unmake_move_double() {
+        // Make and unmake two moves in a row
+        let mut board = create_starting_board();
+        let start = Square::new(1, 0);
+        let dest1 = Square::new(2, 0);
+        let dest2 = Square::new(3, 0);
+        let ply1 = Ply::new(start, dest1);
+        let ply2 = Ply::new(dest1, dest2);
+
+        assert!(board.get_piece(&dest1).is_none());
+        assert!(board.get_piece(&dest2).is_none());
+        board.make_move(ply1);
+        assert_eq!(
+            board.get_piece(&dest1).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+        assert!(board.get_piece(&start).is_none());
+        assert!(board.get_piece(&dest2).is_none());
+
+        board.make_move(ply2);
+        assert_eq!(
+            board.get_piece(&dest2).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+        assert!(board.get_piece(&start).is_none());
+        assert!(board.get_piece(&dest1).is_none());
+
+        board.unmake_move(ply2);
+        assert_eq!(
+            board.get_piece(&dest1).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+        assert!(board.get_piece(&dest2).is_none());
+        assert!(board.get_piece(&start).is_none());
+
+        board.unmake_move(ply1);
+        assert_eq!(
+            board.get_piece(&start).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+        assert!(board.get_piece(&dest2).is_none());
+        assert!(board.get_piece(&dest1).is_none());
+    }
+
+    #[test]
+    fn test_make_unmake_move_capture() {
+        let mut board = create_starting_board();
+        let start = Square::new(1, 0); // White Pawn
+        let dest = Square::new(6, 0); // Black Pawn
+        let ply = Ply::new(start, dest);
+
+        assert_eq!(
+            board.get_piece(&start).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+        assert_eq!(
+            board.get_piece(&dest).unwrap(),
+            PieceKind::Pawn(Color::Black)
+        );
+        board.make_move(ply);
+        assert_eq!(
+            board.get_piece(&dest).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+        assert!(board.get_piece(&start).is_none());
+
+        board.unmake_move(ply);
+        assert_eq!(
+            board.get_piece(&start).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+        assert_eq!(
+            board.get_piece(&dest).unwrap(),
+            PieceKind::Pawn(Color::Black)
+        );
     }
 }
