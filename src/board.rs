@@ -509,4 +509,12 @@ mod tests {
         board.remove_piece(&square, &PieceKind::Pawn(Color::White));
         assert!(board.get_piece(&square).is_none());
     }
+
+    #[test]
+    fn test_board_display() {
+        let board = create_starting_board();
+        let correct =
+            "♖♘♗♕♔♗♘♖\n♙♙♙♙♙♙♙♙\n--------\n--------\n--------\n--------\n♟♟♟♟♟♟♟♟\n♜♞♝♛♚♝♞♜\n";
+        assert_eq!(board.to_string(), correct);
+    }
 }
