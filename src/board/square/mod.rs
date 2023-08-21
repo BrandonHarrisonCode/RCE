@@ -87,28 +87,147 @@ impl Direction {
 
 #[cfg(test)]
 mod tests {
-    use super::super::Ply;
     use super::*;
 
     #[test]
     fn test_derived_traits() {
-        let start = Square::new(3, 5);
-        let dest = Square::new(5, 4);
-        let ply = Ply::new(start, dest);
-        dbg!(&ply);
+        let square = Square::new(3, 5);
+        dbg!(&square);
 
-        assert_eq!(ply, ply.clone());
+        assert_eq!(square, square.clone());
     }
 
     #[test]
     fn test_display() {
-        let start = Square::new(3, 5);
-        let dest = Square::new(5, 4);
-        let ply = Ply::new(start, dest);
+        let square = Square::new(3, 5);
 
-        let result = ply.to_string();
-        let correct = String::from(format!("{} -> {}", start, dest));
+        let result = square.to_string();
+        let correct = String::from("f4");
 
         assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_display_oob_rank() {
+        let square = Square::new(9, 5);
+
+        let result = square.to_string();
+        let correct = String::from("Invalid range: 9, 5");
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_display_oob_file() {
+        let square = Square::new(5, 9);
+
+        let result = square.to_string();
+        let correct = String::from("Invalid range: 5, 9");
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_display_oob_both() {
+        let square = Square::new(10, 19);
+
+        let result = square.to_string();
+        let correct = String::from("Invalid range: 10, 19");
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_north() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::North.unit_square();
+
+        assert_eq!(before.rank + 1, after.rank);
+        assert_eq!(before.file, after.file);
+    }
+
+    #[test]
+    fn test_northeast() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::NorthEast.unit_square();
+
+        assert_eq!(before.rank + 1, after.rank);
+        assert_eq!(before.file + 1, after.file);
+    }
+
+    #[test]
+    fn test_east() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::East.unit_square();
+
+        assert_eq!(before.rank, after.rank);
+        assert_eq!(before.file + 1, after.file);
+    }
+
+    #[test]
+    fn test_southeast() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::SouthEast.unit_square();
+
+        assert_eq!(before.rank - 1, after.rank);
+        assert_eq!(before.file + 1, after.file);
+    }
+
+    #[test]
+    fn test_south() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::South.unit_square();
+
+        assert_eq!(before.rank - 1, after.rank);
+        assert_eq!(before.file, after.file);
+    }
+
+    #[test]
+    fn test_southwest() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::SouthWest.unit_square();
+
+        assert_eq!(before.rank - 1, after.rank);
+        assert_eq!(before.file - 1, after.file);
+    }
+
+    #[test]
+    fn test_west() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::West.unit_square();
+
+        assert_eq!(before.rank, after.rank);
+        assert_eq!(before.file - 1, after.file);
+    }
+
+    #[test]
+    fn test_northwest() {
+        let before = Square::new(4, 4);
+        let after = before.clone() + Direction::NorthWest.unit_square();
+
+        assert_eq!(before.rank + 1, after.rank);
+        assert_eq!(before.file - 1, after.file);
+    }
+
+    #[test]
+    fn test_direction_inverse() {
+        let square = Square::new(4, 4);
+
+        assert_eq!(
+            square,
+            square + Direction::North.unit_square() + Direction::South.unit_square()
+        );
+        assert_eq!(
+            square,
+            square + Direction::East.unit_square() + Direction::West.unit_square()
+        );
+        assert_eq!(
+            square,
+            square + Direction::NorthWest.unit_square() + Direction::SouthEast.unit_square()
+        );
+        assert_eq!(
+            square,
+            square + Direction::NorthEast.unit_square() + Direction::SouthWest.unit_square()
+        );
     }
 }
