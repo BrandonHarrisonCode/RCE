@@ -445,4 +445,68 @@ mod tests {
         let board = create_starting_board();
         board.get_piece(&Square::new(0, 8)).unwrap();
     }
+
+    #[test]
+    fn test_get_moves_for_piece() {
+        let board = create_starting_board();
+        let moves = board.get_moves_for_piece(&Square::new(1, 0)); // Pawn
+        let correct = [Ply {
+            start: Square { rank: 1, file: 0 },
+            dest: Square { rank: 2, file: 0 },
+        }];
+
+        assert_eq!(moves.unwrap(), correct);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_get_moves_for_piece_empty() {
+        let board = create_starting_board();
+        let moves = board.get_moves_for_piece(&Square::new(2, 0)); // Empty
+
+        moves.unwrap();
+    }
+
+    #[test]
+    fn test_get_all_moves() {
+        let board = create_starting_board();
+        let all_moves = board.get_all_moves();
+
+        assert!(all_moves.len() > 0);
+    }
+
+    #[test]
+    fn test_add_piece() {
+        let mut board = create_starting_board();
+        let square = Square::new(2, 0);
+        board.add_piece(&square, &PieceKind::Queen(Color::White));
+        assert_eq!(
+            board.get_piece(&square).unwrap(),
+            PieceKind::Queen(Color::White)
+        );
+    }
+
+    #[test]
+    fn test_clear_piece() {
+        let mut board = create_starting_board();
+        let square = Square::new(1, 0);
+        board.clear_piece(&square);
+        assert!(board.get_piece(&square).is_none());
+    }
+
+    #[test]
+    fn test_remove_piece() {
+        let mut board = create_starting_board();
+        let square = Square::new(1, 0);
+
+        // Should do nothing, since there is a white pawn here, not a black pawn
+        board.remove_piece(&square, &PieceKind::Pawn(Color::Black));
+        assert_eq!(
+            board.get_piece(&square).unwrap(),
+            PieceKind::Pawn(Color::White)
+        );
+
+        board.remove_piece(&square, &PieceKind::Pawn(Color::White));
+        assert!(board.get_piece(&square).is_none());
+    }
 }
