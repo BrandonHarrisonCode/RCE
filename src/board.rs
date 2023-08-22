@@ -549,10 +549,16 @@ mod tests {
     fn test_get_moves_for_piece() {
         let board = create_starting_board();
         let moves = board.get_moves_for_piece(&Square::new(1, 0)); // Pawn
-        let correct = [Ply {
-            start: Square { rank: 1, file: 0 },
-            dest: Square { rank: 2, file: 0 },
-        }];
+        let correct = [
+            Ply {
+                start: Square { rank: 1, file: 0 },
+                dest: Square { rank: 2, file: 0 },
+            },
+            Ply {
+                start: Square { rank: 1, file: 0 },
+                dest: Square { rank: 3, file: 0 },
+            },
+        ];
 
         assert_eq!(moves.unwrap(), correct);
     }

@@ -23,10 +23,18 @@ impl Piece for Pawn {
     /// [ ] Promotion
     fn get_moveset(square: &Square) -> Vec<Ply> {
         let mut output: Vec<Ply> = Vec::new();
+
         output.push(Ply::new(
             square.clone(),
             square.clone() + Direction::North.unit_square(),
         ));
+
+        if square.rank == 1 {
+            output.push(Ply::new(
+                square.clone(),
+                square.clone() + Direction::North.unit_square() + Direction::North.unit_square(),
+            ));
+        }
         output
     }
 }
@@ -106,11 +114,11 @@ mod tests {
     fn test_pawn_get_moveset_white_a2() {
         let piece = PieceKind::Pawn(Color::White);
         let start_square = Square::new(1, 0);
-        let dest_square = Square::new(2, 0);
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, dest_square));
+        correct.push(Ply::new(start_square, Square::new(2, 0)));
+        correct.push(Ply::new(start_square, Square::new(3, 0)));
 
         assert_eq!(result, correct);
     }
@@ -119,11 +127,11 @@ mod tests {
     fn test_pawn_get_moveset_white_d2() {
         let piece = PieceKind::Pawn(Color::White);
         let start_square = Square::new(1, 3);
-        let dest_square = Square::new(2, 3);
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, dest_square));
+        correct.push(Ply::new(start_square, Square::new(2, 3)));
+        correct.push(Ply::new(start_square, Square::new(3, 3)));
 
         assert_eq!(result, correct);
     }
