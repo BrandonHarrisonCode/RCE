@@ -16,6 +16,12 @@ pub fn debug_bitboard_helper(bitboard: &u64) -> String {
     builder
 }
 
+pub enum FENInstruction<'a> {
+    Bitboard(&'a mut u64),
+    NewRow(),
+    Skip(u64),
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]

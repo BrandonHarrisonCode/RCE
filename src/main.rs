@@ -10,7 +10,6 @@ const SHORT_TITLE: &str = "RCE";
 
 fn main() {
     println!("{TITLE} - {SHORT_TITLE}");
-
     let mut board = board::create_starting_board();
 
     println!("{}", board);

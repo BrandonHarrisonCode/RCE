@@ -5,6 +5,7 @@ pub mod piece;
 mod ply;
 mod square;
 
+use super::utils::FENInstruction;
 use piece::{Color, PieceKind};
 use ply::Ply;
 use square::Square;
@@ -12,6 +13,7 @@ use square::Square;
 const NUM_PIECES: usize = 32;
 
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
+#[derive(Clone, Debug, PartialEq)]
 pub struct Board {
     is_white_turn: bool,
 
@@ -81,6 +83,102 @@ impl Board {
     ) -> Board {
         Board {
             is_white_turn: true,
+            captures: Vec::with_capacity(NUM_PIECES),
+            w_pawns,
+            w_king,
+            w_queens,
+            w_rooks,
+            w_bishops,
+            w_knights,
+            b_pawns,
+            b_king,
+            b_queens,
+            b_rooks,
+            b_bishops,
+            b_knights,
+        }
+    }
+
+    /// Returns a new, empty board
+    ///
+    /// # Examples
+    /// ```
+    /// // Create empty board
+    /// let board = Board::new_empty_board();
+    /// ```
+    pub fn new_empty_board() -> Board {
+        Board::new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    }
+
+    /// Returns a new board given a FEN string
+    ///
+    /// # Arguments
+    ///
+    /// * `fen` - A string representing the FEN of a position
+    ///
+    /// # Examples
+    /// ```
+    /// // Create empty board
+    /// let board = Board::new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /// ```
+    pub fn from_fen(fen: &str) -> Board {
+        let fields: Vec<&str> = fen.split_ascii_whitespace().collect();
+
+        let mut w_pawns: u64 = 0;
+        let mut w_king: u64 = 0;
+        let mut w_queens: u64 = 0;
+        let mut w_rooks: u64 = 0;
+        let mut w_bishops: u64 = 0;
+        let mut w_knights: u64 = 0;
+        let mut b_pawns: u64 = 0;
+        let mut b_king: u64 = 0;
+        let mut b_queens: u64 = 0;
+        let mut b_rooks: u64 = 0;
+        let mut b_bishops: u64 = 0;
+        let mut b_knights: u64 = 0;
+
+        let mut idx: u64 = 0;
+        for chr in fields[0].chars() {
+            let instruction = match chr {
+                'P' => FENInstruction::Bitboard(&mut w_pawns),
+                'K' => FENInstruction::Bitboard(&mut w_king),
+                'Q' => FENInstruction::Bitboard(&mut w_queens),
+                'R' => FENInstruction::Bitboard(&mut w_rooks),
+                'B' => FENInstruction::Bitboard(&mut w_bishops),
+                'N' => FENInstruction::Bitboard(&mut w_knights),
+                'p' => FENInstruction::Bitboard(&mut b_pawns),
+                'k' => FENInstruction::Bitboard(&mut b_king),
+                'q' => FENInstruction::Bitboard(&mut b_queens),
+                'r' => FENInstruction::Bitboard(&mut b_rooks),
+                'b' => FENInstruction::Bitboard(&mut b_bishops),
+                'n' => FENInstruction::Bitboard(&mut b_knights),
+                '1'..='8' => FENInstruction::Skip(chr.to_string().parse().ok().unwrap()),
+                '/' => FENInstruction::NewRow(),
+                _ => panic!("Unknown FEN instruction: {}", chr),
+            };
+
+            let mask: u64 = 1 << (63 - idx);
+            match instruction {
+                FENInstruction::Bitboard(bb) => *bb |= mask,
+                FENInstruction::Skip(num) => idx += num - 1,
+                FENInstruction::NewRow() => idx -= 1,
+            }
+            idx += 1;
+        }
+
+        let is_white_turn = match fields[1].chars().next().unwrap_or('w') {
+            'w' => true,
+            'b' => false,
+            _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
+        };
+
+        // TODO: Castling rights
+        // TODO: En passant target square
+        // TODO: Halfmove clock
+        // TODO: Fullmove number
+
+        Board {
+            is_white_turn,
             captures: Vec::with_capacity(NUM_PIECES),
             w_pawns,
             w_king,
@@ -620,5 +718,57 @@ mod tests {
             board.get_piece(&dest).unwrap(),
             PieceKind::Pawn(Color::Black)
         );
+    }
+
+    #[test]
+    fn from_fen_starting_position() {
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        assert_eq!(create_starting_board(), Board::from_fen(fen));
+    }
+
+    #[test]
+    fn from_fen_white_position1() {
+        let fen = "1k1r3r/p6p/1pp1pp2/2Np1qp1/1Q1P4/2P1PP2/PP4PP/R4nK1 w - - 0 21";
+        let correct = Board {
+            is_white_turn: true,
+            w_pawns: 271368960,
+            w_king: 2,
+            w_queens: 1073741824,
+            w_rooks: 128,
+            w_bishops: 0,
+            w_knights: 137438953472,
+            b_pawns: 36429096560885760,
+            b_king: 4611686018427387904,
+            b_queens: 17179869184,
+            b_rooks: 1224979098644774912,
+            b_bishops: 0,
+            b_knights: 4,
+            captures: Vec::new(),
+        };
+
+        assert_eq!(Board::from_fen(fen), correct);
+    }
+
+    #[test]
+    fn from_fen_black_position1() {
+        let fen = "5b2/pp1N2pk/2pn1q1p/3n1p1Q/3P1P2/2PB3R/PP3KPP/R1B1r3 b - - 12 31";
+        let correct = Board {
+            is_white_turn: false,
+            w_pawns: 337691392,
+            w_king: 1024,
+            w_queens: 4294967296,
+            w_rooks: 65664,
+            w_bishops: 1048608,
+            w_knights: 4503599627370496,
+            b_pawns: 54642446545453056,
+            b_king: 281474976710656,
+            b_queens: 4398046511104,
+            b_rooks: 8,
+            b_bishops: 288230376151711744,
+            b_knights: 17660905521152,
+            captures: Vec::new(),
+        };
+
+        assert_eq!(Board::from_fen(fen), correct);
     }
 }
