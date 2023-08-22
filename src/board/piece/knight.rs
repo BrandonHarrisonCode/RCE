@@ -25,7 +25,6 @@ impl Piece for Knight {
                 + Direction::North.unit_square()
                 + Direction::West.unit_square(),
         ));
-        println!("1. {}", moveset[moveset.len() - 1]);
 
         moveset.push(Ply::new(
             square.clone(),
@@ -34,7 +33,6 @@ impl Piece for Knight {
                 + Direction::North.unit_square()
                 + Direction::East.unit_square(),
         ));
-        println!("2. {}", moveset[moveset.len() - 1]);
 
         moveset.push(Ply::new(
             square.clone(),
@@ -43,7 +41,6 @@ impl Piece for Knight {
                 + Direction::South.unit_square()
                 + Direction::West.unit_square(),
         ));
-        println!("3. {}", moveset[moveset.len() - 1]);
 
         moveset.push(Ply::new(
             square.clone(),
@@ -52,7 +49,6 @@ impl Piece for Knight {
                 + Direction::South.unit_square()
                 + Direction::East.unit_square(),
         ));
-        println!("4. {}", moveset[moveset.len() - 1]);
 
         moveset.push(Ply::new(
             square.clone(),
@@ -61,7 +57,6 @@ impl Piece for Knight {
                 + Direction::East.unit_square()
                 + Direction::North.unit_square(),
         ));
-        println!("5. {}", moveset[moveset.len() - 1]);
 
         moveset.push(Ply::new(
             square.clone(),
@@ -70,7 +65,6 @@ impl Piece for Knight {
                 + Direction::East.unit_square()
                 + Direction::South.unit_square(),
         ));
-        println!("6. {}", moveset[moveset.len() - 1]);
 
         moveset.push(Ply::new(
             square.clone(),
@@ -79,7 +73,6 @@ impl Piece for Knight {
                 + Direction::West.unit_square()
                 + Direction::North.unit_square(),
         ));
-        println!("7. {}", moveset[moveset.len() - 1]);
 
         moveset.push(Ply::new(
             square.clone(),
@@ -88,7 +81,6 @@ impl Piece for Knight {
                 + Direction::West.unit_square()
                 + Direction::South.unit_square(),
         ));
-        println!("8. {}", moveset[moveset.len() - 1]);
 
         let output = moveset
             .into_iter()
@@ -100,11 +92,6 @@ impl Piece for Knight {
                     && mv.start != mv.dest
             })
             .collect();
-
-        println!("Knight moves for {}:", square);
-        for mv in &output {
-            println!("{}", mv);
-        }
 
         output
     }
