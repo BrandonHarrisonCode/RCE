@@ -174,8 +174,8 @@ mod tests {
     #[test]
     fn test_get_all_legal_moves() {
         let piece = PieceKind::Pawn(Color::White);
-        let start_square = Square::new(5, 7);
-        let dest_square = Square::new(6, 7);
+        let start_square = Square::new("h6");
+        let dest_square = Square::new("h7");
 
         let result = piece.get_all_legal_moves(&start_square);
         let mut correct = Vec::new();

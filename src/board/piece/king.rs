@@ -146,17 +146,17 @@ mod tests {
     }
 
     #[test]
-    fn test_king_get_moveset_white_b0() {
+    fn test_king_get_moveset_white_b1() {
         let piece = PieceKind::King(Color::White);
-        let start_square = Square::new(0, 1);
+        let start_square = Square::new("b1");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(1, 1)));
-        correct.push(Ply::new(start_square, Square::new(1, 0)));
-        correct.push(Ply::new(start_square, Square::new(1, 2)));
-        correct.push(Ply::new(start_square, Square::new(0, 2)));
-        correct.push(Ply::new(start_square, Square::new(0, 0)));
+        correct.push(Ply::new(start_square, Square::new("b2")));
+        correct.push(Ply::new(start_square, Square::new("a2")));
+        correct.push(Ply::new(start_square, Square::new("c2")));
+        correct.push(Ply::new(start_square, Square::new("c1")));
+        correct.push(Ply::new(start_square, Square::new("a1")));
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -166,18 +166,18 @@ mod tests {
     #[test]
     fn test_king_get_moveset_white_d4() {
         let piece = PieceKind::King(Color::White);
-        let start_square = Square::new(3, 3);
+        let start_square = Square::new("d4");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(2, 2))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(2, 3))); // Down 2, Right 1
-        correct.push(Ply::new(start_square, Square::new(2, 4))); // Up 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(3, 2))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(3, 4))); // Up 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(4, 2))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(4, 3))); // Down 2, Right 1
-        correct.push(Ply::new(start_square, Square::new(4, 4))); // Up 2, Left 1
+        correct.push(Ply::new(start_square, Square::new("c3")));
+        correct.push(Ply::new(start_square, Square::new("d3")));
+        correct.push(Ply::new(start_square, Square::new("e3")));
+        correct.push(Ply::new(start_square, Square::new("c4")));
+        correct.push(Ply::new(start_square, Square::new("e4")));
+        correct.push(Ply::new(start_square, Square::new("c5")));
+        correct.push(Ply::new(start_square, Square::new("d5")));
+        correct.push(Ply::new(start_square, Square::new("e5")));
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -187,15 +187,15 @@ mod tests {
     #[test]
     fn test_king_get_moveset_white_h6() {
         let piece = PieceKind::King(Color::White);
-        let start_square = Square::new(5, 7);
+        let start_square = Square::new("h6");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(4, 6))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(4, 7))); // Down 2, Right 1
-        correct.push(Ply::new(start_square, Square::new(5, 6))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(6, 6))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(6, 7))); // Down 2, Right 1
+        correct.push(Ply::new(start_square, Square::new("g5")));
+        correct.push(Ply::new(start_square, Square::new("h5")));
+        correct.push(Ply::new(start_square, Square::new("g6")));
+        correct.push(Ply::new(start_square, Square::new("g7")));
+        correct.push(Ply::new(start_square, Square::new("h7")));
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -203,17 +203,17 @@ mod tests {
     }
 
     #[test]
-    fn test_king_get_moveset_black_b0() {
+    fn test_king_get_moveset_black_b1() {
         let piece = PieceKind::King(Color::Black);
-        let start_square = Square::new(0, 1);
+        let start_square = Square::new("b1");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(0, 2)));
-        correct.push(Ply::new(start_square, Square::new(0, 0)));
-        correct.push(Ply::new(start_square, Square::new(1, 2)));
-        correct.push(Ply::new(start_square, Square::new(1, 1)));
-        correct.push(Ply::new(start_square, Square::new(1, 0)));
+        correct.push(Ply::new(start_square, Square::new("a1")));
+        correct.push(Ply::new(start_square, Square::new("c1")));
+        correct.push(Ply::new(start_square, Square::new("a2")));
+        correct.push(Ply::new(start_square, Square::new("b2")));
+        correct.push(Ply::new(start_square, Square::new("c2")));
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -223,18 +223,18 @@ mod tests {
     #[test]
     fn test_king_get_moveset_black_d4() {
         let piece = PieceKind::King(Color::Black);
-        let start_square = Square::new(3, 3);
+        let start_square = Square::new("d4");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(2, 2))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(2, 3))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(2, 4))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(3, 2))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(3, 4))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(4, 2))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(4, 3))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(4, 4))); // Down 2, Left 1
+        correct.push(Ply::new(start_square, Square::new("c3")));
+        correct.push(Ply::new(start_square, Square::new("d3")));
+        correct.push(Ply::new(start_square, Square::new("e3")));
+        correct.push(Ply::new(start_square, Square::new("c4")));
+        correct.push(Ply::new(start_square, Square::new("e4")));
+        correct.push(Ply::new(start_square, Square::new("c5")));
+        correct.push(Ply::new(start_square, Square::new("d5")));
+        correct.push(Ply::new(start_square, Square::new("e5")));
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -244,15 +244,16 @@ mod tests {
     #[test]
     fn test_king_get_moveset_black_h6() {
         let piece = PieceKind::King(Color::Black);
-        let start_square = Square::new(5, 7);
+        let start_square = Square::new("h6");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(4, 6))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(4, 7))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(5, 6))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(6, 6))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new(6, 7))); // Down 2, Left 1
+
+        correct.push(Ply::new(start_square, Square::new("g5")));
+        correct.push(Ply::new(start_square, Square::new("h5")));
+        correct.push(Ply::new(start_square, Square::new("g6")));
+        correct.push(Ply::new(start_square, Square::new("g7")));
+        correct.push(Ply::new(start_square, Square::new("h7")));
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();

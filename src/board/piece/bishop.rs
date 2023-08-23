@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn test_bishop_get_moveset() {
         let piece = PieceKind::Bishop(Color::White);
-        let result = piece.get_moveset(&Square::new(0, 0));
+        let result = piece.get_moveset(&Square::new("a1"));
         let correct = Vec::new();
 
         assert_eq!(result, correct);

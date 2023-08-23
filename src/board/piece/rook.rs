@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn test_rook_get_moveset() {
         let piece = PieceKind::Rook(Color::White);
-        let result = piece.get_moveset(&Square::new(0, 0));
+        let result = piece.get_moveset(&Square::new("a1"));
         let correct = Vec::new();
 
         assert_eq!(result, correct);

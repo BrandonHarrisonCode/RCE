@@ -207,8 +207,8 @@ impl Board {
     /// # Examples
     /// ```
     /// let board = create_starting_board();
-    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new(0,0)));
-    /// assert_eq!(None, board.get_piece(Square::new(3,0)));
+    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new("a1")));
+    /// assert_eq!(None, board.get_piece(Square::new("b3")));
     /// ```
     pub fn get_piece(&self, square: &Square) -> Option<PieceKind> {
         let mask = mask_for_coord(square);
@@ -232,7 +232,7 @@ impl Board {
     /// # Examples
     /// ```
     /// let board = create_starting_board();
-    /// let movelist = board.get_moves_for_piece(Square::new(1,0));
+    /// let movelist = board.get_moves_for_piece(Square::new("a2"));
     /// ```
     pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Ply>> {
         if let Some(piece) = self.get_piece(square) {
@@ -247,13 +247,13 @@ impl Board {
     /// # Examples
     /// ```
     /// let board = create_starting_board();
-    /// let movelist = board.get_all_moves(Square::new(1,0));
+    /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
         for i in (0..8).rev() {
             for j in 0..8 {
-                let square = &Square::new(i, j);
+                let square = &Square { rank: i, file: j };
                 if let Some(piece) = self.get_piece(square) {
                     if !self.is_white_turn ^ (piece.get_color() == Color::White) {
                         all_moves.append(&mut piece.get_all_legal_moves(square));
@@ -331,7 +331,7 @@ impl Board {
     /// # Examples
     /// ```
     /// let board = create_starting_board();
-    /// board.add_piece(&Square::new(2,0), &PieceKind::Rook(Color::White));
+    /// board.add_piece(&Square::new("a3"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn add_piece(&mut self, square: &Square, piece: &PieceKind) {
         let mask = mask_for_coord(square);
@@ -350,7 +350,7 @@ impl Board {
     /// ```
     /// let board = create_starting_board();
     /// // Playing with rook odds
-    /// board.clear_piece(&Square::new(0, 0));
+    /// board.clear_piece(&Square::new("a1"));
     /// ```
     #[allow(dead_code)]
     pub fn clear_piece(&mut self, square: &Square) {
@@ -375,7 +375,7 @@ impl Board {
     /// ```
     /// let board = create_starting_board();
     /// // Playing with rook odds
-    /// board.remove_piece(&Square::new(0,0), &PieceKind::Rook(Color::White));
+    /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn remove_piece(&mut self, square: &Square, piece: &PieceKind) {
         let mask = !mask_for_coord(square);
@@ -394,7 +394,7 @@ impl Board {
     /// ```
     /// let board = create_starting_board();
     /// // Ply the a pawn one square forward
-    /// board.make_move(Ply::new(Square::new(1, 0), Square::new(2, 0)));
+    /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
     pub fn make_move(&mut self, new_move: Ply) {
         let start_piece_kind = self.get_piece(&new_move.start).unwrap();
@@ -445,7 +445,7 @@ impl Board {
 ///
 /// # Examples
 /// ```
-/// let mask = mask_for_coord(Square::new(1,4));
+/// let mask = mask_for_coord(Square::new("e2"));
 /// ```
 fn mask_for_coord(square: &Square) -> u64 {
     let rank_mask: u64 = 0x00000000000000FF << (8 * square.rank);
@@ -459,7 +459,7 @@ impl fmt::Display for Board {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for i in (0..8).rev() {
             for j in 0..8 {
-                if let Some(piece) = self.get_piece(&Square::new(i, j)) {
+                if let Some(piece) = self.get_piece(&Square { rank: i, file: j }) {
                     write!(f, "{}", piece)?;
                 } else {
                     write!(f, "-")?;
@@ -502,7 +502,7 @@ mod tests {
     fn test_get_piece1() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece(&Square::new(0, 0)).unwrap(),
+            board.get_piece(&Square::new("a1")).unwrap(),
             PieceKind::Rook(Color::White)
         );
     }
@@ -511,7 +511,7 @@ mod tests {
     fn test_get_piece2() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece(&Square::new(7, 7)).unwrap(),
+            board.get_piece(&Square::new("h8")).unwrap(),
             PieceKind::Rook(Color::Black)
         );
     }
@@ -520,7 +520,7 @@ mod tests {
     fn test_get_piece3() {
         let board = create_starting_board();
         assert_eq!(
-            board.get_piece(&Square::new(6, 7)).unwrap(),
+            board.get_piece(&Square::new("h7")).unwrap(),
             PieceKind::Pawn(Color::Black)
         );
     }
@@ -528,35 +528,35 @@ mod tests {
     #[test]
     fn test_get_piece_none() {
         let board = create_starting_board();
-        assert!(board.get_piece(&Square::new(4, 4)).is_none());
+        assert!(board.get_piece(&Square::new("e5")).is_none());
     }
 
     #[test]
     #[should_panic]
     fn test_get_piece_oob_rank() {
         let board = create_starting_board();
-        board.get_piece(&Square::new(8, 7)).unwrap();
+        board.get_piece(&Square { rank: 8, file: 7 }).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_get_piece_oob_file() {
         let board = create_starting_board();
-        board.get_piece(&Square::new(0, 8)).unwrap();
+        board.get_piece(&Square { rank: 0, file: 8 }).unwrap();
     }
 
     #[test]
     fn test_get_moves_for_piece() {
         let board = create_starting_board();
-        let moves = board.get_moves_for_piece(&Square::new(1, 0)); // Pawn
+        let moves = board.get_moves_for_piece(&Square::new("a2")); // pawn
         let correct = [
             Ply {
-                start: Square { rank: 1, file: 0 },
-                dest: Square { rank: 2, file: 0 },
+                start: Square::new("a2"),
+                dest: Square::new("a3"),
             },
             Ply {
-                start: Square { rank: 1, file: 0 },
-                dest: Square { rank: 3, file: 0 },
+                start: Square::new("a2"),
+                dest: Square::new("a4"),
             },
         ];
 
@@ -567,7 +567,7 @@ mod tests {
     #[should_panic]
     fn test_get_moves_for_piece_empty() {
         let board = create_starting_board();
-        let moves = board.get_moves_for_piece(&Square::new(2, 0)); // Empty
+        let moves = board.get_moves_for_piece(&Square::new("a3")); // Empty
 
         moves.unwrap();
     }
@@ -583,7 +583,7 @@ mod tests {
     #[test]
     fn test_add_piece() {
         let mut board = create_starting_board();
-        let square = Square::new(2, 0);
+        let square = Square::new("a3");
         board.add_piece(&square, &PieceKind::Queen(Color::White));
         assert_eq!(
             board.get_piece(&square).unwrap(),
@@ -594,7 +594,7 @@ mod tests {
     #[test]
     fn test_clear_piece() {
         let mut board = create_starting_board();
-        let square = Square::new(1, 0);
+        let square = Square::new("a2");
         board.clear_piece(&square);
         assert!(board.get_piece(&square).is_none());
     }
@@ -602,7 +602,7 @@ mod tests {
     #[test]
     fn test_remove_piece() {
         let mut board = create_starting_board();
-        let square = Square::new(1, 0);
+        let square = Square::new("a2");
 
         // Should do nothing, since there is a white pawn here, not a black pawn
         board.remove_piece(&square, &PieceKind::Pawn(Color::Black));
@@ -626,8 +626,8 @@ mod tests {
     #[test]
     fn test_make_unmake_move_single() {
         let mut board = create_starting_board();
-        let start = Square::new(1, 0);
-        let dest = Square::new(2, 0);
+        let start = Square::new("a2");
+        let dest = Square::new("a3");
         let ply = Ply::new(start, dest);
 
         assert!(board.get_piece(&dest).is_none());
@@ -652,9 +652,9 @@ mod tests {
     fn test_make_unmake_move_double() {
         // Make and unmake two moves in a row
         let mut board = create_starting_board();
-        let start = Square::new(1, 0);
-        let dest1 = Square::new(2, 0);
-        let dest2 = Square::new(3, 0);
+        let start = Square::new("a2");
+        let dest1 = Square::new("a3");
+        let dest2 = Square::new("a4");
         let ply1 = Ply::new(start, dest1);
         let ply2 = Ply::new(dest1, dest2);
 
@@ -696,8 +696,8 @@ mod tests {
     #[test]
     fn test_make_unmake_move_capture() {
         let mut board = create_starting_board();
-        let start = Square::new(1, 0); // White Pawn
-        let dest = Square::new(6, 0); // Black Pawn
+        let start = Square::new("a2"); // White Pawn
+        let dest = Square::new("a7"); // Black Pawn
         let ply = Ply::new(start, dest);
 
         assert_eq!(

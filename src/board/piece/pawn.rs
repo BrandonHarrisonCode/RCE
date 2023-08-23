@@ -113,12 +113,12 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_a2() {
         let piece = PieceKind::Pawn(Color::White);
-        let start_square = Square::new(1, 0);
+        let start_square = Square::new("a2");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(2, 0)));
-        correct.push(Ply::new(start_square, Square::new(3, 0)));
+        correct.push(Ply::new(start_square, Square::new("a3")));
+        correct.push(Ply::new(start_square, Square::new("a4")));
 
         assert_eq!(result, correct);
     }
@@ -126,12 +126,12 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_d2() {
         let piece = PieceKind::Pawn(Color::White);
-        let start_square = Square::new(1, 3);
+        let start_square = Square::new("d2");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new(2, 3)));
-        correct.push(Ply::new(start_square, Square::new(3, 3)));
+        correct.push(Ply::new(start_square, Square::new("d3")));
+        correct.push(Ply::new(start_square, Square::new("d4")));
 
         assert_eq!(result, correct);
     }
@@ -139,8 +139,8 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_h6() {
         let piece = PieceKind::Pawn(Color::White);
-        let start_square = Square::new(5, 7);
-        let dest_square = Square::new(6, 7);
+        let start_square = Square::new("h6");
+        let dest_square = Square::new("h7");
 
         let result = piece.get_moveset(&start_square);
         let mut correct = Vec::new();

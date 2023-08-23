@@ -1,10 +1,27 @@
-use derive_more::Constructor;
 use std::fmt;
 
-#[derive(Constructor, Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
 pub struct Square {
     pub rank: u8,
     pub file: u8,
+}
+impl Square {
+    pub fn new(algebraic_notation: &str) -> Square {
+        let mut iter = algebraic_notation.chars();
+        let filechar: char = iter.next().unwrap();
+
+        let file: u8 = filechar as u8 - ('a' as u8);
+        let rank: u8 = (iter
+            .next()
+            .unwrap()
+            .to_string()
+            .parse::<u16>()
+            .ok()
+            .unwrap()
+            - 1) as u8;
+
+        Square { rank, file }
+    }
 }
 impl std::ops::Add<SquareDelta> for Square {
     type Output = Square;
@@ -91,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_derived_traits() {
-        let square = Square::new(3, 5);
+        let square = Square { rank: 3, file: 5 };
         dbg!(&square);
 
         assert_eq!(square, square.clone());
@@ -99,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let square = Square::new(3, 5);
+        let square = Square { rank: 3, file: 5 };
 
         let result = square.to_string();
         let correct = String::from("f4");
@@ -109,7 +126,7 @@ mod tests {
 
     #[test]
     fn test_display_oob_rank() {
-        let square = Square::new(9, 5);
+        let square = Square { rank: 9, file: 5 };
 
         let result = square.to_string();
         let correct = String::from("Invalid range: 9, 5");
@@ -119,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_display_oob_file() {
-        let square = Square::new(5, 9);
+        let square = Square { rank: 5, file: 9 };
 
         let result = square.to_string();
         let correct = String::from("Invalid range: 5, 9");
@@ -129,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_display_oob_both() {
-        let square = Square::new(10, 19);
+        let square = Square { rank: 10, file: 19 };
 
         let result = square.to_string();
         let correct = String::from("Invalid range: 10, 19");
@@ -139,7 +156,7 @@ mod tests {
 
     #[test]
     fn test_north() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::North.unit_square();
 
         assert_eq!(before.rank + 1, after.rank);
@@ -148,7 +165,7 @@ mod tests {
 
     #[test]
     fn test_northeast() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::NorthEast.unit_square();
 
         assert_eq!(before.rank + 1, after.rank);
@@ -157,7 +174,7 @@ mod tests {
 
     #[test]
     fn test_east() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::East.unit_square();
 
         assert_eq!(before.rank, after.rank);
@@ -166,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_southeast() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::SouthEast.unit_square();
 
         assert_eq!(before.rank - 1, after.rank);
@@ -175,7 +192,7 @@ mod tests {
 
     #[test]
     fn test_south() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::South.unit_square();
 
         assert_eq!(before.rank - 1, after.rank);
@@ -184,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_southwest() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::SouthWest.unit_square();
 
         assert_eq!(before.rank - 1, after.rank);
@@ -193,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_west() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::West.unit_square();
 
         assert_eq!(before.rank, after.rank);
@@ -202,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_northwest() {
-        let before = Square::new(4, 4);
+        let before = Square { rank: 4, file: 4 };
         let after = before.clone() + Direction::NorthWest.unit_square();
 
         assert_eq!(before.rank + 1, after.rank);
@@ -211,7 +228,7 @@ mod tests {
 
     #[test]
     fn test_direction_inverse() {
-        let square = Square::new(4, 4);
+        let square = Square { rank: 4, file: 4 };
 
         assert_eq!(
             square,
@@ -229,5 +246,53 @@ mod tests {
             square,
             square + Direction::NorthEast.unit_square() + Direction::SouthWest.unit_square()
         );
+    }
+
+    #[test]
+    fn test_new_square1() {
+        let result = Square::new("d5");
+        let correct = Square { rank: 4, file: 3 };
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_new_square2() {
+        let result = Square::new("a1");
+        let correct = Square { rank: 0, file: 0 };
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_new_square3() {
+        let result = Square::new("a8");
+        let correct = Square { rank: 7, file: 0 };
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_new_square4() {
+        let result = Square::new("h1");
+        let correct = Square { rank: 0, file: 7 };
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_new_square5() {
+        let result = Square::new("h8");
+        let correct = Square { rank: 7, file: 7 };
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_new_square6() {
+        let result = Square::new("e3");
+        let correct = Square { rank: 2, file: 4 };
+
+        assert_eq!(result, correct);
     }
 }

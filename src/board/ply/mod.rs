@@ -22,8 +22,8 @@ mod tests {
 
     #[test]
     fn test_derived_traits() {
-        let start = Square::new(3, 5);
-        let dest = Square::new(5, 4);
+        let start = Square::new("f4");
+        let dest = Square::new("d6");
         let ply = Ply::new(start, dest);
         dbg!(&ply);
 
@@ -32,8 +32,8 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let start = Square::new(3, 5);
-        let dest = Square::new(5, 4);
+        let start = Square::new("f4");
+        let dest = Square::new("d6");
         let ply = Ply::new(start, dest);
 
         let result = ply.to_string();
