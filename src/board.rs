@@ -106,6 +106,7 @@ impl Board {
     /// // Create empty board
     /// let board = Board::new_empty_board();
     /// ```
+    #[allow(dead_code)]
     pub fn new_empty_board() -> Board {
         Board::new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
     }
@@ -121,6 +122,7 @@ impl Board {
     /// // Create empty board
     /// let board = Board::new(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     /// ```
+    #[allow(dead_code)]
     pub fn from_fen(fen: &str) -> Board {
         let fields: Vec<&str> = fen.split_ascii_whitespace().collect();
 
@@ -234,12 +236,9 @@ impl Board {
     /// let board = create_starting_board();
     /// let movelist = board.get_moves_for_piece(Square::new("a2"));
     /// ```
+    #[allow(dead_code)]
     pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Ply>> {
-        if let Some(piece) = self.get_piece(square) {
-            Some(piece.get_all_legal_moves(square))
-        } else {
-            None
-        }
+        self.get_piece(square).map(|x| x.get_all_legal_moves(square))
     }
 
     /// Returns a list of all potential moves for the current side
