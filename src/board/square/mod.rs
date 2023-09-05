@@ -10,7 +10,7 @@ impl Square {
         let mut iter = algebraic_notation.chars();
         let filechar: char = iter.next().unwrap();
 
-        let file: u8 = filechar as u8 - ('a' as u8);
+        let file: u8 = filechar as u8 - b'a';
         let rank: u8 = (iter
             .next()
             .unwrap()
@@ -157,7 +157,7 @@ mod tests {
     #[test]
     fn test_north() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::North.unit_square();
+        let after = before + Direction::North.unit_square();
 
         assert_eq!(before.rank + 1, after.rank);
         assert_eq!(before.file, after.file);
@@ -166,7 +166,7 @@ mod tests {
     #[test]
     fn test_northeast() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::NorthEast.unit_square();
+        let after = before + Direction::NorthEast.unit_square();
 
         assert_eq!(before.rank + 1, after.rank);
         assert_eq!(before.file + 1, after.file);
@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn test_east() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::East.unit_square();
+        let after = before + Direction::East.unit_square();
 
         assert_eq!(before.rank, after.rank);
         assert_eq!(before.file + 1, after.file);
@@ -184,7 +184,7 @@ mod tests {
     #[test]
     fn test_southeast() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::SouthEast.unit_square();
+        let after = before + Direction::SouthEast.unit_square();
 
         assert_eq!(before.rank - 1, after.rank);
         assert_eq!(before.file + 1, after.file);
@@ -193,7 +193,7 @@ mod tests {
     #[test]
     fn test_south() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::South.unit_square();
+        let after = before + Direction::South.unit_square();
 
         assert_eq!(before.rank - 1, after.rank);
         assert_eq!(before.file, after.file);
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn test_southwest() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::SouthWest.unit_square();
+        let after = before + Direction::SouthWest.unit_square();
 
         assert_eq!(before.rank - 1, after.rank);
         assert_eq!(before.file - 1, after.file);
@@ -211,7 +211,7 @@ mod tests {
     #[test]
     fn test_west() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::West.unit_square();
+        let after = before + Direction::West.unit_square();
 
         assert_eq!(before.rank, after.rank);
         assert_eq!(before.file - 1, after.file);
@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn test_northwest() {
         let before = Square { rank: 4, file: 4 };
-        let after = before.clone() + Direction::NorthWest.unit_square();
+        let after = before + Direction::NorthWest.unit_square();
 
         assert_eq!(before.rank + 1, after.rank);
         assert_eq!(before.file - 1, after.file);

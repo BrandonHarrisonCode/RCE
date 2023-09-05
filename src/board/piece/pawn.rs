@@ -24,15 +24,12 @@ impl Piece for Pawn {
     fn get_moveset(square: &Square) -> Vec<Ply> {
         let mut output: Vec<Ply> = Vec::new();
 
-        output.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::North.unit_square(),
-        ));
+        output.push(Ply::new(*square, *square + Direction::North.unit_square()));
 
         if square.rank == 1 {
             output.push(Ply::new(
-                square.clone(),
-                square.clone() + Direction::North.unit_square() + Direction::North.unit_square(),
+                *square,
+                *square + Direction::North.unit_square() + Direction::North.unit_square(),
             ));
         }
         output
@@ -116,9 +113,10 @@ mod tests {
         let start_square = Square::new("a2");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("a3")));
-        correct.push(Ply::new(start_square, Square::new("a4")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("a3")),
+            Ply::new(start_square, Square::new("a4")),
+        ];
 
         assert_eq!(result, correct);
     }
@@ -129,9 +127,10 @@ mod tests {
         let start_square = Square::new("d2");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("d3")));
-        correct.push(Ply::new(start_square, Square::new("d4")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("d3")),
+            Ply::new(start_square, Square::new("d4")),
+        ];
 
         assert_eq!(result, correct);
     }
@@ -143,8 +142,7 @@ mod tests {
         let dest_square = Square::new("h7");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, dest_square));
+        let correct = vec![Ply::new(start_square, dest_square)];
 
         assert_eq!(result, correct);
     }
