@@ -8,7 +8,7 @@ pub fn debug_bitboard_helper(bitboard: &u64) -> String {
     let mut builder = String::new();
     let mask = 0xFF;
 
-    builder.push_str(&format!("Debug bitboard: {:0>64b}\n", bitboard).to_string());
+    builder.push_str(&format!("Debug bitboard: {:0>64b}\n", bitboard));
     for i in (0..8).rev() {
         builder.push_str(&format!("{:0>8b}\n", (bitboard >> (8 * i)) & mask));
     }

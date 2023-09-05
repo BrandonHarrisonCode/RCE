@@ -17,48 +17,18 @@ impl Piece for King {
     }
 
     fn get_moveset(square: &Square) -> Vec<Ply> {
-        let mut moveset: Vec<Ply> = Vec::new();
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::North.unit_square(),
-        ));
+        let moveset: Vec<Ply> = vec![
+            Ply::new(*square, *square + Direction::North.unit_square()),
+            Ply::new(*square, *square + Direction::East.unit_square()),
+            Ply::new(*square, *square + Direction::South.unit_square()),
+            Ply::new(*square, *square + Direction::West.unit_square()),
+            Ply::new(*square, *square + Direction::NorthEast.unit_square()),
+            Ply::new(*square, *square + Direction::NorthWest.unit_square()),
+            Ply::new(*square, *square + Direction::SouthEast.unit_square()),
+            Ply::new(*square, *square + Direction::SouthWest.unit_square()),
+        ];
 
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::East.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::South.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::West.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::NorthEast.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::NorthWest.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::SouthEast.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone() + Direction::SouthWest.unit_square(),
-        ));
-
-        let output = moveset
+        moveset
             .into_iter()
             .filter(|mv| {
                 mv.start.rank < 8
@@ -67,9 +37,7 @@ impl Piece for King {
                     && mv.dest.file < 8
                     && mv.start != mv.dest
             })
-            .collect();
-
-        output
+            .collect::<Vec<Ply>>()
     }
 }
 
@@ -151,12 +119,13 @@ mod tests {
         let start_square = Square::new("b1");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("b2")));
-        correct.push(Ply::new(start_square, Square::new("a2")));
-        correct.push(Ply::new(start_square, Square::new("c2")));
-        correct.push(Ply::new(start_square, Square::new("c1")));
-        correct.push(Ply::new(start_square, Square::new("a1")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("b2")),
+            Ply::new(start_square, Square::new("a2")),
+            Ply::new(start_square, Square::new("c2")),
+            Ply::new(start_square, Square::new("c1")),
+            Ply::new(start_square, Square::new("a1")),
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -169,15 +138,16 @@ mod tests {
         let start_square = Square::new("d4");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("c3")));
-        correct.push(Ply::new(start_square, Square::new("d3")));
-        correct.push(Ply::new(start_square, Square::new("e3")));
-        correct.push(Ply::new(start_square, Square::new("c4")));
-        correct.push(Ply::new(start_square, Square::new("e4")));
-        correct.push(Ply::new(start_square, Square::new("c5")));
-        correct.push(Ply::new(start_square, Square::new("d5")));
-        correct.push(Ply::new(start_square, Square::new("e5")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("c3")),
+            Ply::new(start_square, Square::new("d3")),
+            Ply::new(start_square, Square::new("e3")),
+            Ply::new(start_square, Square::new("c4")),
+            Ply::new(start_square, Square::new("e4")),
+            Ply::new(start_square, Square::new("c5")),
+            Ply::new(start_square, Square::new("d5")),
+            Ply::new(start_square, Square::new("e5")),
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -190,12 +160,13 @@ mod tests {
         let start_square = Square::new("h6");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("g5")));
-        correct.push(Ply::new(start_square, Square::new("h5")));
-        correct.push(Ply::new(start_square, Square::new("g6")));
-        correct.push(Ply::new(start_square, Square::new("g7")));
-        correct.push(Ply::new(start_square, Square::new("h7")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("g5")),
+            Ply::new(start_square, Square::new("h5")),
+            Ply::new(start_square, Square::new("g6")),
+            Ply::new(start_square, Square::new("g7")),
+            Ply::new(start_square, Square::new("h7")),
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -208,12 +179,13 @@ mod tests {
         let start_square = Square::new("b1");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("a1")));
-        correct.push(Ply::new(start_square, Square::new("c1")));
-        correct.push(Ply::new(start_square, Square::new("a2")));
-        correct.push(Ply::new(start_square, Square::new("b2")));
-        correct.push(Ply::new(start_square, Square::new("c2")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("a1")),
+            Ply::new(start_square, Square::new("c1")),
+            Ply::new(start_square, Square::new("a2")),
+            Ply::new(start_square, Square::new("b2")),
+            Ply::new(start_square, Square::new("c2")),
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -226,15 +198,16 @@ mod tests {
         let start_square = Square::new("d4");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("c3")));
-        correct.push(Ply::new(start_square, Square::new("d3")));
-        correct.push(Ply::new(start_square, Square::new("e3")));
-        correct.push(Ply::new(start_square, Square::new("c4")));
-        correct.push(Ply::new(start_square, Square::new("e4")));
-        correct.push(Ply::new(start_square, Square::new("c5")));
-        correct.push(Ply::new(start_square, Square::new("d5")));
-        correct.push(Ply::new(start_square, Square::new("e5")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("c3")),
+            Ply::new(start_square, Square::new("d3")),
+            Ply::new(start_square, Square::new("e3")),
+            Ply::new(start_square, Square::new("c4")),
+            Ply::new(start_square, Square::new("e4")),
+            Ply::new(start_square, Square::new("c5")),
+            Ply::new(start_square, Square::new("d5")),
+            Ply::new(start_square, Square::new("e5")),
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -247,13 +220,13 @@ mod tests {
         let start_square = Square::new("h6");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-
-        correct.push(Ply::new(start_square, Square::new("g5")));
-        correct.push(Ply::new(start_square, Square::new("h5")));
-        correct.push(Ply::new(start_square, Square::new("g6")));
-        correct.push(Ply::new(start_square, Square::new("g7")));
-        correct.push(Ply::new(start_square, Square::new("h7")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("g5")),
+            Ply::new(start_square, Square::new("h5")),
+            Ply::new(start_square, Square::new("g6")),
+            Ply::new(start_square, Square::new("g7")),
+            Ply::new(start_square, Square::new("h7")),
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();

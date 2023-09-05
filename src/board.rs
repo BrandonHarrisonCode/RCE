@@ -216,7 +216,7 @@ impl Board {
         let mask = mask_for_coord(square);
         for (kind, bb) in self.bitboard_map() {
             if (*bb & mask) >= 1 {
-                return Some(kind.clone());
+                return Some(kind);
             }
         }
         None
@@ -576,7 +576,7 @@ mod tests {
         let board = create_starting_board();
         let all_moves = board.get_all_moves();
 
-        assert!(all_moves.len() > 0);
+        assert!(!all_moves.is_empty());
     }
 
     #[test]
