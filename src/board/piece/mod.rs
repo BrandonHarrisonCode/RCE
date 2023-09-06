@@ -178,8 +178,7 @@ mod tests {
         let dest_square = Square::new("h7");
 
         let result = piece.get_all_legal_moves(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, dest_square));
+        let correct = vec![Ply::new(start_square, dest_square)];
 
         assert_eq!(result, correct);
     }

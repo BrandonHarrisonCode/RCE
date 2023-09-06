@@ -37,7 +37,7 @@ mod tests {
         let ply = Ply::new(start, dest);
 
         let result = ply.to_string();
-        let correct = String::from(format!("{} -> {}", start, dest));
+        let correct = format!("{} -> {}", start, dest);
 
         assert_eq!(result, correct);
     }

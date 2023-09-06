@@ -17,72 +17,66 @@ impl Piece for Knight {
     }
 
     fn get_moveset(square: &Square) -> Vec<Ply> {
-        let mut moveset: Vec<Ply> = Vec::new();
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::North.unit_square()
-                + Direction::North.unit_square()
-                + Direction::West.unit_square(),
-        ));
+        let moveset: Vec<Ply> = vec![
+            Ply::new(
+                *square,
+                *square
+                    + Direction::North.unit_square()
+                    + Direction::North.unit_square()
+                    + Direction::West.unit_square(),
+            ),
+            Ply::new(
+                *square,
+                *square
+                    + Direction::North.unit_square()
+                    + Direction::North.unit_square()
+                    + Direction::East.unit_square(),
+            ),
+            Ply::new(
+                *square,
+                *square
+                    + Direction::South.unit_square()
+                    + Direction::South.unit_square()
+                    + Direction::West.unit_square(),
+            ),
+            Ply::new(
+                *square,
+                *square
+                    + Direction::South.unit_square()
+                    + Direction::South.unit_square()
+                    + Direction::East.unit_square(),
+            ),
+            Ply::new(
+                *square,
+                *square
+                    + Direction::East.unit_square()
+                    + Direction::East.unit_square()
+                    + Direction::North.unit_square(),
+            ),
+            Ply::new(
+                *square,
+                *square
+                    + Direction::East.unit_square()
+                    + Direction::East.unit_square()
+                    + Direction::South.unit_square(),
+            ),
+            Ply::new(
+                *square,
+                *square
+                    + Direction::West.unit_square()
+                    + Direction::West.unit_square()
+                    + Direction::North.unit_square(),
+            ),
+            Ply::new(
+                *square,
+                *square
+                    + Direction::West.unit_square()
+                    + Direction::West.unit_square()
+                    + Direction::South.unit_square(),
+            ),
+        ];
 
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::North.unit_square()
-                + Direction::North.unit_square()
-                + Direction::East.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::South.unit_square()
-                + Direction::South.unit_square()
-                + Direction::West.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::South.unit_square()
-                + Direction::South.unit_square()
-                + Direction::East.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::East.unit_square()
-                + Direction::East.unit_square()
-                + Direction::North.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::East.unit_square()
-                + Direction::East.unit_square()
-                + Direction::South.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::West.unit_square()
-                + Direction::West.unit_square()
-                + Direction::North.unit_square(),
-        ));
-
-        moveset.push(Ply::new(
-            square.clone(),
-            square.clone()
-                + Direction::West.unit_square()
-                + Direction::West.unit_square()
-                + Direction::South.unit_square(),
-        ));
-
-        let output = moveset
+        moveset
             .into_iter()
             .filter(|mv| {
                 mv.start.rank < 8
@@ -91,9 +85,7 @@ impl Piece for Knight {
                     && mv.dest.file < 8
                     && mv.start != mv.dest
             })
-            .collect();
-
-        output
+            .collect::<Vec<Ply>>()
     }
 }
 
@@ -175,10 +167,11 @@ mod tests {
         let start_square = Square::new("b1");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("a3")));
-        correct.push(Ply::new(start_square, Square::new("c3")));
-        correct.push(Ply::new(start_square, Square::new("d2")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("a3")),
+            Ply::new(start_square, Square::new("c3")),
+            Ply::new(start_square, Square::new("d2")),
+        ];
 
         assert_eq!(result, correct);
     }
@@ -189,15 +182,16 @@ mod tests {
         let start_square = Square::new("d4");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("c2"))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("e2"))); // Down 2, Right 1
-        correct.push(Ply::new(start_square, Square::new("c6"))); // Up 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("e6"))); // Up 2, Right 1
-        correct.push(Ply::new(start_square, Square::new("b5"))); // Left 2, Up 1
-        correct.push(Ply::new(start_square, Square::new("b3"))); // Left 2, Down 1
-        correct.push(Ply::new(start_square, Square::new("f5"))); // Right 2, Up 1
-        correct.push(Ply::new(start_square, Square::new("f3"))); // Right 2, Down 1
+        let correct = vec![
+            Ply::new(start_square, Square::new("c2")), // Down 2, Left 1
+            Ply::new(start_square, Square::new("e2")), // Down 2, Right 1
+            Ply::new(start_square, Square::new("c6")), // Up 2, Left 1
+            Ply::new(start_square, Square::new("e6")), // Up 2, Right 1
+            Ply::new(start_square, Square::new("b5")), // Left 2, Up 1
+            Ply::new(start_square, Square::new("b3")), // Left 2, Down 1
+            Ply::new(start_square, Square::new("f5")), // Right 2, Up 1
+            Ply::new(start_square, Square::new("f3")), // Right 2, Down 1
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -210,11 +204,12 @@ mod tests {
         let start_square = Square::new("h6");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("g4"))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("g8"))); // Up 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("f7"))); // Left 2, Up 1
-        correct.push(Ply::new(start_square, Square::new("f5"))); // Left 2, Down 1
+        let correct = vec![
+            Ply::new(start_square, Square::new("g4")), // Down 2, Left 1
+            Ply::new(start_square, Square::new("g8")), // Up 2, Left 1
+            Ply::new(start_square, Square::new("f7")), // Left 2, Up 1
+            Ply::new(start_square, Square::new("f5")), // Left 2, Down 1
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -227,10 +222,11 @@ mod tests {
         let start_square = Square::new("b1");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("a3")));
-        correct.push(Ply::new(start_square, Square::new("c3")));
-        correct.push(Ply::new(start_square, Square::new("d2")));
+        let correct = vec![
+            Ply::new(start_square, Square::new("a3")),
+            Ply::new(start_square, Square::new("c3")),
+            Ply::new(start_square, Square::new("d2")),
+        ];
 
         assert_eq!(result, correct);
     }
@@ -241,15 +237,16 @@ mod tests {
         let start_square = Square::new("d4");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("c2"))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("e2"))); // Down 2, Right 1
-        correct.push(Ply::new(start_square, Square::new("c6"))); // Up 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("e6"))); // Up 2, Right 1
-        correct.push(Ply::new(start_square, Square::new("b5"))); // Left 2, Up 1
-        correct.push(Ply::new(start_square, Square::new("b3"))); // Left 2, Down 1
-        correct.push(Ply::new(start_square, Square::new("f5"))); // Right 2, Up 1
-        correct.push(Ply::new(start_square, Square::new("f3"))); // Right 2, Down 1
+        let correct = vec![
+            Ply::new(start_square, Square::new("c2")), // Down 2, Left 1
+            Ply::new(start_square, Square::new("e2")), // Down 2, Right 1
+            Ply::new(start_square, Square::new("c6")), // Up 2, Left 1
+            Ply::new(start_square, Square::new("e6")), // Up 2, Right 1
+            Ply::new(start_square, Square::new("b5")), // Left 2, Up 1
+            Ply::new(start_square, Square::new("b3")), // Left 2, Down 1
+            Ply::new(start_square, Square::new("f5")), // Right 2, Up 1
+            Ply::new(start_square, Square::new("f3")), // Right 2, Down 1
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
@@ -262,11 +259,12 @@ mod tests {
         let start_square = Square::new("h6");
 
         let result = piece.get_moveset(&start_square);
-        let mut correct = Vec::new();
-        correct.push(Ply::new(start_square, Square::new("g4"))); // Down 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("g8"))); // Up 2, Left 1
-        correct.push(Ply::new(start_square, Square::new("f7"))); // Left 2, Up 1
-        correct.push(Ply::new(start_square, Square::new("f5"))); // Left 2, Down 1
+        let correct = vec![
+            Ply::new(start_square, Square::new("g4")), // Down 2, Left 1
+            Ply::new(start_square, Square::new("g8")), // Up 2, Left 1
+            Ply::new(start_square, Square::new("f7")), // Left 2, Up 1
+            Ply::new(start_square, Square::new("f5")), // Left 2, Down 1
+        ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
