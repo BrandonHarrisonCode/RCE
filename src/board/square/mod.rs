@@ -6,6 +6,7 @@ pub struct Square {
     pub file: u8,
 }
 impl Square {
+    #[allow(dead_code)]
     pub fn new(algebraic_notation: &str) -> Square {
         let mut iter = algebraic_notation.chars();
         let filechar: char = iter.next().unwrap();
@@ -21,6 +22,73 @@ impl Square {
             - 1) as u8;
 
         Square { rank, file }
+    }
+
+    /// Returns a u64 mask filled with 0s except for a 1 in the designated square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - A square that indicates the desired bit to set to 1
+    ///
+    /// # Examples
+    /// ```
+    /// let mask = Square::new("e2").get_mask();
+    /// ```
+    pub fn get_mask(&self) -> u64 {
+        self.get_rank_mask() & self.get_file_mask()
+    }
+
+    /// Creates a mask that marks the rank of a given square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square that will be covered by the mask
+    ///
+    /// # Examples
+    /// ```
+    /// let rank_mask = Square::new("a1").get_rank_mask());
+    /// ```
+    pub fn get_rank_mask(&self) -> u64 {
+        0xFF << (self.rank * 8)
+    }
+
+    /// Creates a mask that marks the file of a given square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square that will be covered by the mask
+    ///
+    /// # Examples
+    /// ```
+    /// let file_mask = Square::new("a1").get_file_mask();
+    /// ```
+    pub fn get_file_mask(&self) -> u64 {
+        0x0101010101010101 << (8 - (self.file + 1))
+    }
+
+    /// Returns a vector of squares that match a given mask
+    ///
+    /// # Arguments
+    ///
+    /// * `mask` - The mask of squares to be returned
+    ///
+    /// # Examples
+    /// ```
+    /// let squares = Square::get_squares_from_mask(0xFF);
+    /// ```
+    pub fn get_squares_from_mask(mask: u64) -> Vec<Square> {
+        let mut squares: Vec<Square> = vec![];
+
+        for i in 0..64 {
+            if mask & (1 << i) != 0 {
+                squares.push(Square {
+                    rank: i / 8,
+                    file: 7 - (i % 8),
+                });
+            }
+        }
+
+        squares
     }
 }
 impl std::ops::Add<SquareDelta> for Square {
@@ -104,7 +172,9 @@ impl Direction {
 
 #[cfg(test)]
 mod tests {
+    use super::super::super::utils::*;
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_derived_traits() {
@@ -294,5 +364,233 @@ mod tests {
         let correct = Square { rank: 2, file: 4 };
 
         assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_rank_mask_h6() {
+        let start_square = Square::new("h6");
+        let result = start_square.get_rank_mask();
+        let correct = 0b0000000000000000111111110000000000000000000000000000000000000000;
+
+        assert_eq!(
+            result,
+            correct,
+            "Rank mask for h6 is incorrect: \nExpected: {}\n Got: {}",
+            debug_bitboard(&correct),
+            debug_bitboard(&result),
+        );
+    }
+
+    #[test]
+    fn test_get_rank_mask_a1() {
+        let start_square = Square::new("a1");
+        let result = start_square.get_rank_mask();
+        let correct = 0b0000000000000000000000000000000000000000000000000000000011111111;
+
+        assert_eq!(
+            result,
+            correct,
+            "Rank mask for a2 is incorrect: \nExpected: {}\n Got: {}",
+            debug_bitboard(&correct),
+            debug_bitboard(&result),
+        );
+    }
+
+    #[test]
+    fn test_get_rank_mask_b8() {
+        let start_square = Square::new("b8");
+        let result = start_square.get_rank_mask();
+        let correct = 0b1111111100000000000000000000000000000000000000000000000000000000;
+
+        assert_eq!(
+            result,
+            correct,
+            "Rank mask for a2 is incorrect: \nExpected: {}\n Got: {}",
+            debug_bitboard(&correct),
+            debug_bitboard(&result),
+        );
+    }
+
+    #[test]
+    fn test_get_file_mask_h6() {
+        let start_square = Square::new("h6");
+        let result = start_square.get_file_mask();
+        let correct = 0b0000000100000001000000010000000100000001000000010000000100000001;
+
+        assert_eq!(
+            result,
+            correct,
+            "File mask for h6 is incorrect: \nExpected: {}\n Got: {}",
+            debug_bitboard(&correct),
+            debug_bitboard(&result),
+        );
+    }
+
+    #[test]
+    fn test_get_file_mask_a1() {
+        let start_square = Square::new("a1");
+        let result = start_square.get_file_mask();
+        let correct = 0b1000000010000000100000001000000010000000100000001000000010000000;
+
+        assert_eq!(
+            result,
+            correct,
+            "File mask for a2 is incorrect: \nExpected: {}\n Got: {}",
+            debug_bitboard(&correct),
+            debug_bitboard(&result),
+        );
+    }
+
+    #[test]
+    fn test_get_file_mask_b8() {
+        let start_square = Square::new("b8");
+        let result = start_square.get_file_mask();
+        let correct = 0b0100000001000000010000000100000001000000010000000100000001000000;
+
+        assert_eq!(
+            result,
+            correct,
+            "File mask for a2 is incorrect: \nExpected: {}\n Got: {}",
+            debug_bitboard(&correct),
+            debug_bitboard(&result),
+        );
+    }
+
+    #[test]
+    fn test_get_squares_from_mask_file_h6() {
+        let start_square = Square::new("h6");
+        let result = Square::get_squares_from_mask(start_square.get_file_mask());
+        let correct = vec![
+            Square::new("h1"),
+            Square::new("h2"),
+            Square::new("h3"),
+            Square::new("h4"),
+            Square::new("h5"),
+            Square::new("h6"),
+            Square::new("h7"),
+            Square::new("h8"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_squares_from_mask_rank_h6() {
+        let start_square = Square::new("h6");
+        let result = Square::get_squares_from_mask(start_square.get_rank_mask());
+        let correct = vec![
+            Square::new("a6"),
+            Square::new("b6"),
+            Square::new("c6"),
+            Square::new("d6"),
+            Square::new("e6"),
+            Square::new("f6"),
+            Square::new("g6"),
+            Square::new("h6"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_squares_from_mask_rank_and_file_h6() {
+        let start_square = Square::new("h6");
+        let result = Square::get_squares_from_mask(
+            start_square.get_rank_mask() | start_square.get_file_mask(),
+        );
+        let correct = vec![
+            Square::new("a6"),
+            Square::new("b6"),
+            Square::new("c6"),
+            Square::new("d6"),
+            Square::new("e6"),
+            Square::new("f6"),
+            Square::new("g6"),
+            Square::new("h1"),
+            Square::new("h2"),
+            Square::new("h3"),
+            Square::new("h4"),
+            Square::new("h5"),
+            Square::new("h6"),
+            Square::new("h7"),
+            Square::new("h8"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_squares_from_mask_file_a1() {
+        let start_square = Square::new("a1");
+        let result = Square::get_squares_from_mask(start_square.get_file_mask());
+        let correct = vec![
+            Square::new("a1"),
+            Square::new("a2"),
+            Square::new("a3"),
+            Square::new("a4"),
+            Square::new("a5"),
+            Square::new("a6"),
+            Square::new("a7"),
+            Square::new("a8"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_squares_from_mask_rank_a1() {
+        let start_square = Square::new("a1");
+        let result = Square::get_squares_from_mask(start_square.get_rank_mask());
+        let correct = vec![
+            Square::new("a1"),
+            Square::new("b1"),
+            Square::new("c1"),
+            Square::new("d1"),
+            Square::new("e1"),
+            Square::new("f1"),
+            Square::new("g1"),
+            Square::new("h1"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_squares_from_mask_rank_and_file_a1() {
+        let start_square = Square::new("a1");
+        let result = Square::get_squares_from_mask(
+            start_square.get_rank_mask() | start_square.get_file_mask(),
+        );
+        let correct = vec![
+            Square::new("a1"),
+            Square::new("b1"),
+            Square::new("c1"),
+            Square::new("d1"),
+            Square::new("e1"),
+            Square::new("f1"),
+            Square::new("g1"),
+            Square::new("h1"),
+            Square::new("a2"),
+            Square::new("a3"),
+            Square::new("a4"),
+            Square::new("a5"),
+            Square::new("a6"),
+            Square::new("a7"),
+            Square::new("a8"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
     }
 }

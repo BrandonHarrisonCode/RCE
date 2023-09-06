@@ -22,9 +22,8 @@ impl Piece for Pawn {
     /// [ ] En passant
     /// [ ] Promotion
     fn get_moveset(square: &Square) -> Vec<Ply> {
-        let mut output: Vec<Ply> = Vec::new();
-
-        output.push(Ply::new(*square, *square + Direction::North.unit_square()));
+        let mut output: Vec<Ply> =
+            vec![Ply::new(*square, *square + Direction::North.unit_square())];
 
         if square.rank == 1 {
             output.push(Ply::new(

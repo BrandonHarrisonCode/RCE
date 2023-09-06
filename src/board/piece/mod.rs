@@ -65,14 +65,25 @@ impl PieceKind {
     }
 
     fn get_moveset(&self, square: &Square) -> Vec<Ply> {
-        match self {
+        let moveset = match self {
             PieceKind::Pawn(_c) => Pawn::get_moveset(square),
             PieceKind::King(_c) => King::get_moveset(square),
             PieceKind::Queen(_c) => Queen::get_moveset(square),
             PieceKind::Rook(_c) => Rook::get_moveset(square),
             PieceKind::Bishop(_c) => Bishop::get_moveset(square),
             PieceKind::Knight(_c) => Knight::get_moveset(square),
-        }
+        };
+
+        moveset
+            .into_iter()
+            .filter(|mv| {
+                mv.start.rank < 8
+                    && mv.start.file < 8
+                    && mv.dest.rank < 8
+                    && mv.dest.file < 8
+                    && mv.start != mv.dest
+            })
+            .collect::<Vec<Ply>>()
     }
 
     pub fn get_all_legal_moves(&self, square: &Square) -> Vec<Ply> {

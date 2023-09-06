@@ -1,7 +1,6 @@
 #[allow(dead_code)]
-pub fn debug_bitboard(bitboard: &u64) {
-    let output = debug_bitboard_helper(bitboard);
-    println!("{}", output);
+pub fn debug_bitboard(bitboard: &u64) -> String {
+    debug_bitboard_helper(bitboard)
 }
 
 pub fn debug_bitboard_helper(bitboard: &u64) -> String {

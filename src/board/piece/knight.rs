@@ -17,7 +17,7 @@ impl Piece for Knight {
     }
 
     fn get_moveset(square: &Square) -> Vec<Ply> {
-        let moveset: Vec<Ply> = vec![
+        vec![
             Ply::new(
                 *square,
                 *square
@@ -74,18 +74,7 @@ impl Piece for Knight {
                     + Direction::West.unit_square()
                     + Direction::South.unit_square(),
             ),
-        ];
-
-        moveset
-            .into_iter()
-            .filter(|mv| {
-                mv.start.rank < 8
-                    && mv.start.file < 8
-                    && mv.dest.rank < 8
-                    && mv.dest.file < 8
-                    && mv.start != mv.dest
-            })
-            .collect::<Vec<Ply>>()
+        ]
     }
 }
 

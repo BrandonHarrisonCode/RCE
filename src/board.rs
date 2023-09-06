@@ -214,7 +214,7 @@ impl Board {
     /// assert_eq!(None, board.get_piece(Square::new("b3")));
     /// ```
     pub fn get_piece(&self, square: &Square) -> Option<PieceKind> {
-        let mask = mask_for_coord(square);
+        let mask = square.get_mask();
         for (kind, bb) in self.bitboard_map() {
             if (*bb & mask) >= 1 {
                 return Some(kind);
@@ -335,7 +335,7 @@ impl Board {
     /// board.add_piece(&Square::new("a3"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn add_piece(&mut self, square: &Square, piece: &PieceKind) {
-        let mask = mask_for_coord(square);
+        let mask = square.get_mask();
         self.bitboard_map_mut()
             .entry(*piece)
             .and_modify(|bb| **bb |= mask);
@@ -355,7 +355,7 @@ impl Board {
     /// ```
     #[allow(dead_code)]
     pub fn clear_piece(&mut self, square: &Square) {
-        let mask = !mask_for_coord(square);
+        let mask = !square.get_mask();
         for (_, bb) in self.bitboard_map_mut().iter_mut() {
             **bb &= mask;
         }
@@ -379,7 +379,7 @@ impl Board {
     /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn remove_piece(&mut self, square: &Square, piece: &PieceKind) {
-        let mask = !mask_for_coord(square);
+        let mask = !square.get_mask();
         self.bitboard_map_mut()
             .entry(*piece)
             .and_modify(|bb| **bb &= mask);
@@ -436,23 +436,6 @@ impl Board {
             self.add_piece(&old_move.dest, &capture_piece);
         }
     }
-}
-
-/// Returns a u64 mask filled with 0s except for a 1 in the designated square
-///
-/// # Arguments
-///
-/// * `square` - A square that indicates the desired bit to set to 1
-///
-/// # Examples
-/// ```
-/// let mask = mask_for_coord(Square::new("e2"));
-/// ```
-fn mask_for_coord(square: &Square) -> u64 {
-    let rank_mask: u64 = 0x00000000000000FF << (8 * square.rank);
-    let file_mask: u64 = 0x0101010101010101 << (8 - (square.file + 1));
-
-    rank_mask & file_mask
 }
 
 impl fmt::Display for Board {
