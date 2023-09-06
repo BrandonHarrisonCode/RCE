@@ -32,7 +32,7 @@
 				"$rustc"
 			],
 			"label": "rust: cargo run"
-		}
+		},
 		{
 			"type": "cargo",
 			"command": "llvm-cov",
@@ -40,9 +40,21 @@
 				"$rustc"
 			],
 			"group": {
-				"kind": "test",
+				"kind": "test"
 			},
 			"label": "rust: cargo llvm-cov"
+		},
+		{
+			"type": "cargo",
+			"command": "clippy",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": {
+				"kind": "test",
+				"isDefault": true
+			},
+			"label": "rust: cargo clippy"
 		}
 	]
 }
