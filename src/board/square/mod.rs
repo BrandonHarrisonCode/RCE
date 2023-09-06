@@ -66,6 +66,73 @@ impl Square {
         0x0101010101010101 << (8 - (self.file + 1))
     }
 
+    /// Creates a mask that marks both diagonals of a given square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square that will be covered by the mask
+    ///
+    /// # Examples
+    /// ```
+    /// let diagonals_mask = Square::new("a1").get_diagonals_mask();
+    /// ```
+    pub fn get_diagonals_mask(&self) -> u64 {
+        let start = self.u64();
+        let mut mask = 0u64;
+
+        let mut step: i128 = start as i128;
+        while step < 64 {
+            mask |= 1 << step;
+            if step % 8 == 0 {
+                break;
+            }
+            step += 7;
+        }
+
+        step = start as i128;
+        while step < 64 {
+            mask |= 1 << step;
+            if (step + 1) % 8 == 0 {
+                break;
+            }
+            step += 9;
+        }
+
+        step = start as i128;
+        while step >= 0 {
+            mask |= 1 << step;
+            if (step + 1) % 8 == 0 {
+                break;
+            }
+            step -= 7;
+        }
+
+        step = start as i128;
+        while step >= 0 {
+            mask |= 1 << step;
+            if step % 8 == 0 {
+                break;
+            }
+            step -= 9;
+        }
+
+        mask
+    }
+
+    /// Converts a square to it's u64 representation, where 0 is in the bottom right corner and 63 is in the top left
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square to be converted
+    ///
+    /// # Examples
+    /// ```
+    /// let num = Square::new("a1").u64();
+    /// ```
+    fn u64(&self) -> u64 {
+        (self.rank * 8 + (7 - self.file)).into()
+    }
+
     /// Returns a vector of squares that match a given mask
     ///
     /// # Arguments
@@ -592,5 +659,199 @@ mod tests {
         let result_set: HashSet<Square> = result.into_iter().collect();
         let correct_set: HashSet<Square> = correct.into_iter().collect();
         assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_diagonals_mask_a1() {
+        let start_square = Square::new("a1");
+
+        let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
+        let correct = vec![
+            Square::new("a1"),
+            Square::new("b2"),
+            Square::new("c3"),
+            Square::new("d4"),
+            Square::new("e5"),
+            Square::new("f6"),
+            Square::new("g7"),
+            Square::new("h8"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_diagonals_mask_b1() {
+        let start_square = Square::new("b1");
+
+        let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
+        let correct = vec![
+            Square::new("b1"),
+            Square::new("c2"),
+            Square::new("d3"),
+            Square::new("e4"),
+            Square::new("f5"),
+            Square::new("g6"),
+            Square::new("h7"),
+            Square::new("a2"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_diagonals_mask_e4() {
+        let start_square = Square::new("e4");
+
+        let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
+        let correct = vec![
+            Square::new("e4"),
+            Square::new("d5"),
+            Square::new("c6"),
+            Square::new("b7"),
+            Square::new("a8"),
+            Square::new("f5"),
+            Square::new("g6"),
+            Square::new("h7"),
+            Square::new("d3"),
+            Square::new("c2"),
+            Square::new("b1"),
+            Square::new("f3"),
+            Square::new("g2"),
+            Square::new("h1"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_diagonals_mask_d4() {
+        let start_square = Square::new("d4");
+
+        let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
+        let correct = vec![
+            Square::new("d4"),
+            Square::new("a1"),
+            Square::new("b2"),
+            Square::new("c3"),
+            Square::new("c5"),
+            Square::new("b6"),
+            Square::new("a7"),
+            Square::new("e5"),
+            Square::new("f6"),
+            Square::new("g7"),
+            Square::new("h8"),
+            Square::new("e3"),
+            Square::new("f2"),
+            Square::new("g1"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_diagonals_mask_g6() {
+        let start_square = Square::new("g6");
+
+        let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
+        let correct = vec![
+            Square::new("g6"),
+            Square::new("h7"),
+            Square::new("h5"),
+            Square::new("f7"),
+            Square::new("e8"),
+            Square::new("f5"),
+            Square::new("e4"),
+            Square::new("d3"),
+            Square::new("c2"),
+            Square::new("b1"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_get_diagonals_mask_h6() {
+        let start_square = Square::new("h6");
+
+        let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
+        let correct = vec![
+            Square::new("h6"),
+            Square::new("g7"),
+            Square::new("f8"),
+            Square::new("g5"),
+            Square::new("f4"),
+            Square::new("e3"),
+            Square::new("d2"),
+            Square::new("c1"),
+        ];
+
+        let result_set: HashSet<Square> = result.into_iter().collect();
+        let correct_set: HashSet<Square> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_u64_a1() {
+        let start_square = Square::new("a1");
+        let result = start_square.u64();
+        let correct = 7;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_u64_h1() {
+        let start_square = Square::new("h1");
+        let result = start_square.u64();
+        let correct = 0;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_u64_a8() {
+        let start_square = Square::new("a8");
+        let result = start_square.u64();
+        let correct = 63;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_u64_h8() {
+        let start_square = Square::new("h8");
+        let result = start_square.u64();
+        let correct = 56;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_u64_c5() {
+        let start_square = Square::new("c5");
+        let result = start_square.u64();
+        let correct = 37;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_u64_f3() {
+        let start_square = Square::new("f3");
+        let result = start_square.u64();
+        let correct = 18;
+
+        assert_eq!(result, correct);
     }
 }
