@@ -17,7 +17,7 @@ impl Piece for Pawn {
     }
 
     /// [X] Advances 1 square forward
-    /// [ ] Advances 2 squares forward if on second rank
+    /// [X] Advances 2 squares forward if on second rank
     /// [ ] Takes diagonally forward
     /// [ ] En passant
     /// [ ] Promotion

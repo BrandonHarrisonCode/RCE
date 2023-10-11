@@ -1,16 +1,30 @@
-use derive_more::Constructor;
 use std::fmt;
 
-use super::square::Square;
+use super::{piece::PieceKind, square::Square};
 
-#[derive(Constructor, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Ply {
     pub start: Square,
     pub dest: Square,
+    pub captured_piece: Option<PieceKind>,
 }
+impl Ply {
+    pub fn new(start: Square, dest: Square) -> Ply {
+        Ply {
+            start,
+            dest,
+            captured_piece: None,
+        }
+    }
+}
+
 impl fmt::Display for Ply {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} -> {}", self.start, self.dest)
+        write!(f, "{} -> {}", self.start, self.dest,)?;
+        if let Some(captured_piece) = self.captured_piece {
+            write!(f, " (captured: {})", captured_piece)?;
+        }
+        Ok(())
     }
 }
 

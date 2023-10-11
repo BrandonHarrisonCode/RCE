@@ -10,8 +10,6 @@ use piece::{Color, PieceKind};
 use ply::Ply;
 use square::Square;
 
-const NUM_PIECES: usize = 32;
-
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq)]
 pub struct Board {
@@ -30,7 +28,7 @@ pub struct Board {
     b_bishops: u64,
     b_knights: u64,
 
-    captures: Vec<Option<PieceKind>>,
+    history: Vec<Ply>,
 }
 
 impl Board {
@@ -84,7 +82,7 @@ impl Board {
     ) -> Board {
         Board {
             is_white_turn: true,
-            captures: Vec::with_capacity(NUM_PIECES),
+            history: Vec::new(),
             w_pawns,
             w_king,
             w_queens,
@@ -182,7 +180,7 @@ impl Board {
 
         Board {
             is_white_turn,
-            captures: Vec::with_capacity(NUM_PIECES),
+            history: Vec::new(),
             w_pawns,
             w_king,
             w_queens,
@@ -397,19 +395,17 @@ impl Board {
     /// // Ply the a pawn one square forward
     /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
-    pub fn make_move(&mut self, new_move: Ply) {
+    pub fn make_move(&mut self, mut new_move: Ply) {
         let start_piece_kind = self.get_piece(&new_move.start).unwrap();
 
-        // If capture, save the dest piece to the captures stack
-        if let Some(dest_piece_kind) = self.get_piece(&new_move.dest) {
-            self.remove_piece(&new_move.dest, &dest_piece_kind);
-            self.captures.push(Some(dest_piece_kind));
-        } else {
-            self.captures.push(None);
-        }
-
-        self.add_piece(&new_move.dest, &start_piece_kind);
         self.remove_piece(&new_move.start, &start_piece_kind);
+        if let Some(dest_piece_kind) = self.get_piece(&new_move.dest) {
+            new_move.captured_piece = Some(dest_piece_kind);
+            self.remove_piece(&new_move.dest, &dest_piece_kind);
+        }
+        self.add_piece(&new_move.dest, &start_piece_kind);
+
+        self.history.push(new_move);
     }
 
     /// Unmakes a half-move on this board
@@ -432,8 +428,8 @@ impl Board {
         self.add_piece(&old_move.start, &piece_kind);
         self.remove_piece(&old_move.dest, &piece_kind);
 
-        if let Some(capture_piece) = self.captures.pop().unwrap() {
-            self.add_piece(&old_move.dest, &capture_piece);
+        if let Some(caputre_piece) = self.history.pop().unwrap().captured_piece {
+            self.add_piece(&old_move.dest, &caputre_piece);
         }
     }
 }
@@ -537,10 +533,12 @@ mod tests {
             Ply {
                 start: Square::new("a2"),
                 dest: Square::new("a3"),
+                captured_piece: None,
             },
             Ply {
                 start: Square::new("a2"),
                 dest: Square::new("a4"),
+                captured_piece: None,
             },
         ];
 
@@ -733,7 +731,7 @@ mod tests {
             b_rooks: 1224979098644774912,
             b_bishops: 0,
             b_knights: 4,
-            captures: Vec::new(),
+            history: Vec::new(),
         };
 
         assert_eq!(Board::from_fen(fen), correct);
@@ -756,7 +754,7 @@ mod tests {
             b_rooks: 8,
             b_bishops: 288230376151711744,
             b_knights: 17660905521152,
-            captures: Vec::new(),
+            history: Vec::new(),
         };
 
         assert_eq!(Board::from_fen(fen), correct);
