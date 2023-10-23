@@ -15,6 +15,11 @@ use square::Square;
 pub struct Board {
     is_white_turn: bool,
 
+    w_kingside_castling: bool,
+    w_queenside_castling: bool,
+    b_kingside_castling: bool,
+    b_queenside_castling: bool,
+
     w_pawns: u64,
     w_king: u64,
     w_queens: u64,
@@ -82,7 +87,12 @@ impl Board {
     ) -> Board {
         Board {
             is_white_turn: true,
-            history: Vec::new(),
+            w_kingside_castling: true,
+            w_queenside_castling: true,
+            b_kingside_castling: true,
+            b_queenside_castling: true,
+
+
             w_pawns,
             w_king,
             w_queens,
@@ -95,6 +105,8 @@ impl Board {
             b_rooks,
             b_bishops,
             b_knights,
+
+            history: Vec::new(),
         }
     }
 
@@ -173,6 +185,23 @@ impl Board {
             _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
         };
 
+        let mut w_kingside_castling: bool = false;
+        let mut b_kingside_castling: bool = false;
+        let mut w_queenside_castling: bool = false;
+        let mut b_queenside_castling: bool = false;
+
+        for chr in fields[2].chars() {
+            match chr {
+                'K' => w_kingside_castling = true,
+                'k' => b_kingside_castling = true,
+                'Q' => w_queenside_castling = true,
+                'q' => b_queenside_castling = true,
+                '-' => (),
+                _ => panic!("Unknown FEN castling notation: {}", chr),
+            };
+        };
+
+
         // TODO: Castling rights
         // TODO: En passant target square
         // TODO: Halfmove clock
@@ -180,6 +209,12 @@ impl Board {
 
         Board {
             is_white_turn,
+
+            w_kingside_castling,
+            w_queenside_castling,
+            b_kingside_castling,
+            b_queenside_castling,
+
             history: Vec::new(),
             w_pawns,
             w_king,
@@ -719,6 +754,12 @@ mod tests {
         let fen = "1k1r3r/p6p/1pp1pp2/2Np1qp1/1Q1P4/2P1PP2/PP4PP/R4nK1 w - - 0 21";
         let correct = Board {
             is_white_turn: true,
+
+            w_kingside_castling: false,
+            w_queenside_castling: false,
+            b_kingside_castling: false,
+            b_queenside_castling: false,
+
             w_pawns: 271368960,
             w_king: 2,
             w_queens: 1073741824,
@@ -742,6 +783,12 @@ mod tests {
         let fen = "5b2/pp1N2pk/2pn1q1p/3n1p1Q/3P1P2/2PB3R/PP3KPP/R1B1r3 b - - 12 31";
         let correct = Board {
             is_white_turn: false,
+
+            w_kingside_castling: false,
+            w_queenside_castling: false,
+            b_kingside_castling: false,
+            b_queenside_castling: false,
+
             w_pawns: 337691392,
             w_king: 1024,
             w_queens: 4294967296,
