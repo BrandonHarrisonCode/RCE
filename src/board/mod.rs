@@ -192,6 +192,46 @@ impl Board {
         self.is_white_turn
     }
 
+    /// Returns a boolean representing whether or not the specified player has kingside castling rights
+    /// 
+    /// # Arguments
+    /// 
+    /// * `white` - A boolean representing whether or not we are checking white or black's castling rights
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(board.has_kingside_castle(true));
+    /// assert!(board.has_kingside_castle(false));
+    /// ```
+    #[allow(dead_code)]
+    pub fn has_kingside_castle(&self, white: bool) -> bool {
+        match white {
+            true => self.w_kingside_castling,
+            false => self.b_kingside_castling,
+        }
+    }
+
+    /// Returns a boolean representing whether or not the specified player has queenside castling rights
+    /// 
+    /// # Arguments
+    /// 
+    /// * `white` - A boolean representing whether or not we are checqueen white or black's castling rights
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(board.has_queenside_castle(true));
+    /// assert!(board.has_queenside_castle(false));
+    /// ```
+    #[allow(dead_code)]
+    pub fn has_queenside_castle(&self, white: bool) -> bool {
+        match white {
+            true => self.w_queenside_castling,
+            false => self.b_queenside_castling,
+        }
+    }
+
     /// Returns a PieceKind Option of the piece currently occupying `square`
     ///
     /// # Arguments
@@ -656,6 +696,50 @@ mod tests {
     fn test_is_black_turn() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
         assert_eq!(board.is_white_turn(), false);
+    }
+
+    #[test]
+    fn test_kingside_castle_true() {
+        let board = Board::construct_starting_board();
+        assert!(board.has_kingside_castle(true));
+        assert!(board.has_kingside_castle(false));
+    }
+
+    #[test]
+    fn test_queenside_castle_true() {
+        let board = Board::construct_starting_board();
+        assert!(board.has_queenside_castle(true));
+        assert!(board.has_queenside_castle(false));
+    }
+
+    #[test]
+    fn test_kingside_castle_false() {
+        let mut board = Board::construct_starting_board();
+        assert!(board.has_kingside_castle(true));
+        assert!(board.has_kingside_castle(false));
+
+        board.w_kingside_castling = false;
+        assert!(!board.has_kingside_castle(true));
+        assert!(board.has_kingside_castle(false));
+
+        board.b_kingside_castling = false;
+        assert!(!board.has_kingside_castle(true));
+        assert!(!board.has_kingside_castle(false));
+    }
+
+    #[test]
+    fn test_queenside_castle_false() {
+        let mut board = Board::construct_starting_board();
+        assert!(board.has_queenside_castle(true));
+        assert!(board.has_queenside_castle(false));
+
+        board.w_queenside_castling = false;
+        assert!(!board.has_queenside_castle(true));
+        assert!(board.has_queenside_castle(false));
+
+        board.b_queenside_castling = false;
+        assert!(!board.has_queenside_castle(true));
+        assert!(!board.has_queenside_castle(false));
     }
 
     #[test]
