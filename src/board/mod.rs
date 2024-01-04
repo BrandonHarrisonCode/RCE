@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::fmt;
+use crate::utils::FENInstruction;
 
 mod boardbuilder;
 pub mod piece;
@@ -38,8 +39,144 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new() -> BoardBuilder {
+    #[allow(dead_code)]
+    pub fn builder() -> BoardBuilder {
         BoardBuilder::default()
+    }
+
+    /// Returns a new board given a FEN string
+    ///
+    /// # Arguments
+    ///
+    /// * `fen` - A string representing the FEN of a position
+    ///
+    /// # Examples
+    /// ```
+    /// // Create empty board
+    /// let board = Board::builder(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /// ```
+    #[allow(dead_code)]
+    pub fn from_fen(fen: &str) -> Board {
+        let fields: Vec<&str> = fen.split_ascii_whitespace().collect();
+
+        let mut w_pawns: u64 = 0;
+        let mut w_king: u64 = 0;
+        let mut w_queens: u64 = 0;
+        let mut w_rooks: u64 = 0;
+        let mut w_bishops: u64 = 0;
+        let mut w_knights: u64 = 0;
+        let mut b_pawns: u64 = 0;
+        let mut b_king: u64 = 0;
+        let mut b_queens: u64 = 0;
+        let mut b_rooks: u64 = 0;
+        let mut b_bishops: u64 = 0;
+        let mut b_knights: u64 = 0;
+
+        let mut idx: u64 = 0;
+        for chr in fields[0].chars() {
+            let instruction = match chr {
+                'P' => FENInstruction::Bitboard(&mut w_pawns),
+                'K' => FENInstruction::Bitboard(&mut w_king),
+                'Q' => FENInstruction::Bitboard(&mut w_queens),
+                'R' => FENInstruction::Bitboard(&mut w_rooks),
+                'B' => FENInstruction::Bitboard(&mut w_bishops),
+                'N' => FENInstruction::Bitboard(&mut w_knights),
+                'p' => FENInstruction::Bitboard(&mut b_pawns),
+                'k' => FENInstruction::Bitboard(&mut b_king),
+                'q' => FENInstruction::Bitboard(&mut b_queens),
+                'r' => FENInstruction::Bitboard(&mut b_rooks),
+                'b' => FENInstruction::Bitboard(&mut b_bishops),
+                'n' => FENInstruction::Bitboard(&mut b_knights),
+                '1'..='8' => FENInstruction::Skip(chr.to_string().parse().ok().unwrap()),
+                '/' => FENInstruction::NewRow(),
+                _ => panic!("Unknown FEN instruction: {}", chr),
+            };
+
+            let mask: u64 = 1 << (63 - idx);
+            match instruction {
+                FENInstruction::Bitboard(bb) => *bb |= mask,
+                FENInstruction::Skip(num) => idx += num - 1,
+                FENInstruction::NewRow() => idx -= 1,
+            }
+            idx += 1;
+        }
+
+        let is_white_turn = match fields[1].chars().next().unwrap_or('w') {
+            'w' => true,
+            'b' => false,
+            _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
+        };
+
+        let mut w_kingside_castling: bool = false;
+        let mut b_kingside_castling: bool = false;
+        let mut w_queenside_castling: bool = false;
+        let mut b_queenside_castling: bool = false;
+
+        for chr in fields[2].chars() {
+            match chr {
+                'K' => w_kingside_castling = true,
+                'k' => b_kingside_castling = true,
+                'Q' => w_queenside_castling = true,
+                'q' => b_queenside_castling = true,
+                '-' => (),
+                _ => panic!("Unknown FEN castling notation: {}", chr),
+            };
+        };
+
+        // TODO: Castling rights
+        // TODO: En passant target square
+        // TODO: Halfmove clock
+        // TODO: Fullmove number
+
+        Board {
+            is_white_turn,
+
+            w_kingside_castling,
+            w_queenside_castling,
+            b_kingside_castling,
+            b_queenside_castling,
+
+            history: Vec::new(),
+            w_pawns,
+            w_king,
+            w_queens,
+            w_rooks,
+            w_bishops,
+            w_knights,
+            b_pawns,
+            b_king,
+            b_queens,
+            b_rooks,
+            b_bishops,
+            b_knights,
+        }
+    }
+
+    /// Creates a new board object that represents the starting board state in a normal game
+    pub fn construct_starting_board() -> Board {
+        Board {
+            is_white_turn: true,
+
+            w_kingside_castling: true,
+            w_queenside_castling: true,
+            b_kingside_castling: true,
+            b_queenside_castling: true,
+
+            w_pawns: 0b0000000000000000000000000000000000000000000000001111111100000000,
+            w_king: 0b0000000000000000000000000000000000000000000000000000000000001000,
+            w_queens: 0b0000000000000000000000000000000000000000000000000000000000010000,
+            w_rooks: 0b0000000000000000000000000000000000000000000000000000000010000001,
+            w_bishops: 0b0000000000000000000000000000000000000000000000000000000000100100,
+            w_knights: 0b0000000000000000000000000000000000000000000000000000000001000010,
+            b_pawns: 0b0000000011111111000000000000000000000000000000000000000000000000,
+            b_king: 0b0000100000000000000000000000000000000000000000000000000000000000,
+            b_queens: 0b0001000000000000000000000000000000000000000000000000000000000000,
+            b_rooks: 0b1000000100000000000000000000000000000000000000000000000000000000,
+            b_bishops: 0b0010010000000000000000000000000000000000000000000000000000000000,
+            b_knights: 0b0100001000000000000000000000000000000000000000000000000000000000,
+
+            history: Vec::new(),
+        }
     }
 
 
@@ -54,7 +191,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new("a1")));
     /// assert_eq!(None, board.get_piece(Square::new("b3")));
     /// ```
@@ -79,7 +216,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// let movelist = board.get_moves_for_piece(Square::new("a2"));
     /// ```
     #[allow(dead_code)]
@@ -92,7 +229,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_all_moves(&self) -> Vec<Ply> {
@@ -114,7 +251,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// let all_bb = board.bitboard_map();
     /// let pawn_bb: u64 = all_bb.get(PieceKind::Pawn(Color::White));
     /// ```
@@ -142,7 +279,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// let all_bb = board.bitboard_map_mut();
     /// all_bb[PieceKind::Pawn(Color::White)] |= 0x1;
     /// ```
@@ -176,7 +313,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// board.add_piece(&Square::new("a3"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn add_piece(&mut self, square: &Square, piece: &PieceKind) {
@@ -194,7 +331,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// // Playing with rook odds
     /// board.clear_piece(&Square::new("a1"));
     /// ```
@@ -219,7 +356,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// // Playing with rook odds
     /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
     /// ```
@@ -237,7 +374,7 @@ impl Board {
     /// * `new_move` - A Ply that holds the origin and destination square of the move.
     ///
     /// # Examples
-    /// let board = Board::new().starting_board();
+    /// let board = Board::construct_starting_board();
     /// // Ply the a pawn one square forward
     /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
@@ -304,8 +441,72 @@ mod tests {
     use super::*;
 
     #[test]
+    fn from_fen_starting_position() {
+        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        assert_eq!(Board::construct_starting_board(), Board::from_fen(fen));
+    }
+
+    #[test]
+    fn from_fen_white_position1() {
+        let fen = "1k1r3r/p6p/1pp1pp2/2Np1qp1/1Q1P4/2P1PP2/PP4PP/R4nK1 w - - 0 21";
+        let correct = Board {
+            is_white_turn: true,
+
+            w_kingside_castling: false,
+            w_queenside_castling: false,
+            b_kingside_castling: false,
+            b_queenside_castling: false,
+
+            w_pawns: 271368960,
+            w_king: 2,
+            w_queens: 1073741824,
+            w_rooks: 128,
+            w_bishops: 0,
+            w_knights: 137438953472,
+            b_pawns: 36429096560885760,
+            b_king: 4611686018427387904,
+            b_queens: 17179869184,
+            b_rooks: 1224979098644774912,
+            b_bishops: 0,
+            b_knights: 4,
+            history: Vec::new(),
+        };
+
+        assert_eq!(Board::from_fen(fen), correct);
+    }
+
+    #[test]
+    fn from_fen_black_position1() {
+        let fen = "5b2/pp1N2pk/2pn1q1p/3n1p1Q/3P1P2/2PB3R/PP3KPP/R1B1r3 b - - 12 31";
+        let correct = Board {
+            is_white_turn: false,
+
+            w_kingside_castling: false,
+            w_queenside_castling: false,
+            b_kingside_castling: false,
+            b_queenside_castling: false,
+
+            w_pawns: 337691392,
+            w_king: 1024,
+            w_queens: 4294967296,
+            w_rooks: 65664,
+            w_bishops: 1048608,
+            w_knights: 4503599627370496,
+            b_pawns: 54642446545453056,
+            b_king: 281474976710656,
+            b_queens: 4398046511104,
+            b_rooks: 8,
+            b_bishops: 288230376151711744,
+            b_knights: 17660905521152,
+            history: Vec::new(),
+        };
+
+        assert_eq!(Board::from_fen(fen), correct);
+    }
+
+    #[test]
     fn test_get_piece1() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         assert_eq!(
             board.get_piece(&Square::new("a1")).unwrap(),
             PieceKind::Rook(Color::White)
@@ -314,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_get_piece2() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         assert_eq!(
             board.get_piece(&Square::new("h8")).unwrap(),
             PieceKind::Rook(Color::Black)
@@ -323,7 +524,7 @@ mod tests {
 
     #[test]
     fn test_get_piece3() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         assert_eq!(
             board.get_piece(&Square::new("h7")).unwrap(),
             PieceKind::Pawn(Color::Black)
@@ -332,27 +533,27 @@ mod tests {
 
     #[test]
     fn test_get_piece_none() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         assert!(board.get_piece(&Square::new("e5")).is_none());
     }
 
     #[test]
     #[should_panic]
     fn test_get_piece_oob_rank() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         board.get_piece(&Square { rank: 8, file: 7 }).unwrap();
     }
 
     #[test]
     #[should_panic]
     fn test_get_piece_oob_file() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         board.get_piece(&Square { rank: 0, file: 8 }).unwrap();
     }
 
     #[test]
     fn test_get_moves_for_piece() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         let moves = board.get_moves_for_piece(&Square::new("a2")); // pawn
         let correct = [
             Ply {
@@ -373,7 +574,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_get_moves_for_piece_empty() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         let moves = board.get_moves_for_piece(&Square::new("a3")); // Empty
 
         moves.unwrap();
@@ -381,7 +582,7 @@ mod tests {
 
     #[test]
     fn test_get_all_moves() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         let all_moves = board.get_all_moves();
 
         assert!(!all_moves.is_empty());
@@ -389,7 +590,7 @@ mod tests {
 
     #[test]
     fn test_add_piece() {
-        let mut board = Board::new().starting_board();
+        let mut board = Board::construct_starting_board();
         let square = Square::new("a3");
         board.add_piece(&square, &PieceKind::Queen(Color::White));
         assert_eq!(
@@ -400,7 +601,7 @@ mod tests {
 
     #[test]
     fn test_clear_piece() {
-        let mut board = Board::new().starting_board();
+        let mut board = Board::construct_starting_board();
         let square = Square::new("a2");
         board.clear_piece(&square);
         assert!(board.get_piece(&square).is_none());
@@ -408,7 +609,7 @@ mod tests {
 
     #[test]
     fn test_remove_piece() {
-        let mut board = Board::new().starting_board();
+        let mut board = Board::construct_starting_board();
         let square = Square::new("a2");
 
         // Should do nothing, since there is a white pawn here, not a black pawn
@@ -424,7 +625,7 @@ mod tests {
 
     #[test]
     fn test_board_display() {
-        let board = Board::new().starting_board();
+        let board = Board::construct_starting_board();
         let correct =
             "♖♘♗♕♔♗♘♖\n♙♙♙♙♙♙♙♙\n--------\n--------\n--------\n--------\n♟♟♟♟♟♟♟♟\n♜♞♝♛♚♝♞♜\n";
         assert_eq!(board.to_string(), correct);
@@ -432,7 +633,7 @@ mod tests {
 
     #[test]
     fn test_make_unmake_move_single() {
-        let mut board = Board::new().starting_board();
+        let mut board = Board::construct_starting_board();
         let start = Square::new("a2");
         let dest = Square::new("a3");
         let ply = Ply::new(start, dest);
@@ -458,7 +659,7 @@ mod tests {
     #[test]
     fn test_make_unmake_move_double() {
         // Make and unmake two moves in a row
-        let mut board = Board::new().starting_board();
+        let mut board = Board::construct_starting_board();
         let start = Square::new("a2");
         let dest1 = Square::new("a3");
         let dest2 = Square::new("a4");
@@ -502,7 +703,7 @@ mod tests {
 
     #[test]
     fn test_make_unmake_move_capture() {
-        let mut board = Board::new().starting_board();
+        let mut board = Board::construct_starting_board();
         let start = Square::new("a2"); // White Pawn
         let dest = Square::new("a7"); // Black Pawn
         let ply = Ply::new(start, dest);
