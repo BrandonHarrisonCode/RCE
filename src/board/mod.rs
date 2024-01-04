@@ -611,16 +611,8 @@ mod tests {
         let board = Board::construct_starting_board();
         let moves = board.get_moves_for_piece(&Square::new("a2")); // pawn
         let correct = [
-            Ply {
-                start: Square::new("a2"),
-                dest: Square::new("a3"),
-                captured_piece: None,
-            },
-            Ply {
-                start: Square::new("a2"),
-                dest: Square::new("a4"),
-                captured_piece: None,
-            },
+            Ply::new(Square::new("a2"), Square::new("a3")),
+            Ply::new(Square::new("a2"), Square::new("a4")),
         ];
 
         assert_eq!(moves.unwrap(), correct);

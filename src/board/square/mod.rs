@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Square {
     pub rank: u8,
     pub file: u8,
