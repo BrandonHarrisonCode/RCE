@@ -5,12 +5,14 @@ extern crate derive_more;
 mod board;
 mod utils;
 
+use board::Board;
+
 const TITLE: &str = "Rust Chess Engine";
 const SHORT_TITLE: &str = "RCE";
 
 fn main() {
     println!("{TITLE} - {SHORT_TITLE}");
-    let mut board = board::create_starting_board();
+    let mut board = Board::new().starting_board();
 
     println!("{}", board);
 
