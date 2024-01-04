@@ -53,7 +53,7 @@ impl Board {
     /// # Examples
     /// ```
     /// // Create empty board
-    /// let board = Board::builder(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /// let board = Board::from_fen("8/8/8/8/8/8/8/8 w - - 0 1");
     /// ```
     #[allow(dead_code)]
     pub fn from_fen(fen: &str) -> Board {
@@ -106,7 +106,7 @@ impl Board {
             'b' => false,
             _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
         };
-
+        
         let mut w_kingside_castling: bool = false;
         let mut b_kingside_castling: bool = false;
         let mut w_queenside_castling: bool = false;
@@ -179,6 +179,18 @@ impl Board {
         }
     }
 
+
+    /// Returns a boolean representing whether or not it is white's turn
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(board.is_white_turn());
+    /// ```
+    #[allow(dead_code)]
+    pub fn is_white_turn(&self) -> bool {
+        self.is_white_turn
+    }
 
     /// Returns a PieceKind Option of the piece currently occupying `square`
     ///
@@ -388,6 +400,7 @@ impl Board {
         }
         self.add_piece(&new_move.dest, &start_piece_kind);
 
+        self.is_white_turn = !self.is_white_turn;
         self.history.push(new_move);
     }
 
@@ -414,6 +427,8 @@ impl Board {
         if let Some(caputre_piece) = self.history.pop().unwrap().captured_piece {
             self.add_piece(&old_move.dest, &caputre_piece);
         }
+
+        self.is_white_turn = !self.is_white_turn;
     }
 }
 
@@ -632,11 +647,25 @@ mod tests {
     }
 
     #[test]
+    fn test_is_white_turn() {
+        let board = Board::construct_starting_board();
+        assert_eq!(board.is_white_turn(), true);
+    }
+
+    #[test]
+    fn test_is_black_turn() {
+        let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
+        assert_eq!(board.is_white_turn(), false);
+    }
+
+    #[test]
     fn test_make_unmake_move_single() {
         let mut board = Board::construct_starting_board();
         let start = Square::new("a2");
         let dest = Square::new("a3");
         let ply = Ply::new(start, dest);
+
+        assert!(board.is_white_turn);
 
         assert!(board.get_piece(&dest).is_none());
         board.make_move(ply);
@@ -644,6 +673,7 @@ mod tests {
             board.get_piece(&dest).unwrap(),
             PieceKind::Pawn(Color::White)
         );
+        assert!(!board.is_white_turn);
 
         assert!(board.get_piece(&start).is_none());
 
@@ -652,6 +682,7 @@ mod tests {
             board.get_piece(&start).unwrap(),
             PieceKind::Pawn(Color::White)
         );
+        assert!(board.is_white_turn);
 
         assert!(board.get_piece(&dest).is_none());
     }
@@ -666,6 +697,8 @@ mod tests {
         let ply1 = Ply::new(start, dest1);
         let ply2 = Ply::new(dest1, dest2);
 
+        assert!(board.is_white_turn);
+
         assert!(board.get_piece(&dest1).is_none());
         assert!(board.get_piece(&dest2).is_none());
         board.make_move(ply1);
@@ -675,6 +708,7 @@ mod tests {
         );
         assert!(board.get_piece(&start).is_none());
         assert!(board.get_piece(&dest2).is_none());
+        assert!(!board.is_white_turn);
 
         board.make_move(ply2);
         assert_eq!(
@@ -683,6 +717,7 @@ mod tests {
         );
         assert!(board.get_piece(&start).is_none());
         assert!(board.get_piece(&dest1).is_none());
+        assert!(board.is_white_turn);
 
         board.unmake_move(ply2);
         assert_eq!(
@@ -691,6 +726,7 @@ mod tests {
         );
         assert!(board.get_piece(&dest2).is_none());
         assert!(board.get_piece(&start).is_none());
+        assert!(!board.is_white_turn);
 
         board.unmake_move(ply1);
         assert_eq!(
@@ -699,6 +735,7 @@ mod tests {
         );
         assert!(board.get_piece(&dest2).is_none());
         assert!(board.get_piece(&dest1).is_none());
+        assert!(board.is_white_turn);
     }
 
     #[test]
@@ -707,6 +744,7 @@ mod tests {
         let start = Square::new("a2"); // White Pawn
         let dest = Square::new("a7"); // Black Pawn
         let ply = Ply::new(start, dest);
+        assert!(board.is_white_turn);
 
         assert_eq!(
             board.get_piece(&start).unwrap(),
@@ -722,6 +760,7 @@ mod tests {
             PieceKind::Pawn(Color::White)
         );
         assert!(board.get_piece(&start).is_none());
+        assert!(!board.is_white_turn);
 
         board.unmake_move(ply);
         assert_eq!(
@@ -732,5 +771,6 @@ mod tests {
             board.get_piece(&dest).unwrap(),
             PieceKind::Pawn(Color::Black)
         );
+        assert!(board.is_white_turn);
     }
 }
