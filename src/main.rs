@@ -16,7 +16,7 @@ fn main() {
 
     println!("{}", board);
 
-    let moves = board.get_all_moves();
+    let moves = board.get_legal_moves();
 
     println!("{:?}", moves);
 

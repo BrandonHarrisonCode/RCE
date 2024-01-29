@@ -17,7 +17,7 @@ impl Piece for King {
     }
 
     fn get_moveset(square: &Square) -> Vec<Ply> {
-        vec![
+        let mut moveset = vec![
             Ply::new(*square, *square + Direction::North.unit_square()),
             Ply::new(*square, *square + Direction::East.unit_square()),
             Ply::new(*square, *square + Direction::South.unit_square()),
@@ -26,7 +26,19 @@ impl Piece for King {
             Ply::new(*square, *square + Direction::NorthWest.unit_square()),
             Ply::new(*square, *square + Direction::SouthEast.unit_square()),
             Ply::new(*square, *square + Direction::SouthWest.unit_square()),
-        ]
+        ];
+
+        if *square == Square::new("e1") {
+            moveset.push(Ply::builder(*square, Square::new("g1")).is_castles(true).build());
+            moveset.push(Ply::builder(*square, Square::new("c1")).is_castles(true).build());
+        }
+
+        if *square == Square::new("e8") {
+            moveset.push(Ply::builder(*square, Square::new("g8")).is_castles(true).build());
+            moveset.push(Ply::builder(*square, Square::new("c8")).is_castles(true).build());
+        }
+
+        moveset
     }
 }
 
@@ -215,6 +227,90 @@ mod tests {
             Ply::new(start_square, Square::new("g6")),
             Ply::new(start_square, Square::new("g7")),
             Ply::new(start_square, Square::new("h7")),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_king_get_moveset_white_e1() {
+        let piece = PieceKind::King(Color::White);
+        let start_square = Square::new("e1");
+
+        let result = piece.get_moveset(&start_square);
+        let correct = vec![
+            Ply::new(start_square, Square::new("d1")),
+            Ply::new(start_square, Square::new("d2")),
+            Ply::new(start_square, Square::new("e2")),
+            Ply::new(start_square, Square::new("f1")),
+            Ply::new(start_square, Square::new("f2")),
+            Ply::builder(start_square, Square::new("g1")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("c1")).is_castles(true).build(),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_king_get_moveset_black_e1() {
+        let piece = PieceKind::King(Color::White);
+        let start_square = Square::new("e1");
+
+        let result = piece.get_moveset(&start_square);
+        let correct = vec![
+            Ply::new(start_square, Square::new("d1")),
+            Ply::new(start_square, Square::new("d2")),
+            Ply::new(start_square, Square::new("e2")),
+            Ply::new(start_square, Square::new("f1")),
+            Ply::new(start_square, Square::new("f2")),
+            Ply::builder(start_square, Square::new("g1")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("c1")).is_castles(true).build(),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_king_get_moveset_white_e8() {
+        let piece = PieceKind::King(Color::White);
+        let start_square = Square::new("e8");
+
+        let result = piece.get_moveset(&start_square);
+        let correct = vec![
+            Ply::new(start_square, Square::new("d8")),
+            Ply::new(start_square, Square::new("d7")),
+            Ply::new(start_square, Square::new("e7")),
+            Ply::new(start_square, Square::new("f8")),
+            Ply::new(start_square, Square::new("f7")),
+            Ply::builder(start_square, Square::new("g8")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("c8")).is_castles(true).build(),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_king_get_moveset_black_e8() {
+        let piece = PieceKind::King(Color::White);
+        let start_square = Square::new("e8");
+
+        let result = piece.get_moveset(&start_square);
+        let correct = vec![
+            Ply::new(start_square, Square::new("d8")),
+            Ply::new(start_square, Square::new("d7")),
+            Ply::new(start_square, Square::new("e7")),
+            Ply::new(start_square, Square::new("f8")),
+            Ply::new(start_square, Square::new("f7")),
+            Ply::builder(start_square, Square::new("g8")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("c8")).is_castles(true).build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();

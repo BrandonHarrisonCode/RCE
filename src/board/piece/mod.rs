@@ -64,7 +64,7 @@ impl PieceKind {
         }
     }
 
-    fn get_moveset(&self, square: &Square) -> Vec<Ply> {
+    pub fn get_moveset(&self, square: &Square) -> Vec<Ply> {
         let moveset = match self {
             PieceKind::Pawn(_c) => Pawn::get_moveset(square),
             PieceKind::King(_c) => King::get_moveset(square),
@@ -84,19 +84,6 @@ impl PieceKind {
                     && mv.start != mv.dest
             })
             .collect::<Vec<Ply>>()
-    }
-
-    pub fn get_all_legal_moves(&self, square: &Square) -> Vec<Ply> {
-        self.get_moveset(square)
-            .into_iter()
-            .filter(|mv| {
-                mv.start.rank < 8
-                    && mv.start.file < 8
-                    && mv.dest.rank < 8
-                    && mv.dest.file < 8
-                    && mv.start != mv.dest
-            })
-            .collect()
     }
 }
 
@@ -180,18 +167,6 @@ mod tests {
         let piece1 = PieceKind::Pawn(Color::White);
         let piece2 = PieceKind::Queen(Color::Black);
         assert_ne!(piece1, piece2);
-    }
-
-    #[test]
-    fn test_get_all_legal_moves() {
-        let piece = PieceKind::Pawn(Color::White);
-        let start_square = Square::new("h6");
-        let dest_square = Square::new("h7");
-
-        let result = piece.get_all_legal_moves(&start_square);
-        let correct = vec![Ply::new(start_square, dest_square)];
-
-        assert_eq!(result, correct);
     }
 
     #[test]

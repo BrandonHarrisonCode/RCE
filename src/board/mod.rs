@@ -274,7 +274,7 @@ impl Board {
     #[allow(dead_code)]
     pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Ply>> {
         self.get_piece(square)
-            .map(|x| x.get_all_legal_moves(square))
+            .map(|x| x.get_moveset(square))
     }
 
     /// Returns a list of all potential moves for the current side
@@ -284,19 +284,73 @@ impl Board {
     /// let board = Board::construct_starting_board();
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
-    pub fn get_all_moves(&self) -> Vec<Ply> {
+    fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
         for i in (0..8).rev() {
             for j in 0..8 {
                 let square = &Square { rank: i, file: j };
                 if let Some(piece) = self.get_piece(square) {
                     if !self.is_white_turn ^ (piece.get_color() == Color::White) {
-                        all_moves.append(&mut piece.get_all_legal_moves(square));
+                        all_moves.append(&mut piece.get_moveset(square));
                     }
                 }
             }
         }
+
         all_moves
+    }
+
+    /// Returns a list of all legal moves for the current side
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// let movelist = board.get_all_moves(Square::new("a2"));
+    /// ```
+    pub fn get_legal_moves(&self) -> Vec<Ply> {
+        self.filter_moves(self.get_all_moves())
+    }
+
+
+    /// Filters a list of moves to only include legal moves
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board()
+    /// let movelist = board.get_all_moves(Square::new("e1"));
+    /// let legal_moves = filter_moves(&board, movelist);
+    /// ```
+    fn filter_moves(&self, moves: Vec<Ply>) -> Vec<Ply> {
+        moves.into_iter().filter(|mv| self.is_legal_move(mv)).collect()
+    }
+
+    /// Returns a boolean representing whether or not a given move is legal
+    /// 
+    /// # Examples
+    /// ```
+    /// let ply = Ply(Square::new("e2"), Square::new("e9"));
+    /// assert!(!board.is_legal_move(ply));
+    /// ```
+    fn is_legal_move(&self, ply: &Ply) -> bool {
+        if ply.start.rank >= 8 || ply.start.file >= 8 || ply.dest.rank >= 8 || ply.dest.file >= 8 {
+            return false;
+        }
+
+        let mut board_copy = self.clone();
+        board_copy.make_move(*ply);
+        !board_copy.is_in_check()
+    }
+
+    /// Returns a boolean representing whether or not the current side is in check
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(!board.is_in_check());
+    /// ```
+    pub fn is_in_check(&self) -> bool {
+        let enemy_moves = self.get_all_moves();
+        enemy_moves.into_iter().any(|mv| mv.captured_piece.is_some_and(|pc| matches!(pc, PieceKind::King(_c))))
     }
 
     /// Returns a HashMap of PieceKinds to a reference of their corresponding bitboard
