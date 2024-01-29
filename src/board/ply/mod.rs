@@ -8,6 +8,7 @@ pub struct Ply {
     pub dest: Square,
     pub captured_piece: Option<PieceKind>,
     pub promoted_to: Option<PieceKind>,
+    pub is_castle: bool,
 }
 impl Ply {
     pub fn new(start: Square, dest: Square) -> Ply {
@@ -16,6 +17,7 @@ impl Ply {
             dest,
             captured_piece: None,
             promoted_to: None,
+            is_castle: false,
         }
     }
 
@@ -26,6 +28,7 @@ impl Ply {
             dest,
             captured_piece: None,
             promoted_to: None,
+            is_castles: false,
         }
     }
 }
@@ -52,36 +55,43 @@ pub struct PlyBuilder {
     dest: Square,
     captured_piece: Option<PieceKind>,
     promoted_to: Option<PieceKind>,
+    is_castles: bool,
 }
 
 #[allow(dead_code)]
 impl PlyBuilder {
-    pub fn start(mut self, start: Square) -> PlyBuilder {
+    pub fn start(&mut self, start: Square) -> &mut Self {
         self.start = start;
         self
     }
 
-    pub fn dest(mut self, dest: Square) -> PlyBuilder {
+    pub fn dest(&mut self, dest: Square) -> &mut Self {
         self.dest = dest;
         self
     }
 
-    pub fn captured(mut self, captured_piece: PieceKind) -> PlyBuilder {
+    pub fn captured(&mut self, captured_piece: PieceKind) -> &mut Self {
         self.captured_piece = Some(captured_piece);
         self
     }
 
-    pub fn promoted_to(mut self, promoted_to: PieceKind) -> PlyBuilder {
+    pub fn promoted_to(&mut self, promoted_to: PieceKind) -> &mut Self {
         self.promoted_to = Some(promoted_to);
         self
     }
 
-    pub fn build(self) -> Ply {
+    pub fn is_castles(&mut self, is_castle: bool) -> &mut Self {
+        self.is_castles = is_castle;
+        self
+    }
+
+    pub fn build(&self) -> Ply {
         Ply {
             start: self.start,
             dest: self.dest,
             captured_piece: self.captured_piece,
             promoted_to: self.promoted_to,
+            is_castle: self.is_castles,
         }
     }
 }
@@ -205,5 +215,16 @@ mod tests {
         assert_eq!(ply.dest, dest);
         assert_eq!(ply.captured_piece, Some(captured_piece));
         assert_eq!(ply.promoted_to, Some(promoted_to));
+    }
+
+    #[test]
+    fn test_builder_is_castles() {
+        let start = Square::new("e1");
+        let dest = Square::new("g1");
+        let ply = Ply::builder(start, dest).is_castles(true).build();
+
+        assert_eq!(ply.start, start);
+        assert_eq!(ply.dest, dest);
+        assert_eq!(ply.is_castle, true);
     }
 }
