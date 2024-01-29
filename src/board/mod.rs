@@ -332,10 +332,17 @@ impl Board {
     /// assert!(!board.is_legal_move(ply));
     /// ```
     fn is_legal_move(&self, ply: &Ply) -> bool {
+        // Only allow moves within the board
         if ply.start.rank >= 8 || ply.start.file >= 8 || ply.dest.rank >= 8 || ply.dest.file >= 8 {
             return false;
         }
 
+        // Don't allow capturing your own pieces
+        if self.get_piece(&ply.dest).is_some_and(|pc| pc.get_color() == self.get_piece(&ply.start).unwrap().get_color()) {
+            return false;
+        }
+
+        // Don't allow leaving your king in check
         let mut board_copy = self.clone();
         board_copy.make_move(*ply);
         !board_copy.is_in_check()
