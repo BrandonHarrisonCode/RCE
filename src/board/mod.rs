@@ -314,7 +314,7 @@ impl Board {
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_legal_moves(&self) -> Vec<Ply> {
-        self.filter_moves(self.get_all_moves())
+        self.filter_moves(self.get_all_moves(), 1)
     }
 
     /// Filters a list of moves to only include legal moves
@@ -325,10 +325,10 @@ impl Board {
     /// let movelist = board.get_all_moves(Square::new("e1"));
     /// let legal_moves = filter_moves(&board, movelist);
     /// ```
-    fn filter_moves(&self, moves: Vec<Ply>) -> Vec<Ply> {
+    fn filter_moves(&self, moves: Vec<Ply>, depth: u64) -> Vec<Ply> {
         moves
             .into_iter()
-            .filter(|mv| self.is_legal_move(mv))
+            .filter(|mv| self.is_legal_move(mv, depth))
             .collect()
     }
 
@@ -339,7 +339,7 @@ impl Board {
     /// let ply = Ply(Square::new("e2"), Square::new("e9"));
     /// assert!(!board.is_legal_move(ply));
     /// ```
-    fn is_legal_move(&self, ply: &Ply) -> bool {
+    fn is_legal_move(&self, ply: &Ply, depth: u64) -> bool {
         // Only allow moves within the board
         if ply.start.rank >= 8 || ply.start.file >= 8 || ply.dest.rank >= 8 || ply.dest.file >= 8 {
             return false;
@@ -364,17 +364,21 @@ impl Board {
             return false;
         }
 
+        if depth == 0 {
+            return true;
+        }
+
         // Don't allow leaving your king in check
         let mut board_copy = self.clone();
         board_copy.make_move(*ply);
         board_copy.skip_turn();
-        !board_copy.is_in_check()
+        !board_copy.is_in_check_helper(depth - 1)
     }
 
     pub fn skip_turn(&mut self) {
         self.is_white_turn = !self.is_white_turn;
     }
-
+    
     pub fn undo_skip_turn(&mut self) {
         self.skip_turn();
     }
@@ -386,10 +390,15 @@ impl Board {
     /// let board = Board::construct_starting_board();
     /// assert!(!board.is_in_check());
     /// ```
+    #[allow(dead_code)]
     pub fn is_in_check(&self) -> bool {
+        self.is_in_check_helper(1)
+    }
+    
+    pub fn is_in_check_helper(&self, depth: u64) -> bool {
         let mut board_copy = self.clone();
         board_copy.skip_turn();
-        let enemy_moves = board_copy.get_all_moves();
+        let enemy_moves = board_copy.filter_moves(board_copy.get_all_moves(), depth);
         let result = enemy_moves.into_iter().any( |mv| mv.captured_piece.is_some_and( |pc| matches!(pc, PieceKind::King(c) if c != board_copy.get_piece(&mv.start).unwrap().get_color())));
         board_copy.undo_skip_turn();
 
@@ -966,10 +975,83 @@ mod tests {
     }
 
     #[test]
-    fn test_get_legal_moves_count() {
+    fn test_get_legal_moves_count_start() {
+        let board = Board::construct_starting_board();
+        let result = board.get_legal_moves().len();
+        let correct = 20;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_1() {
         let board = Board::from_fen("2k1b3/8/8/8/2K5/5Q2/5PPP/5RN1 w - - 0 1");
         let result = board.get_legal_moves().len();
         let correct = 39;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_2() {
+        let board = Board::from_fen("8/1K6/2Q5/8/8/6q1/2k5/8 b - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 7;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_3() {
+        let board = Board::from_fen("8/1K6/2Q5/8/8/6q1/2k5/8 b - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 7;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_4() {
+        let board = Board::from_fen("8/1k6/2q5/5b2/8/R5Q1/2K5/3N4 w - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 3;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_5() {
+        let board = Board::from_fen("8/1k6/2q5/8/8/R5Q1/2K5/3N4 w - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 8;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_6() {
+        let board = Board::from_fen("rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 50;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_7() {
+        let board = Board::from_fen("rnbqkbnr/8/5B2/Q2B4/3R2N1/2N5/1K6/7R w kq - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 72;
+
+        assert_eq!(result, correct);
+    }
+
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_8() {
+        let board = Board::from_fen("5b2/r7/1qn2B1n/1Q6/3R2N1/2N3k1/1K2Br2/3b3R w - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 44;
 
         assert_eq!(result, correct);
     }
