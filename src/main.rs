@@ -22,7 +22,7 @@ fn main() {
 
     for pmove in moves {
         board.make_move(pmove);
-        println!("{}", board);
+        println!("{}:\n{}", pmove, board);
         // println!("Iterating moves...");
         // let new_moves = board.get_all_moves();
         // for npmove in new_moves {

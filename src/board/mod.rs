@@ -1,16 +1,16 @@
+use crate::utils::FENInstruction;
 use std::collections::HashMap;
 use std::fmt;
-use crate::utils::FENInstruction;
 
 mod boardbuilder;
 pub mod piece;
 mod ply;
 mod square;
 
+use boardbuilder::BoardBuilder;
 use piece::{Color, PieceKind};
 use ply::Ply;
 use square::Square;
-use boardbuilder::BoardBuilder;
 
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq)]
@@ -106,7 +106,7 @@ impl Board {
             'b' => false,
             _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
         };
-        
+
         let mut w_kingside_castling: bool = false;
         let mut b_kingside_castling: bool = false;
         let mut w_queenside_castling: bool = false;
@@ -121,7 +121,7 @@ impl Board {
                 '-' => (),
                 _ => panic!("Unknown FEN castling notation: {}", chr),
             };
-        };
+        }
 
         // TODO: Castling rights
         // TODO: En passant target square
@@ -179,9 +179,8 @@ impl Board {
         }
     }
 
-
     /// Returns a boolean representing whether or not it is white's turn
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
@@ -193,11 +192,11 @@ impl Board {
     }
 
     /// Returns a boolean representing whether or not the specified player has kingside castling rights
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `white` - A boolean representing whether or not we are checking white or black's castling rights
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
@@ -213,11 +212,11 @@ impl Board {
     }
 
     /// Returns a boolean representing whether or not the specified player has queenside castling rights
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `white` - A boolean representing whether or not we are checqueen white or black's castling rights
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
@@ -273,8 +272,7 @@ impl Board {
     /// ```
     #[allow(dead_code)]
     pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Ply>> {
-        self.get_piece(square)
-            .map(|x| x.get_moveset(square))
+        self.get_piece(square).map(|x| x.get_moveset(square))
     }
 
     /// Returns a list of all potential moves for the current side
@@ -291,7 +289,15 @@ impl Board {
                 let square = &Square { rank: i, file: j };
                 if let Some(piece) = self.get_piece(square) {
                     if !self.is_white_turn ^ (piece.get_color() == Color::White) {
-                        all_moves.append(&mut piece.get_moveset(square));
+                        let mut square_moveset = piece
+                            .get_moveset(square)
+                            .into_iter()
+                            .map(|mut mv| {
+                                mv.captured_piece = self.get_piece(&mv.dest);
+                                mv
+                            })
+                            .collect::<Vec<Ply>>();
+                        all_moves.append(&mut square_moveset);
                     }
                 }
             }
@@ -311,9 +317,8 @@ impl Board {
         self.filter_moves(self.get_all_moves())
     }
 
-
     /// Filters a list of moves to only include legal moves
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board()
@@ -321,11 +326,14 @@ impl Board {
     /// let legal_moves = filter_moves(&board, movelist);
     /// ```
     fn filter_moves(&self, moves: Vec<Ply>) -> Vec<Ply> {
-        moves.into_iter().filter(|mv| self.is_legal_move(mv)).collect()
+        moves
+            .into_iter()
+            .filter(|mv| self.is_legal_move(mv))
+            .collect()
     }
 
     /// Returns a boolean representing whether or not a given move is legal
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let ply = Ply(Square::new("e2"), Square::new("e9"));
@@ -338,26 +346,54 @@ impl Board {
         }
 
         // Don't allow capturing your own pieces
-        if self.get_piece(&ply.dest).is_some_and(|pc| pc.get_color() == self.get_piece(&ply.start).unwrap().get_color()) {
+        if self
+            .get_piece(&ply.dest)
+            .is_some_and(|pc| pc.get_color() == self.get_piece(&ply.start).unwrap().get_color())
+        {
+            return false;
+        }
+
+        // Don't allow moving through pieces unless you're a knight
+        if !matches!(self.get_piece(&ply.start).unwrap(), PieceKind::Knight(_c))
+            && ply
+                .start
+                .get_transit_squares(&ply.dest)
+                .iter()
+                .any(|sq| self.get_piece(sq).is_some())
+        {
             return false;
         }
 
         // Don't allow leaving your king in check
         let mut board_copy = self.clone();
         board_copy.make_move(*ply);
+        board_copy.skip_turn();
         !board_copy.is_in_check()
     }
 
+    pub fn skip_turn(&mut self) {
+        self.is_white_turn = !self.is_white_turn;
+    }
+
+    pub fn undo_skip_turn(&mut self) {
+        self.skip_turn();
+    }
+
     /// Returns a boolean representing whether or not the current side is in check
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
     /// assert!(!board.is_in_check());
     /// ```
     pub fn is_in_check(&self) -> bool {
-        let enemy_moves = self.get_all_moves();
-        enemy_moves.into_iter().any(|mv| mv.captured_piece.is_some_and(|pc| matches!(pc, PieceKind::King(_c))))
+        let mut board_copy = self.clone();
+        board_copy.skip_turn();
+        let enemy_moves = board_copy.get_all_moves();
+        let result = enemy_moves.into_iter().any( |mv| mv.captured_piece.is_some_and( |pc| matches!(pc, PieceKind::King(c) if c != board_copy.get_piece(&mv.start).unwrap().get_color())));
+        board_copy.undo_skip_turn();
+
+        result
     }
 
     /// Returns a HashMap of PieceKinds to a reference of their corresponding bitboard
@@ -909,5 +945,32 @@ mod tests {
             PieceKind::Pawn(Color::Black)
         );
         assert!(board.is_white_turn);
+    }
+
+    #[test]
+    fn test_is_not_in_check() {
+        let board = Board::construct_starting_board();
+        assert_eq!(board.is_in_check(), false);
+    }
+
+    #[test]
+    fn test_is_in_check_queen_white() {
+        let board = Board::from_fen("8/1k6/2q5/8/8/2K3Q1/8/8 w - - 0 1");
+        assert!(board.is_in_check());
+    }
+
+    #[test]
+    fn test_is_in_check_queen_black() {
+        let board = Board::from_fen("8/1K6/2Q5/8/8/2k3q1/8/8 b - - 0 1");
+        assert!(board.is_in_check());
+    }
+
+    #[test]
+    fn test_get_legal_moves_count() {
+        let board = Board::from_fen("2k1b3/8/8/8/2K5/5Q2/5PPP/5RN1 w - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 39;
+
+        assert_eq!(result, correct);
     }
 }
