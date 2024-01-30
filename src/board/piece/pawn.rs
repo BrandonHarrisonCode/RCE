@@ -21,14 +21,29 @@ impl Piece for Pawn {
     /// [ ] Takes diagonally forward
     /// [ ] En passant
     /// [ ] Promotion
-    fn get_moveset(square: &Square) -> Vec<Ply> {
-        let mut output: Vec<Ply> =
-            vec![Ply::new(*square, *square + Direction::North.unit_square())];
+    fn get_moveset(square: &Square, color: &Color) -> Vec<Ply> {
+        let (direction, starting_rank) = match color {
+            Color::White => (Direction::North, 1),
+            Color::Black => (Direction::South, 6),
+        };
+        let mut output: Vec<Ply> = vec![
+            Ply::new(*square, *square + direction.unit_square()),
+            Ply::builder(
+                *square,
+                *square + direction.unit_square() + Direction::East.unit_square(),
+            )
+            .build(),
+            Ply::builder(
+                *square,
+                *square + direction.unit_square() + Direction::West.unit_square(),
+            )
+            .build(),
+        ];
 
-        if square.rank == 1 {
+        if square.rank == starting_rank {
             output.push(Ply::new(
                 *square,
-                *square + Direction::North.unit_square() + Direction::North.unit_square(),
+                *square + direction.unit_square() + direction.unit_square(),
             ));
         }
         output
@@ -40,6 +55,7 @@ impl Piece for Pawn {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
 
     #[test]
     fn test_pawn_derived_traits() {
@@ -114,10 +130,13 @@ mod tests {
         let result = piece.get_moveset(&start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a3")),
+            Ply::new(start_square, Square::new("b3")),
             Ply::new(start_square, Square::new("a4")),
         ];
 
-        assert_eq!(result, correct);
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
     }
 
     #[test]
@@ -128,21 +147,79 @@ mod tests {
         let result = piece.get_moveset(&start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("d3")),
+            Ply::new(start_square, Square::new("c3")),
+            Ply::new(start_square, Square::new("e3")),
             Ply::new(start_square, Square::new("d4")),
         ];
 
-        assert_eq!(result, correct);
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
     }
 
     #[test]
     fn test_pawn_get_moveset_white_h6() {
         let piece = PieceKind::Pawn(Color::White);
         let start_square = Square::new("h6");
-        let dest_square = Square::new("h7");
 
         let result = piece.get_moveset(&start_square);
-        let correct = vec![Ply::new(start_square, dest_square)];
+        let correct = vec![
+            Ply::new(start_square, Square::new("h7")),
+            Ply::new(start_square, Square::new("g7")),
+        ];
 
-        assert_eq!(result, correct);
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_pawn_get_moveset_black_a3() {
+        let piece = PieceKind::Pawn(Color::Black);
+        let start_square = Square::new("a3");
+
+        let result = piece.get_moveset(&start_square);
+        let correct = vec![
+            Ply::new(start_square, Square::new("a2")),
+            Ply::new(start_square, Square::new("b2")),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_pawn_get_moveset_black_d5() {
+        let piece = PieceKind::Pawn(Color::Black);
+        let start_square = Square::new("d5");
+
+        let result = piece.get_moveset(&start_square);
+        let correct = vec![
+            Ply::new(start_square, Square::new("d4")),
+            Ply::new(start_square, Square::new("c4")),
+            Ply::new(start_square, Square::new("e4")),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_pawn_get_moveset_black_h7() {
+        let piece = PieceKind::Pawn(Color::Black);
+        let start_square = Square::new("h7");
+
+        let result = piece.get_moveset(&start_square);
+        let correct = vec![
+            Ply::new(start_square, Square::new("h6")),
+            Ply::new(start_square, Square::new("h5")),
+            Ply::new(start_square, Square::new("g6")),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
     }
 }

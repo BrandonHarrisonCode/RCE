@@ -66,12 +66,12 @@ impl PieceKind {
 
     pub fn get_moveset(&self, square: &Square) -> Vec<Ply> {
         let moveset = match self {
-            PieceKind::Pawn(_c) => Pawn::get_moveset(square),
-            PieceKind::King(_c) => King::get_moveset(square),
-            PieceKind::Queen(_c) => Queen::get_moveset(square),
-            PieceKind::Rook(_c) => Rook::get_moveset(square),
-            PieceKind::Bishop(_c) => Bishop::get_moveset(square),
-            PieceKind::Knight(_c) => Knight::get_moveset(square),
+            PieceKind::Pawn(color) => Pawn::get_moveset(square, color),
+            PieceKind::King(color) => King::get_moveset(square, color),
+            PieceKind::Queen(color) => Queen::get_moveset(square, color),
+            PieceKind::Rook(color) => Rook::get_moveset(square, color),
+            PieceKind::Bishop(color) => Bishop::get_moveset(square, color),
+            PieceKind::Knight(color) => Knight::get_moveset(square, color),
         };
 
         moveset
@@ -90,7 +90,7 @@ impl PieceKind {
 pub trait Piece: Clone + PartialEq + Eq {
     fn get_piece_symbol(color: &Color) -> &'static str;
     // Assumes always white?
-    fn get_moveset(square: &Square) -> Vec<Ply>;
+    fn get_moveset(square: &Square, color: &Color) -> Vec<Ply>;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

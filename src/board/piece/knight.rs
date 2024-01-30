@@ -16,7 +16,7 @@ impl Piece for Knight {
         }
     }
 
-    fn get_moveset(square: &Square) -> Vec<Ply> {
+    fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
         vec![
             Ply::new(
                 *square,

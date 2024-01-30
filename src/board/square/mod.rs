@@ -223,7 +223,7 @@ pub enum Direction {
 }
 
 impl Direction {
-    pub fn unit_square(self) -> SquareDelta {
+    pub fn unit_square(&self) -> SquareDelta {
         match self {
             Self::North => SquareDelta {
                 rank_delta: 1,

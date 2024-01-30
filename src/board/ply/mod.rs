@@ -8,7 +8,7 @@ pub struct Ply {
     pub dest: Square,
     pub captured_piece: Option<PieceKind>,
     pub promoted_to: Option<PieceKind>,
-    pub is_castle: bool,
+    pub is_castles: bool,
 }
 impl Ply {
     pub fn new(start: Square, dest: Square) -> Ply {
@@ -17,7 +17,7 @@ impl Ply {
             dest,
             captured_piece: None,
             promoted_to: None,
-            is_castle: false,
+            is_castles: false,
         }
     }
 
@@ -42,6 +42,10 @@ impl fmt::Display for Ply {
 
         if let Some(promoted_to) = self.promoted_to {
             write!(f, " (promoted to: {})", promoted_to)?;
+        }
+
+        if self.is_castles {
+            write!(f, " (castles)")?;
         }
 
         Ok(())
@@ -91,7 +95,7 @@ impl PlyBuilder {
             dest: self.dest,
             captured_piece: self.captured_piece,
             promoted_to: self.promoted_to,
-            is_castle: self.is_castles,
+            is_castles: self.is_castles,
         }
     }
 }
@@ -225,6 +229,6 @@ mod tests {
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
-        assert_eq!(ply.is_castle, true);
+        assert_eq!(ply.is_castles, true);
     }
 }

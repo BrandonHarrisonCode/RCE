@@ -16,7 +16,7 @@ impl Piece for Rook {
         }
     }
 
-    fn get_moveset(square: &Square) -> Vec<Ply> {
+    fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
         let move_mask = square.get_rank_mask() | square.get_file_mask();
         let squares = Square::get_squares_from_mask(move_mask);
 

@@ -341,7 +341,13 @@ impl Board {
     /// ```
     fn is_legal_move(&self, ply: &Ply, depth: u64) -> bool {
         // Only allow moves within the board
-        if ply.start.rank >= 8 || ply.start.file >= 8 || ply.dest.rank >= 8 || ply.dest.file >= 8 {
+        if ply.start.rank >= 8
+            || ply.start.file >= 8
+            || ply.dest.rank >= 8
+            || ply.dest.file >= 8
+            || ply.start == ply.dest
+            || self.get_piece(&ply.start).is_none()
+        {
             return false;
         }
 
@@ -354,12 +360,50 @@ impl Board {
         }
 
         // Don't allow moving through pieces unless you're a knight
-        if !matches!(self.get_piece(&ply.start).unwrap(), PieceKind::Knight(_c))
-            && ply
-                .start
-                .get_transit_squares(&ply.dest)
-                .iter()
-                .any(|sq| self.get_piece(sq).is_some())
+        if !ply.is_castles
+            && !matches!(self.get_piece(&ply.start).unwrap(), PieceKind::Knight(_c))
+            && !self.clear_between(&ply.start, &ply.dest)
+        {
+            return false;
+        }
+
+        // Don't allow pawns to capture forwards
+        // Don't allow pawns to move diagonally without capturing
+        if matches!(self.get_piece(&ply.start).unwrap(), PieceKind::Pawn(_c)) {
+            if ply.start.file == ply.dest.file {
+                if self.get_piece(&ply.dest).is_some() {
+                    return false;
+                }
+            } else if self.get_piece(&ply.dest).is_none() {
+                return false;
+            }
+        }
+
+        // Don't allow illegal castling
+        if ply.is_castles
+            && !(match &ply.dest {
+                Square { rank: 0, file: 6 } => {
+                    self.has_kingside_castle(true)
+                        && self.clear_between(&Square::new("e1"), &Square::new("h1"))
+                        && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))
+                }
+                Square { rank: 0, file: 2 } => {
+                    self.has_queenside_castle(true)
+                        && self.clear_between(&Square::new("e1"), &Square::new("a1"))
+                        && self.no_checks_between(&Square::new("e1"), &Square::new("c1"))
+                }
+                Square { rank: 7, file: 6 } => {
+                    self.has_kingside_castle(false)
+                        && self.clear_between(&Square::new("e8"), &Square::new("g8"))
+                        && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))
+                }
+                Square { rank: 7, file: 2 } => {
+                    self.has_queenside_castle(false)
+                        && self.clear_between(&Square::new("e8"), &Square::new("c8"))
+                        && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))
+                }
+                _ => false,
+            })
         {
             return false;
         }
@@ -378,9 +422,21 @@ impl Board {
     pub fn skip_turn(&mut self) {
         self.is_white_turn = !self.is_white_turn;
     }
-    
+
     pub fn undo_skip_turn(&mut self) {
         self.skip_turn();
+    }
+
+    fn clear_between(&self, start: &Square, dest: &Square) -> bool {
+        let squares = start.get_transit_squares(dest);
+        squares.into_iter().all(|sq| self.get_piece(&sq).is_none())
+    }
+
+    fn no_checks_between(&self, start: &Square, dest: &Square) -> bool {
+        let squares = start.get_transit_squares(dest);
+        squares
+            .into_iter()
+            .all(|sq| self.is_legal_move(&Ply::new(*start, sq), 1))
     }
 
     /// Returns a boolean representing whether or not the current side is in check
@@ -394,7 +450,7 @@ impl Board {
     pub fn is_in_check(&self) -> bool {
         self.is_in_check_helper(1)
     }
-    
+
     pub fn is_in_check_helper(&self, depth: u64) -> bool {
         let mut board_copy = self.clone();
         board_copy.skip_turn();
@@ -536,18 +592,46 @@ impl Board {
     /// // Ply the a pawn one square forward
     /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
-    pub fn make_move(&mut self, mut new_move: Ply) {
-        let start_piece_kind = self.get_piece(&new_move.start).unwrap();
+    pub fn make_move(&mut self, new_move: Ply) {
+        let dest_piece_kind = self.replace_square(&new_move.start, &new_move.dest);
+        assert_eq!(new_move.captured_piece, dest_piece_kind);
 
-        self.remove_piece(&new_move.start, &start_piece_kind);
-        if let Some(dest_piece_kind) = self.get_piece(&new_move.dest) {
-            new_move.captured_piece = Some(dest_piece_kind);
-            self.remove_piece(&new_move.dest, &dest_piece_kind);
+        if new_move.is_castles {
+            let (rook_start, rook_dest) = match new_move.dest {
+                Square { rank: 0, file: 6 } => (Square::new("h1"), Square::new("f1")),
+                Square { rank: 0, file: 2 } => (Square::new("a1"), Square::new("d1")),
+                Square { rank: 7, file: 6 } => (Square::new("h8"), Square::new("f8")),
+                Square { rank: 7, file: 2 } => (Square::new("a8"), Square::new("d8")),
+                _ => panic!("Invalid castling king destination {}", new_move.dest),
+            };
+
+            self.replace_square(&rook_start, &rook_dest);
+
+            match new_move.dest {
+                Square { rank: 0, file: 6 } => self.w_kingside_castling = false,
+                Square { rank: 0, file: 2 } => self.w_queenside_castling = false,
+                Square { rank: 7, file: 6 } => self.b_kingside_castling = false,
+                Square { rank: 7, file: 2 } => self.b_queenside_castling = false,
+                _ => panic!("Invalid castling king destination {}", new_move.dest),
+            };
         }
-        self.add_piece(&new_move.dest, &start_piece_kind);
 
         self.is_white_turn = !self.is_white_turn;
         self.history.push(new_move);
+    }
+
+    fn replace_square(&mut self, start: &Square, dest: &Square) -> Option<PieceKind> {
+        let start_piece_kind = self.get_piece(start).unwrap();
+        self.remove_piece(start, &start_piece_kind);
+
+        let dest_piece_kind_option = self.get_piece(dest);
+        if let Some(dest_piece_kind) = dest_piece_kind_option {
+            self.remove_piece(dest, &dest_piece_kind);
+        }
+
+        self.add_piece(dest, &start_piece_kind);
+
+        dest_piece_kind_option
     }
 
     /// Unmakes a half-move on this board
@@ -563,15 +647,30 @@ impl Board {
     /// ```
     /// ```
     pub fn unmake_move(&mut self, old_move: Ply) {
-        let piece_kind = self.get_piece(&old_move.dest).unwrap();
+        self.replace_square(&old_move.dest, &old_move.start);
 
-        // Start is guaranteed to be empty since the piece we're moving back was at the start last
-        // move
-        self.add_piece(&old_move.start, &piece_kind);
-        self.remove_piece(&old_move.dest, &piece_kind);
+        if let Some(captured_piece) = self.history.pop().unwrap().captured_piece {
+            self.add_piece(&old_move.dest, &captured_piece);
+        }
 
-        if let Some(caputre_piece) = self.history.pop().unwrap().captured_piece {
-            self.add_piece(&old_move.dest, &caputre_piece);
+        if old_move.is_castles {
+            let (rook_start, rook_dest) = match old_move.dest {
+                Square { rank: 0, file: 6 } => (Square::new("h1"), Square::new("f1")),
+                Square { rank: 0, file: 2 } => (Square::new("a1"), Square::new("d1")),
+                Square { rank: 7, file: 6 } => (Square::new("h8"), Square::new("f8")),
+                Square { rank: 7, file: 2 } => (Square::new("a8"), Square::new("d8")),
+                _ => panic!("Invalid castling king destination {}", old_move.dest),
+            };
+
+            self.replace_square(&rook_dest, &rook_start);
+
+            match old_move.dest {
+                Square { rank: 0, file: 6 } => self.w_kingside_castling = true,
+                Square { rank: 0, file: 2 } => self.w_queenside_castling = true,
+                Square { rank: 7, file: 6 } => self.b_kingside_castling = true,
+                Square { rank: 7, file: 2 } => self.b_queenside_castling = true,
+                _ => panic!("Invalid castling king destination {}", old_move.dest),
+            };
         }
 
         self.is_white_turn = !self.is_white_turn;
@@ -718,6 +817,7 @@ mod tests {
         let moves = board.get_moves_for_piece(&Square::new("a2")); // pawn
         let correct = [
             Ply::new(Square::new("a2"), Square::new("a3")),
+            Ply::new(Square::new("a2"), Square::new("b3")),
             Ply::new(Square::new("a2"), Square::new("a4")),
         ];
 
@@ -925,7 +1025,9 @@ mod tests {
         let mut board = Board::construct_starting_board();
         let start = Square::new("a2"); // White Pawn
         let dest = Square::new("a7"); // Black Pawn
-        let ply = Ply::new(start, dest);
+        let ply = Ply::builder(start, dest)
+            .captured(PieceKind::Pawn(Color::Black))
+            .build();
         assert!(board.is_white_turn);
 
         assert_eq!(
@@ -1046,12 +1148,58 @@ mod tests {
         assert_eq!(result, correct);
     }
 
-
     #[test]
     fn test_get_legal_moves_count_from_position_8() {
         let board = Board::from_fen("5b2/r7/1qn2B1n/1Q6/3R2N1/2N3k1/1K2Br2/3b3R w - - 0 1");
         let result = board.get_legal_moves().len();
         let correct = 44;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_9() {
+        let board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 26;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_10() {
+        let board = Board::from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 25;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_11() {
+        let board = Board::from_fen("4r2k/4qpRb/2p1p2Q/1p3r1P/p2P4/P4P2/1PP1N3/1K4R1 b - - 2 32");
+        let result = board.get_legal_moves().len();
+        let correct = 31;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_12() {
+        let board =
+            Board::from_fen("r2qk2r/pp3ppb/2p1pn1p/4Q2P/2B5/3P2N1/PPP2PP1/R3K2R b KQkq - 0 14");
+        let result = board.get_legal_moves().len();
+        let correct = 37;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_13() {
+        let board =
+            Board::from_fen("r2q1rk1/pp3ppb/2p1pn1p/4Q2P/2B5/3P2N1/PPP2PP1/2KR3R b - - 2 15");
+        let result = board.get_legal_moves().len();
+        let correct = 33;
 
         assert_eq!(result, correct);
     }

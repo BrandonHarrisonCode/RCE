@@ -16,7 +16,7 @@ impl Piece for King {
         }
     }
 
-    fn get_moveset(square: &Square) -> Vec<Ply> {
+    fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
         let mut moveset = vec![
             Ply::new(*square, *square + Direction::North.unit_square()),
             Ply::new(*square, *square + Direction::East.unit_square()),
