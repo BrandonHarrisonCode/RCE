@@ -88,8 +88,16 @@ impl PieceKind {
 }
 
 pub trait Piece: Clone + PartialEq + Eq {
-    fn get_piece_symbol(color: &Color) -> &'static str;
-    // Assumes always white?
+    const WHITE_SYMBOL: &'static str;
+    const BLACK_SYMBOL: &'static str;
+    
+    fn get_piece_symbol(color: &Color) -> &'static str {
+        match color {
+            Color::White => Self::WHITE_SYMBOL,
+            Color::Black => Self::BLACK_SYMBOL,
+        }
+    }
+
     fn get_moveset(square: &Square, color: &Color) -> Vec<Ply>;
 }
 

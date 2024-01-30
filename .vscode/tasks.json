@@ -55,6 +55,15 @@
 				"isDefault": true
 			},
 			"label": "rust: cargo clippy"
+		},
+		{
+			"type": "cargo",
+			"command": "doc",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build",
+			"label": "rust: cargo doc"
 		}
 	]
 }

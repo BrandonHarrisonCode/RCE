@@ -18,8 +18,6 @@ fn main() {
 
     let moves = board.get_legal_moves();
 
-    println!("{:?}", moves);
-
     for pmove in moves {
         board.make_move(pmove);
         println!("{}:\n{}", pmove, board);

@@ -3,24 +3,17 @@ use super::*;
 #[derive(Clone, PartialEq, Debug)]
 pub struct Pawn;
 
-const WHITE_SYMBOL: &str = "♟";
-const BLACK_SYMBOL: &str = "♙";
-
 impl Eq for Pawn {}
 
 impl Piece for Pawn {
-    fn get_piece_symbol(color: &Color) -> &'static str {
-        match color {
-            Color::White => WHITE_SYMBOL,
-            Color::Black => BLACK_SYMBOL,
-        }
-    }
+    const WHITE_SYMBOL: &'static str = "♟";
+    const BLACK_SYMBOL: &'static str = "♙";
 
-    /// [X] Advances 1 square forward
-    /// [X] Advances 2 squares forward if on second rank
-    /// [ ] Takes diagonally forward
-    /// [ ] En passant
-    /// [ ] Promotion
+    /// - [X] Advances 1 square forward
+    /// - [X] Advances 2 squares forward if on second rank
+    /// - [X] Takes diagonally forward
+    /// - [ ] En passant
+    /// - [ ] Promotion
     fn get_moveset(square: &Square, color: &Color) -> Vec<Ply> {
         let (direction, starting_rank) = match color {
             Color::White => (Direction::North, 1),
@@ -67,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_pawn_display_white() {
-        let output = super::WHITE_SYMBOL;
+        let output = Pawn::WHITE_SYMBOL;
         let correct = "♟";
 
         assert_eq!(output, correct);
@@ -75,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_pawn_display_black() {
-        let output = super::BLACK_SYMBOL;
+        let output = Pawn::BLACK_SYMBOL;
         let correct = "♙";
 
         assert_eq!(output, correct);

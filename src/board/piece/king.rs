@@ -3,18 +3,12 @@ use super::*;
 #[derive(Clone, PartialEq, Debug)]
 pub struct King;
 
-const WHITE_SYMBOL: &str = "♚";
-const BLACK_SYMBOL: &str = "♔";
 
 impl Eq for King {}
 
 impl Piece for King {
-    fn get_piece_symbol(color: &Color) -> &'static str {
-        match color {
-            Color::White => WHITE_SYMBOL,
-            Color::Black => BLACK_SYMBOL,
-        }
-    }
+    const WHITE_SYMBOL: &'static str = "♚";
+    const BLACK_SYMBOL: &'static str = "♔";
 
     fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
         let mut moveset = vec![
@@ -59,7 +53,7 @@ mod tests {
 
     #[test]
     fn test_king_display_white() {
-        let output = super::WHITE_SYMBOL;
+        let output = King::WHITE_SYMBOL;
         let correct = "♚";
 
         assert_eq!(output, correct);
@@ -67,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_king_display_black() {
-        let output = super::BLACK_SYMBOL;
+        let output = King::BLACK_SYMBOL;
         let correct = "♔";
 
         assert_eq!(output, correct);
