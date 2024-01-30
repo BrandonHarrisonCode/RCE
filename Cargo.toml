@@ -8,5 +8,5 @@ edition = "2021"
 [dependencies]
 derive_more = "0.99.17"
 indoc = "2.0.3"
-strum = "0.25.0"
-strum_macros = "0.25.1"
+strum = "0.26.1"
+strum_macros = "0.26.1"
