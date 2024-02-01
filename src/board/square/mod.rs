@@ -184,6 +184,7 @@ impl Square {
         squares
     }
 }
+
 impl std::ops::Add<SquareDelta> for Square {
     type Output = Square;
 
@@ -194,6 +195,51 @@ impl std::ops::Add<SquareDelta> for Square {
         }
     }
 }
+
+impl std::ops::Add<Direction> for Square {
+    type Output = Square;
+
+    fn add(self, direction: Direction) -> Square {
+        let delta = match direction {
+            Direction::North => SquareDelta {
+                rank_delta: 1,
+                file_delta: 0,
+            },
+            Direction::NorthEast => SquareDelta {
+                rank_delta: 1,
+                file_delta: 1,
+            },
+            Direction::East => SquareDelta {
+                rank_delta: 0,
+                file_delta: 1,
+            },
+            Direction::SouthEast => SquareDelta {
+                rank_delta: -1,
+                file_delta: 1,
+            },
+            Direction::South => SquareDelta {
+                rank_delta: -1,
+                file_delta: 0,
+            },
+            Direction::SouthWest => SquareDelta {
+                rank_delta: -1,
+                file_delta: -1,
+            },
+            Direction::West => SquareDelta {
+                rank_delta: 0,
+                file_delta: -1,
+            },
+            Direction::NorthWest => SquareDelta {
+                rank_delta: 1,
+                file_delta: -1,
+            },
+
+        };
+
+        self + delta
+    }
+}
+
 impl fmt::Display for Square {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.file >= 8 || self.rank >= 8 {
@@ -210,7 +256,7 @@ pub struct SquareDelta {
     file_delta: i8,
 }
 
-#[allow(dead_code)]
+#[derive(Clone, Copy)]
 pub enum Direction {
     North,
     NorthEast,
@@ -220,45 +266,6 @@ pub enum Direction {
     SouthWest,
     West,
     NorthWest,
-}
-
-impl Direction {
-    pub fn unit_square(&self) -> SquareDelta {
-        match self {
-            Self::North => SquareDelta {
-                rank_delta: 1,
-                file_delta: 0,
-            },
-            Self::NorthEast => SquareDelta {
-                rank_delta: 1,
-                file_delta: 1,
-            },
-            Self::East => SquareDelta {
-                rank_delta: 0,
-                file_delta: 1,
-            },
-            Self::SouthEast => SquareDelta {
-                rank_delta: -1,
-                file_delta: 1,
-            },
-            Self::South => SquareDelta {
-                rank_delta: -1,
-                file_delta: 0,
-            },
-            Self::SouthWest => SquareDelta {
-                rank_delta: -1,
-                file_delta: -1,
-            },
-            Self::West => SquareDelta {
-                rank_delta: 0,
-                file_delta: -1,
-            },
-            Self::NorthWest => SquareDelta {
-                rank_delta: 1,
-                file_delta: -1,
-            },
-        }
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -320,7 +327,7 @@ mod tests {
     #[test]
     fn test_north() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::North.unit_square();
+        let after = before + Direction::North;
 
         assert_eq!(before.rank + 1, after.rank);
         assert_eq!(before.file, after.file);
@@ -329,7 +336,7 @@ mod tests {
     #[test]
     fn test_northeast() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::NorthEast.unit_square();
+        let after = before + Direction::NorthEast;
 
         assert_eq!(before.rank + 1, after.rank);
         assert_eq!(before.file + 1, after.file);
@@ -338,7 +345,7 @@ mod tests {
     #[test]
     fn test_east() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::East.unit_square();
+        let after = before + Direction::East;
 
         assert_eq!(before.rank, after.rank);
         assert_eq!(before.file + 1, after.file);
@@ -347,7 +354,7 @@ mod tests {
     #[test]
     fn test_southeast() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::SouthEast.unit_square();
+        let after = before + Direction::SouthEast;
 
         assert_eq!(before.rank - 1, after.rank);
         assert_eq!(before.file + 1, after.file);
@@ -356,7 +363,7 @@ mod tests {
     #[test]
     fn test_south() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::South.unit_square();
+        let after = before + Direction::South;
 
         assert_eq!(before.rank - 1, after.rank);
         assert_eq!(before.file, after.file);
@@ -365,7 +372,7 @@ mod tests {
     #[test]
     fn test_southwest() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::SouthWest.unit_square();
+        let after = before + Direction::SouthWest;
 
         assert_eq!(before.rank - 1, after.rank);
         assert_eq!(before.file - 1, after.file);
@@ -374,7 +381,7 @@ mod tests {
     #[test]
     fn test_west() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::West.unit_square();
+        let after = before + Direction::West;
 
         assert_eq!(before.rank, after.rank);
         assert_eq!(before.file - 1, after.file);
@@ -383,7 +390,7 @@ mod tests {
     #[test]
     fn test_northwest() {
         let before = Square { rank: 4, file: 4 };
-        let after = before + Direction::NorthWest.unit_square();
+        let after = before + Direction::NorthWest;
 
         assert_eq!(before.rank + 1, after.rank);
         assert_eq!(before.file - 1, after.file);
@@ -395,19 +402,19 @@ mod tests {
 
         assert_eq!(
             square,
-            square + Direction::North.unit_square() + Direction::South.unit_square()
+            square + Direction::North + Direction::South
         );
         assert_eq!(
             square,
-            square + Direction::East.unit_square() + Direction::West.unit_square()
+            square + Direction::East + Direction::West
         );
         assert_eq!(
             square,
-            square + Direction::NorthWest.unit_square() + Direction::SouthEast.unit_square()
+            square + Direction::NorthWest + Direction::SouthEast
         );
         assert_eq!(
             square,
-            square + Direction::NorthEast.unit_square() + Direction::SouthWest.unit_square()
+            square + Direction::NorthEast + Direction::SouthWest
         );
     }
 

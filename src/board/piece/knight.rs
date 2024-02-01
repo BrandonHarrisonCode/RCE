@@ -3,7 +3,6 @@ use super::*;
 #[derive(Clone, PartialEq, Debug)]
 pub struct Knight;
 
-
 impl Eq for Knight {}
 
 impl Piece for Knight {
@@ -15,58 +14,58 @@ impl Piece for Knight {
             Ply::new(
                 *square,
                 *square
-                    + Direction::North.unit_square()
-                    + Direction::North.unit_square()
-                    + Direction::West.unit_square(),
+                    + Direction::North
+                    + Direction::North
+                    + Direction::West,
             ),
             Ply::new(
                 *square,
                 *square
-                    + Direction::North.unit_square()
-                    + Direction::North.unit_square()
-                    + Direction::East.unit_square(),
+                    + Direction::North
+                    + Direction::North
+                    + Direction::East,
             ),
             Ply::new(
                 *square,
                 *square
-                    + Direction::South.unit_square()
-                    + Direction::South.unit_square()
-                    + Direction::West.unit_square(),
+                    + Direction::South
+                    + Direction::South
+                    + Direction::West,
             ),
             Ply::new(
                 *square,
                 *square
-                    + Direction::South.unit_square()
-                    + Direction::South.unit_square()
-                    + Direction::East.unit_square(),
+                    + Direction::South
+                    + Direction::South
+                    + Direction::East,
             ),
             Ply::new(
                 *square,
                 *square
-                    + Direction::East.unit_square()
-                    + Direction::East.unit_square()
-                    + Direction::North.unit_square(),
+                    + Direction::East
+                    + Direction::East
+                    + Direction::North,
             ),
             Ply::new(
                 *square,
                 *square
-                    + Direction::East.unit_square()
-                    + Direction::East.unit_square()
-                    + Direction::South.unit_square(),
+                    + Direction::East
+                    + Direction::East
+                    + Direction::South,
             ),
             Ply::new(
                 *square,
                 *square
-                    + Direction::West.unit_square()
-                    + Direction::West.unit_square()
-                    + Direction::North.unit_square(),
+                    + Direction::West
+                    + Direction::West
+                    + Direction::North,
             ),
             Ply::new(
                 *square,
                 *square
-                    + Direction::West.unit_square()
-                    + Direction::West.unit_square()
-                    + Direction::South.unit_square(),
+                    + Direction::West
+                    + Direction::West
+                    + Direction::South,
             ),
         ]
     }

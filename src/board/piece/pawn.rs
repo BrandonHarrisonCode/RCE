@@ -20,15 +20,15 @@ impl Piece for Pawn {
             Color::Black => (Direction::South, 6),
         };
         let mut output: Vec<Ply> = vec![
-            Ply::new(*square, *square + direction.unit_square()),
+            Ply::new(*square, *square + direction),
             Ply::builder(
                 *square,
-                *square + direction.unit_square() + Direction::East.unit_square(),
+                *square + direction + Direction::East,
             )
             .build(),
             Ply::builder(
                 *square,
-                *square + direction.unit_square() + Direction::West.unit_square(),
+                *square + direction + Direction::West,
             )
             .build(),
         ];
@@ -36,7 +36,7 @@ impl Piece for Pawn {
         if square.rank == starting_rank {
             output.push(Ply::new(
                 *square,
-                *square + direction.unit_square() + direction.unit_square(),
+                *square + direction + direction,
             ));
         }
         output

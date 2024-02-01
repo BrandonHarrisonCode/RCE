@@ -3,7 +3,6 @@ use super::*;
 #[derive(Clone, PartialEq, Debug)]
 pub struct King;
 
-
 impl Eq for King {}
 
 impl Piece for King {
@@ -12,14 +11,14 @@ impl Piece for King {
 
     fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
         let mut moveset = vec![
-            Ply::new(*square, *square + Direction::North.unit_square()),
-            Ply::new(*square, *square + Direction::East.unit_square()),
-            Ply::new(*square, *square + Direction::South.unit_square()),
-            Ply::new(*square, *square + Direction::West.unit_square()),
-            Ply::new(*square, *square + Direction::NorthEast.unit_square()),
-            Ply::new(*square, *square + Direction::NorthWest.unit_square()),
-            Ply::new(*square, *square + Direction::SouthEast.unit_square()),
-            Ply::new(*square, *square + Direction::SouthWest.unit_square()),
+            Ply::new(*square, *square + Direction::North),
+            Ply::new(*square, *square + Direction::East),
+            Ply::new(*square, *square + Direction::South),
+            Ply::new(*square, *square + Direction::West),
+            Ply::new(*square, *square + Direction::NorthEast),
+            Ply::new(*square, *square + Direction::NorthWest),
+            Ply::new(*square, *square + Direction::SouthEast),
+            Ply::new(*square, *square + Direction::SouthWest),
         ];
 
         if *square == Square::new("e1") {

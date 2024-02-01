@@ -10,6 +10,7 @@ pub struct Ply {
     pub promoted_to: Option<PieceKind>,
     pub is_castles: bool,
 }
+
 impl Ply {
     pub fn new(start: Square, dest: Square) -> Ply {
         Ply {
@@ -53,7 +54,6 @@ impl fmt::Display for Ply {
 }
 
 #[derive(Default)]
-#[allow(dead_code)]
 pub struct PlyBuilder {
     start: Square,
     dest: Square,
@@ -62,23 +62,26 @@ pub struct PlyBuilder {
     is_castles: bool,
 }
 
-#[allow(dead_code)]
 impl PlyBuilder {
+    #[allow(dead_code)]
     pub fn start(&mut self, start: Square) -> &mut Self {
         self.start = start;
         self
     }
 
+    #[allow(dead_code)]
     pub fn dest(&mut self, dest: Square) -> &mut Self {
         self.dest = dest;
         self
     }
 
+    #[allow(dead_code)]
     pub fn captured(&mut self, captured_piece: PieceKind) -> &mut Self {
         self.captured_piece = Some(captured_piece);
         self
     }
 
+    #[allow(dead_code)]
     pub fn promoted_to(&mut self, promoted_to: PieceKind) -> &mut Self {
         self.promoted_to = Some(promoted_to);
         self

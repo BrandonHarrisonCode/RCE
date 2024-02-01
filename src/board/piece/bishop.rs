@@ -3,7 +3,6 @@ use super::*;
 #[derive(Clone, PartialEq, Debug)]
 pub struct Bishop;
 
-
 impl Eq for Bishop {}
 
 impl Piece for Bishop {
