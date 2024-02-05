@@ -19,7 +19,7 @@ fn main() {
     let moves = board.get_legal_moves();
 
     for pmove in moves {
-        board.make_move(pmove);
+        board.make_move(&pmove);
         println!("{}:\n{}", pmove, board);
         // println!("Iterating moves...");
         // let new_moves = board.get_all_moves();
@@ -31,6 +31,6 @@ fn main() {
         //     board.unmake_move(npmove);
         // }
         // println!("Ending iteration...");
-        board.unmake_move(pmove);
+        board.unmake_move(&pmove);
     }
 }

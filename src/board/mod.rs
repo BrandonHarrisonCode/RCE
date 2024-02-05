@@ -39,20 +39,19 @@ pub struct Board {
 }
 
 impl Board {
+    /// Creates a BoardBuilder object to construct a new board
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::builder().kingside_castling(true, true).build();
+    /// ```
     #[allow(dead_code)]
     pub fn builder() -> BoardBuilder {
         BoardBuilder::default()
     }
 
     /// Returns a new board given a FEN string
-    ///
-    /// # Arguments
-    ///
-    /// * `fen` - A string representing the FEN of a position
-    ///
-    /// # Examples
-    /// ```
-    /// // Create empty board
+    ///>d
     /// let board = Board::from_fen("8/8/8/8/8/8/8/8 w - - 0 1");
     /// ```
     #[allow(dead_code)]
@@ -123,7 +122,6 @@ impl Board {
             };
         }
 
-        // TODO: Castling rights
         // TODO: En passant target square
         // TODO: Halfmove clock
         // TODO: Fullmove number
@@ -256,26 +254,13 @@ impl Board {
         None
     }
 
-    /// Returns an optional list of Plys for the piece at a given square
-    ///
-    /// # Arguments
-    ///
-    /// * `square` - A square on the board we would like to inspect
-    ///
-    /// # Errors
-    /// Returns `None` if there is no piece at the specified square.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = Board::construct_starting_board();
-    /// let movelist = board.get_moves_for_piece(Square::new("a2"));
-    /// ```
-    #[allow(dead_code)]
-    pub fn get_moves_for_piece(&self, square: &Square) -> Option<Vec<Ply>> {
-        self.get_piece(square).map(|x| x.get_moveset(square))
-    }
-
     /// Returns a list of all potential moves for the current side
+    /// 
+    /// The list is not guaranteed to be legal, and may include moves that would
+    /// leave the king in check, or moves that illegally capture the player's
+    /// own pieces, move through their own pieces, etc. This function is not
+    /// usually called on its own. It is normally paired with `filter_moves()`
+    /// to create a legal moveset of the board.
     ///
     /// # Examples
     /// ```
@@ -328,7 +313,7 @@ impl Board {
     fn filter_moves(&self, moves: Vec<Ply>, depth: u64) -> Vec<Ply> {
         moves
             .into_iter()
-            .filter(|mv| self.is_legal_move(mv, depth))
+            .filter(|mv| self.is_legal_move(mv, depth).is_ok())
             .collect()
     }
 
@@ -339,84 +324,175 @@ impl Board {
     /// let ply = Ply(Square::new("e2"), Square::new("e9"));
     /// assert!(!board.is_legal_move(ply));
     /// ```
-    fn is_legal_move(&self, ply: &Ply, depth: u64) -> bool {
-        // Only allow moves within the board
-        if ply.start.rank >= 8
-            || ply.start.file >= 8
-            || ply.dest.rank >= 8
-            || ply.dest.file >= 8
-            || ply.start == ply.dest
-            || self.get_piece(&ply.start).is_none()
-        {
-            return false;
-        }
+    fn is_legal_move<'a>(&self, ply: &'a Ply, depth: u64) -> Result<&'a Ply, &'static str>{
+        let result: Result<&'a Ply, &'static str> = self.is_on_board(ply)
+            .and_then(|ply| self.is_self_capture(ply))
+            .and_then(|ply| self.is_illegal_jump(ply))
+            .and_then(|ply| self.is_illegal_pawn_move(ply))
+            .and_then(|ply| self.is_illegal_castling(ply));
 
-        // Don't allow capturing your own pieces
-        if self
-            .get_piece(&ply.dest)
-            .is_some_and(|pc| pc.get_color() == self.get_piece(&ply.start).unwrap().get_color())
-        {
-            return false;
+        if result.is_err() || depth == 0 {
+            return result;
         }
-
-        // Don't allow moving through pieces unless you're a knight
-        if !ply.is_castles
-            && !matches!(self.get_piece(&ply.start).unwrap(), PieceKind::Knight(_c))
-            && !self.clear_between(&ply.start, &ply.dest)
-        {
-            return false;
-        }
-
-        // Don't allow pawns to capture forwards
-        // Don't allow pawns to move diagonally without capturing
-        if matches!(self.get_piece(&ply.start).unwrap(), PieceKind::Pawn(_c)) {
-            if ply.start.file == ply.dest.file {
-                if self.get_piece(&ply.dest).is_some() {
-                    return false;
-                }
-            } else if self.get_piece(&ply.dest).is_none() {
-                return false;
-            }
-        }
-
-        // Don't allow illegal castling
-        if ply.is_castles
-            && !(match &ply.dest {
-                Square { rank: 0, file: 6 } => {
-                    self.has_kingside_castle(true)
-                        && self.clear_between(&Square::new("e1"), &Square::new("h1"))
-                        && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))
-                }
-                Square { rank: 0, file: 2 } => {
-                    self.has_queenside_castle(true)
-                        && self.clear_between(&Square::new("e1"), &Square::new("a1"))
-                        && self.no_checks_between(&Square::new("e1"), &Square::new("c1"))
-                }
-                Square { rank: 7, file: 6 } => {
-                    self.has_kingside_castle(false)
-                        && self.clear_between(&Square::new("e8"), &Square::new("g8"))
-                        && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))
-                }
-                Square { rank: 7, file: 2 } => {
-                    self.has_queenside_castle(false)
-                        && self.clear_between(&Square::new("e8"), &Square::new("c8"))
-                        && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))
-                }
-                _ => false,
-            })
-        {
-            return false;
-        }
-
-        if depth == 0 {
-            return true;
-        }
-
         // Don't allow leaving your king in check
-        let mut board_copy = self.clone();
-        board_copy.make_move(*ply);
-        board_copy.skip_turn();
-        !board_copy.is_in_check_helper(depth - 1)
+        if !self.is_in_check_helper(depth - 1, Some(ply)) {
+            Ok(ply)
+        } else {
+            Err("Move is not valid. The move would leave the king in check.")
+        }
+    }
+
+    /// Returns a boolean representing whether or not a given move is on the constraits of the board.
+    /// 
+    /// Checks if the move start and destination are within the bounds of the board, that the move's start and destination are not the same, and that the start square contains a piece.
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// let ply1 = Ply(Square::new("e2"), Square::new("e9"));
+    /// let ply2 = Ply(Square::new("e2"), Square::new("e2"));
+    /// let ply3 = Ply(Square::new("e2"), Square::new("e4"));
+    /// assert!(!board.is_on_board(ply1));
+    /// assert!(!board.is_on_board(ply2));
+    /// assert!(board.is_on_board(ply3));
+    /// ```
+    fn is_on_board<'a>(&self, ply: &'a Ply) -> Result<&'a Ply, &'static str> {
+        match ply {
+            Ply{start, ..} if start.rank >= 8 => Err("Move is not valid. The start square rank is off the board."),
+            Ply{start, ..} if start.file >= 8 => Err("Move is not valid. The start square file is off the board."),
+            Ply{dest, ..} if dest.rank >= 8 => Err("Move is not valid. The dest square rank is off the board."),
+            Ply{dest, ..} if dest.file >= 8 => Err("Move is not valid. The dest square file is off the board."),
+            Ply{start, dest, ..} if start == dest => Err("Move is not valid. The start and destination squares are the same."),
+            Ply{start, ..} if self.get_piece(start).is_none() => Err("Move is not valid. The start square is empty."),
+            _ => Ok(ply),
+        }
+    }
+
+    /// Returns a boolean representing whether or not a given move is a self-capture
+    /// 
+    /// A self capture is defined as a move that captures a piece of the same color as the moving piece.
+    /// 
+    /// # Panics
+    /// 
+    /// Will panic if there is no piece at the start square of the move.
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// let ply1 = Ply(Square::new("e2"), Square::new("e4"));
+    /// let ply1 = Ply(Square::new("e2"), Square::new("d2"));
+    /// assert!(!board.is_self_capture(ply1));
+    /// assert!(board.is_self_capture(ply2));
+    /// ```
+    fn is_self_capture<'a>(&self, ply: &'a Ply) -> Result<&'a Ply, &'static str> {
+        let dest_piece = self.get_piece(&ply.dest);
+        if dest_piece.is_some_and(|pc| pc.get_color() == self.get_piece(&ply.start).unwrap().get_color()) {
+            Err("Move is not valid. The move would capture a piece of the same color.")
+        } else {
+            Ok(ply)
+        }
+    }
+
+    /// Returns a boolean representing whether or not a given move jumps through other pieces without being a knight.
+    /// 
+    /// # Panics
+    /// 
+    /// Will panic if there is no piece at the start square of the move.
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// let ply1 = Ply(Square::new("e2"), Square::new("e4"));
+    /// let ply2 = Ply(Square::new("e1"), Square::new("e3"));
+    /// assert!(!board.is_illegal_jump(ply1));
+    /// assert!(board.is_illegal_jump(ply2));
+    /// ```
+    fn is_illegal_jump<'a>(&self, ply: &'a Ply) -> Result<&'a Ply, &'static str> {
+        // Castling needs more spaces clear than between the start and dest squares
+        if ply.is_castles {
+            return Ok(ply);
+        }
+
+        match self.get_piece(&ply.start).unwrap() {
+            PieceKind::Knight(_c) => Ok(ply),
+            _ => self.no_pieces_between(&ply.start, &ply.dest).then_some(ply)
+                .ok_or("Move is not valid. The move jumps through other pieces."),
+        }
+    }
+
+    /// Returns a boolean representing whether or not a given move is an illegal pawn move
+    /// 
+    /// Checks if a pawn is capturing forward, or moving diagonally without capturing.
+    /// 
+    /// # Panics
+    /// 
+    /// Will panic if there is no piece at the start square of the move.
+    ///   return false;
+
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// let ply1 = Ply(Square::new("e2"), Square::new("e4"));
+    /// let ply2 = Ply(Square::new("e2"), Square::new("d3"));
+    /// assert!(!board.is_illegal_pawn_move(ply1));
+    /// assert!(board.is_illegal_pawn_move(ply2));
+    /// ```
+    fn is_illegal_pawn_move<'a>(&self, ply: &'a Ply) -> Result<&'a Ply, &'static str> {
+        let start_piece = self.get_piece(&ply.start).unwrap();
+        if !matches!(start_piece, PieceKind::Pawn(_c)) {
+            return Ok(ply);
+        }
+
+        if ply.start.file == ply.dest.file {
+            if self.get_piece(&ply.dest).is_some() {
+                return Err("Move is not valid. The pawn is capturing forward.");
+            }
+        } else if self.get_piece(&ply.dest).is_none() {
+            return Err("Move is not valid. The pawn is moving diagonally without capturing.");
+        }
+
+        Ok(ply)
+    }
+
+    /// Returns a boolean representing whether or not a given move is an illegal castling move
+    /// 
+    /// Checks if castling rights are still availiable, and then ensures there
+    /// are no pieces between the king and the rook and that the king never
+    /// travels through check.
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// let ply = Ply(Square::new("e1"), Square::new("g1"));
+    /// assert!(board.is_illegal_castling(ply)); 
+    ///  
+    fn is_illegal_castling<'a>(&self, ply: &'a Ply) -> Result<&'a Ply, &'static str> {
+        if !ply.is_castles {
+            return Ok(ply);
+        }
+        match &ply.dest {
+            Square { rank: 0, file: 6 } => {
+                (self.has_kingside_castle(true)
+                    && self.no_pieces_between(&Square::new("e1"), &Square::new("h1"))
+                    && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))).then_some(ply).ok_or("Move is not valid. The white king cannot castle kingside.")
+            }
+            Square { rank: 0, file: 2 } => {
+                (self.has_queenside_castle(true)
+                    && self.no_pieces_between(&Square::new("e1"), &Square::new("a1"))
+                    && self.no_checks_between(&Square::new("e1"), &Square::new("c1"))).then_some(ply).ok_or("Move is not valid. The white king cannot castle queenside.")
+            }
+            Square { rank: 7, file: 6 } => {
+                (self.has_kingside_castle(false)
+                    && self.no_pieces_between(&Square::new("e8"), &Square::new("g8"))
+                    && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))).then_some(ply).ok_or("Move is not valid. The black king cannot castle kingside.")
+            }
+            Square { rank: 7, file: 2 } => {
+                (self.has_queenside_castle(false)
+                    && self.no_pieces_between(&Square::new("e8"), &Square::new("c8"))
+                    && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))).then_some(ply).ok_or("Move is not valid. The black king cannot castle queenside.")
+            }
+            _ => Err("Move is not valid. The destination square is not a valid castling destination."),
+        }
     }
 
     pub fn skip_turn(&mut self) {
@@ -427,7 +503,7 @@ impl Board {
         self.skip_turn();
     }
 
-    fn clear_between(&self, start: &Square, dest: &Square) -> bool {
+    fn no_pieces_between(&self, start: &Square, dest: &Square) -> bool {
         let squares = start.get_transit_squares(dest);
         squares.into_iter().all(|sq| self.get_piece(&sq).is_none())
     }
@@ -436,7 +512,7 @@ impl Board {
         let squares = start.get_transit_squares(dest);
         squares
             .into_iter()
-            .all(|sq| self.is_legal_move(&Ply::new(*start, sq), 1))
+            .all(|sq| self.is_legal_move(&Ply::new(*start, sq), 1).is_ok())
     }
 
     /// Returns a boolean representing whether or not the current side is in check
@@ -448,12 +524,16 @@ impl Board {
     /// ```
     #[allow(dead_code)]
     pub fn is_in_check(&self) -> bool {
-        self.is_in_check_helper(1)
+        self.is_in_check_helper(1, None)
     }
 
-    pub fn is_in_check_helper(&self, depth: u64) -> bool {
+    pub fn is_in_check_helper(&self, depth: u64, ply: Option<&Ply>) -> bool {
         let mut board_copy = self.clone();
-        board_copy.skip_turn();
+        if let Some(ply) = ply {
+            board_copy.make_move(ply);
+        } else {
+            board_copy.skip_turn();
+        }
         let enemy_moves = board_copy.filter_moves(board_copy.get_all_moves(), depth);
         let result = enemy_moves.into_iter().any( |mv| mv.captured_piece.is_some_and( |pc| matches!(pc, PieceKind::King(c) if c != board_copy.get_piece(&mv.start).unwrap().get_color())));
         board_copy.undo_skip_turn();
@@ -592,7 +672,7 @@ impl Board {
     /// // Ply the a pawn one square forward
     /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
-    pub fn make_move(&mut self, new_move: Ply) {
+    pub fn make_move(&mut self, new_move: &Ply) {
         let dest_piece_kind = self.replace_square(&new_move.start, &new_move.dest);
         assert_eq!(new_move.captured_piece, dest_piece_kind);
 
@@ -617,7 +697,7 @@ impl Board {
         }
 
         self.is_white_turn = !self.is_white_turn;
-        self.history.push(new_move);
+        self.history.push(*new_move);
     }
 
     fn replace_square(&mut self, start: &Square, dest: &Square) -> Option<PieceKind> {
@@ -646,7 +726,7 @@ impl Board {
     /// # Examples
     /// ```
     /// ```
-    pub fn unmake_move(&mut self, old_move: Ply) {
+    pub fn unmake_move(&mut self, old_move: &Ply) {
         self.replace_square(&old_move.dest, &old_move.start);
 
         if let Some(captured_piece) = self.history.pop().unwrap().captured_piece {
@@ -812,28 +892,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_moves_for_piece() {
-        let board = Board::construct_starting_board();
-        let moves = board.get_moves_for_piece(&Square::new("a2")); // pawn
-        let correct = [
-            Ply::new(Square::new("a2"), Square::new("a3")),
-            Ply::new(Square::new("a2"), Square::new("b3")),
-            Ply::new(Square::new("a2"), Square::new("a4")),
-        ];
-
-        assert_eq!(moves.unwrap(), correct);
-    }
-
-    #[test]
-    #[should_panic]
-    fn test_get_moves_for_piece_empty() {
-        let board = Board::construct_starting_board();
-        let moves = board.get_moves_for_piece(&Square::new("a3")); // Empty
-
-        moves.unwrap();
-    }
-
-    #[test]
     fn test_get_all_moves() {
         let board = Board::construct_starting_board();
         let all_moves = board.get_all_moves();
@@ -950,7 +1008,7 @@ mod tests {
         assert!(board.is_white_turn);
 
         assert!(board.get_piece(&dest).is_none());
-        board.make_move(ply);
+        board.make_move(&ply);
         assert_eq!(
             board.get_piece(&dest).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -959,7 +1017,7 @@ mod tests {
 
         assert!(board.get_piece(&start).is_none());
 
-        board.unmake_move(ply);
+        board.unmake_move(&ply);
         assert_eq!(
             board.get_piece(&start).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -983,7 +1041,7 @@ mod tests {
 
         assert!(board.get_piece(&dest1).is_none());
         assert!(board.get_piece(&dest2).is_none());
-        board.make_move(ply1);
+        board.make_move(&ply1);
         assert_eq!(
             board.get_piece(&dest1).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -992,7 +1050,7 @@ mod tests {
         assert!(board.get_piece(&dest2).is_none());
         assert!(!board.is_white_turn);
 
-        board.make_move(ply2);
+        board.make_move(&ply2);
         assert_eq!(
             board.get_piece(&dest2).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -1001,7 +1059,7 @@ mod tests {
         assert!(board.get_piece(&dest1).is_none());
         assert!(board.is_white_turn);
 
-        board.unmake_move(ply2);
+        board.unmake_move(&ply2);
         assert_eq!(
             board.get_piece(&dest1).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -1010,7 +1068,7 @@ mod tests {
         assert!(board.get_piece(&start).is_none());
         assert!(!board.is_white_turn);
 
-        board.unmake_move(ply1);
+        board.unmake_move(&ply1);
         assert_eq!(
             board.get_piece(&start).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -1038,7 +1096,7 @@ mod tests {
             board.get_piece(&dest).unwrap(),
             PieceKind::Pawn(Color::Black)
         );
-        board.make_move(ply);
+        board.make_move(&ply);
         assert_eq!(
             board.get_piece(&dest).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -1046,7 +1104,7 @@ mod tests {
         assert!(board.get_piece(&start).is_none());
         assert!(!board.is_white_turn);
 
-        board.unmake_move(ply);
+        board.unmake_move(&ply);
         assert_eq!(
             board.get_piece(&start).unwrap(),
             PieceKind::Pawn(Color::White)
@@ -1065,13 +1123,13 @@ mod tests {
     }
 
     #[test]
-    fn test_is_in_check_queen_white() {
+    fn test_is_in_check_white_by_queen() {
         let board = Board::from_fen("8/1k6/2q5/8/8/2K3Q1/8/8 w - - 0 1");
         assert!(board.is_in_check());
     }
 
     #[test]
-    fn test_is_in_check_queen_black() {
+    fn test_is_in_check_black_by_queen() {
         let board = Board::from_fen("8/1K6/2Q5/8/8/2k3q1/8/8 b - - 0 1");
         assert!(board.is_in_check());
     }
