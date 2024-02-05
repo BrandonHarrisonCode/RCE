@@ -1,4 +1,4 @@
-use super::*;
+use super::{Color, Direction, Piece, Ply, Square};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Pawn;
@@ -47,7 +47,8 @@ impl Piece for Pawn {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::board::PieceKind;
+    use super::{Color, Piece, Pawn, Ply, Square};
     use std::collections::HashSet;
 
     #[test]

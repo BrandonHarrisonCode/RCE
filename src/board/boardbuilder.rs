@@ -1,14 +1,15 @@
 use super::ply::Ply;
 use super::Board;
+use super::Castling;
 
 #[derive(Default)]
 pub struct BoardBuilder {
     is_white_turn: bool,
 
-    w_kingside_castling: bool,
-    w_queenside_castling: bool,
-    b_kingside_castling: bool,
-    b_queenside_castling: bool,
+    w_kingside_castling: Castling,
+    w_queenside_castling: Castling,
+    b_kingside_castling: Castling,
+    b_queenside_castling: Castling,
 
     w_pawns: u64,
     w_king: u64,
@@ -32,10 +33,10 @@ impl BoardBuilder {
         BoardBuilder {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -62,7 +63,7 @@ impl BoardBuilder {
     }
 
     #[allow(dead_code)]
-    pub fn kingside_castling(mut self, white: bool, value: bool) -> BoardBuilder {
+    pub fn kingside_castling(mut self, white: bool, value: Castling) -> BoardBuilder {
         match white {
             true => self.w_kingside_castling = value,
             false => self.b_kingside_castling = value,
@@ -71,7 +72,7 @@ impl BoardBuilder {
     }
 
     #[allow(dead_code)]
-    pub fn queenside_castling(mut self, white: bool, value: bool) -> BoardBuilder {
+    pub fn queenside_castling(mut self, white: bool, value: Castling) -> BoardBuilder {
         match white {
             true => self.w_queenside_castling = value,
             false => self.b_queenside_castling = value,
@@ -179,10 +180,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -208,10 +209,10 @@ mod tests {
         let correct = Board {
             is_white_turn: false,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -237,10 +238,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -262,14 +263,14 @@ mod tests {
 
     #[test]
     fn board_builder_white_kingside_castling() {
-        let board = BoardBuilder::default().kingside_castling(true, false).build();
+        let board = BoardBuilder::default().kingside_castling(true, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: false,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Unavailiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -291,14 +292,14 @@ mod tests {
 
     #[test]
     fn board_builder_black_kingside_castling() {
-        let board = BoardBuilder::default().kingside_castling(false, false).build();
+        let board = BoardBuilder::default().kingside_castling(false, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: false,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Unavailiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -320,14 +321,14 @@ mod tests {
 
     #[test]
     fn board_builder_white_queenside_castling() {
-        let board = BoardBuilder::default().queenside_castling(true, false).build();
+        let board = BoardBuilder::default().queenside_castling(true, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: false,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Unavailiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -349,14 +350,14 @@ mod tests {
 
     #[test]
     fn board_builder_black_queenside_castling() {
-        let board = BoardBuilder::default().queenside_castling(false, false).build();
+        let board = BoardBuilder::default().queenside_castling(false, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: false,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Unavailiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -382,10 +383,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 1,
             w_king: 0,
@@ -411,10 +412,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 1,
@@ -440,10 +441,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -469,10 +470,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -498,10 +499,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -527,10 +528,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,
@@ -557,10 +558,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0,
             w_king: 0,

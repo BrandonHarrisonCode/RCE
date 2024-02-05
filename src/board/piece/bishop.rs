@@ -1,4 +1,4 @@
-use super::*;
+use super::{Color, Piece, Ply, Square};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Bishop;
@@ -21,7 +21,8 @@ impl Piece for Bishop {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::board::PieceKind;
+    use super::{Bishop, Color, Piece, Ply, Square};
     use std::collections::HashSet;
 
     #[test]

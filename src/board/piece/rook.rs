@@ -1,4 +1,4 @@
-use super::*;
+use super::{Color, Piece, Ply, Square};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Rook;
@@ -21,7 +21,8 @@ impl Piece for Rook {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::board::PieceKind;
+    use super::{Color, Piece, Ply, Rook, Square};
     use std::collections::HashSet;
 
     #[test]

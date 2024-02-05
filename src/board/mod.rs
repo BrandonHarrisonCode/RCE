@@ -12,15 +12,22 @@ use piece::{Color, PieceKind};
 use ply::Ply;
 use square::Square;
 
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
+pub enum Castling {
+    #[default]
+    Availiable,
+    Unavailiable,
+}
+
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
     is_white_turn: bool,
 
-    w_kingside_castling: bool,
-    w_queenside_castling: bool,
-    b_kingside_castling: bool,
-    b_queenside_castling: bool,
+    w_kingside_castling: Castling,
+    w_queenside_castling: Castling,
+    b_kingside_castling: Castling,
+    b_queenside_castling: Castling,
 
     w_pawns: u64,
     w_king: u64,
@@ -55,7 +62,7 @@ impl Board {
     /// let board = Board::from_fen("8/8/8/8/8/8/8/8 w - - 0 1");
     /// ```
     #[allow(dead_code)]
-    pub fn from_fen(fen: &str) -> Board {
+    pub fn from_fen(fen: &str) -> Self {
         let fields: Vec<&str> = fen.split_ascii_whitespace().collect();
 
         let mut w_pawns: u64 = 0;
@@ -106,17 +113,17 @@ impl Board {
             _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
         };
 
-        let mut w_kingside_castling: bool = false;
-        let mut b_kingside_castling: bool = false;
-        let mut w_queenside_castling: bool = false;
-        let mut b_queenside_castling: bool = false;
+        let mut w_kingside_castling: Castling = Castling::Unavailiable;
+        let mut b_kingside_castling: Castling = Castling::Unavailiable;
+        let mut w_queenside_castling: Castling = Castling::Unavailiable;
+        let mut b_queenside_castling: Castling = Castling::Unavailiable;
 
         for chr in fields[2].chars() {
             match chr {
-                'K' => w_kingside_castling = true,
-                'k' => b_kingside_castling = true,
-                'Q' => w_queenside_castling = true,
-                'q' => b_queenside_castling = true,
+                'K' => w_kingside_castling = Castling::Availiable,
+                'k' => b_kingside_castling = Castling::Availiable,
+                'Q' => w_queenside_castling = Castling::Availiable,
+                'q' => b_queenside_castling = Castling::Availiable,
                 '-' => (),
                 _ => panic!("Unknown FEN castling notation: {}", chr),
             };
@@ -155,10 +162,10 @@ impl Board {
         Board {
             is_white_turn: true,
 
-            w_kingside_castling: true,
-            w_queenside_castling: true,
-            b_kingside_castling: true,
-            b_queenside_castling: true,
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
 
             w_pawns: 0b0000000000000000000000000000000000000000000000001111111100000000,
             w_king: 0b0000000000000000000000000000000000000000000000000000000000001000,
@@ -202,7 +209,7 @@ impl Board {
     /// assert!(board.has_kingside_castle(false));
     /// ```
     #[allow(dead_code)]
-    pub fn has_kingside_castle(&self, white: bool) -> bool {
+    pub fn kingside_castle_status(&self, white: bool) -> Castling {
         match white {
             true => self.w_kingside_castling,
             false => self.b_kingside_castling,
@@ -222,7 +229,7 @@ impl Board {
     /// assert!(board.has_queenside_castle(false));
     /// ```
     #[allow(dead_code)]
-    pub fn has_queenside_castle(&self, white: bool) -> bool {
+    pub fn queenside_castle_status(&self, white: bool) -> Castling {
         match white {
             true => self.w_queenside_castling,
             false => self.b_queenside_castling,
@@ -472,22 +479,22 @@ impl Board {
         }
         match &ply.dest {
             Square { rank: 0, file: 6 } => {
-                (self.has_kingside_castle(true)
+                (self.kingside_castle_status(true) == Castling::Availiable
                     && self.no_pieces_between(&Square::new("e1"), &Square::new("h1"))
                     && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))).then_some(ply).ok_or("Move is not valid. The white king cannot castle kingside.")
             }
             Square { rank: 0, file: 2 } => {
-                (self.has_queenside_castle(true)
+                 (self.queenside_castle_status(true) == Castling::Availiable
                     && self.no_pieces_between(&Square::new("e1"), &Square::new("a1"))
                     && self.no_checks_between(&Square::new("e1"), &Square::new("c1"))).then_some(ply).ok_or("Move is not valid. The white king cannot castle queenside.")
             }
             Square { rank: 7, file: 6 } => {
-                (self.has_kingside_castle(false)
+                 (self.kingside_castle_status(true) == Castling::Availiable
                     && self.no_pieces_between(&Square::new("e8"), &Square::new("g8"))
                     && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))).then_some(ply).ok_or("Move is not valid. The black king cannot castle kingside.")
             }
             Square { rank: 7, file: 2 } => {
-                (self.has_queenside_castle(false)
+                  (self.queenside_castle_status(true) == Castling::Availiable
                     && self.no_pieces_between(&Square::new("e8"), &Square::new("c8"))
                     && self.no_checks_between(&Square::new("e1"), &Square::new("g1"))).then_some(ply).ok_or("Move is not valid. The black king cannot castle queenside.")
             }
@@ -688,10 +695,10 @@ impl Board {
             self.replace_square(&rook_start, &rook_dest);
 
             match new_move.dest {
-                Square { rank: 0, file: 6 } => self.w_kingside_castling = false,
-                Square { rank: 0, file: 2 } => self.w_queenside_castling = false,
-                Square { rank: 7, file: 6 } => self.b_kingside_castling = false,
-                Square { rank: 7, file: 2 } => self.b_queenside_castling = false,
+                Square { rank: 0, file: 6 } => self.w_kingside_castling = Castling::Unavailiable,
+                Square { rank: 0, file: 2 } => self.w_queenside_castling = Castling::Unavailiable,
+                Square { rank: 7, file: 6 } => self.b_kingside_castling = Castling::Unavailiable,
+                Square { rank: 7, file: 2 } => self.b_queenside_castling = Castling::Unavailiable,
                 _ => panic!("Invalid castling king destination {}", new_move.dest),
             };
         }
@@ -745,10 +752,10 @@ impl Board {
             self.replace_square(&rook_dest, &rook_start);
 
             match old_move.dest {
-                Square { rank: 0, file: 6 } => self.w_kingside_castling = true,
-                Square { rank: 0, file: 2 } => self.w_queenside_castling = true,
-                Square { rank: 7, file: 6 } => self.b_kingside_castling = true,
-                Square { rank: 7, file: 2 } => self.b_queenside_castling = true,
+                Square { rank: 0, file: 6 } => self.w_kingside_castling = Castling::Availiable,
+                Square { rank: 0, file: 2 } => self.w_queenside_castling = Castling::Availiable,
+                Square { rank: 7, file: 6 } => self.b_kingside_castling = Castling::Availiable,
+                Square { rank: 7, file: 2 } => self.b_queenside_castling = Castling::Availiable,
                 _ => panic!("Invalid castling king destination {}", old_move.dest),
             };
         }
@@ -792,10 +799,10 @@ mod tests {
         let correct = Board {
             is_white_turn: true,
 
-            w_kingside_castling: false,
-            w_queenside_castling: false,
-            b_kingside_castling: false,
-            b_queenside_castling: false,
+            w_kingside_castling: Castling::Unavailiable,
+            w_queenside_castling: Castling::Unavailiable,
+            b_kingside_castling: Castling::Unavailiable,
+            b_queenside_castling: Castling::Unavailiable,
 
             w_pawns: 271368960,
             w_king: 2,
@@ -821,10 +828,10 @@ mod tests {
         let correct = Board {
             is_white_turn: false,
 
-            w_kingside_castling: false,
-            w_queenside_castling: false,
-            b_kingside_castling: false,
-            b_queenside_castling: false,
+            w_kingside_castling: Castling::Unavailiable,
+            w_queenside_castling: Castling::Unavailiable,
+            b_kingside_castling: Castling::Unavailiable,
+            b_queenside_castling: Castling::Unavailiable,
 
             w_pawns: 337691392,
             w_king: 1024,
@@ -957,45 +964,57 @@ mod tests {
     #[test]
     fn test_kingside_castle_true() {
         let board = Board::construct_starting_board();
-        assert!(board.has_kingside_castle(true));
-        assert!(board.has_kingside_castle(false));
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
     }
 
     #[test]
     fn test_queenside_castle_true() {
         let board = Board::construct_starting_board();
-        assert!(board.has_queenside_castle(true));
-        assert!(board.has_queenside_castle(false));
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
     }
 
     #[test]
     fn test_kingside_castle_false() {
         let mut board = Board::construct_starting_board();
-        assert!(board.has_kingside_castle(true));
-        assert!(board.has_kingside_castle(false));
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(true), Castling::Availiable);
 
-        board.w_kingside_castling = false;
-        assert!(!board.has_kingside_castle(true));
-        assert!(board.has_kingside_castle(false));
+        board.w_kingside_castling = Castling::Unavailiable;
+        assert_eq!(board.kingside_castle_status(true), Castling::Unavailiable);
+        assert_eq!(board.kingside_castle_status(false), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(true), Castling::Availiable);
 
-        board.b_kingside_castling = false;
-        assert!(!board.has_kingside_castle(true));
-        assert!(!board.has_kingside_castle(false));
+        board.b_kingside_castling = Castling::Unavailiable;
+        assert_eq!(board.kingside_castle_status(true), Castling::Unavailiable);
+        assert_eq!(board.kingside_castle_status(false), Castling::Unavailiable);
+        assert_eq!(board.queenside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(true), Castling::Availiable);
     }
 
     #[test]
     fn test_queenside_castle_false() {
         let mut board = Board::construct_starting_board();
-        assert!(board.has_queenside_castle(true));
-        assert!(board.has_queenside_castle(false));
+        assert_eq!(board.queenside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(false), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
 
-        board.w_queenside_castling = false;
-        assert!(!board.has_queenside_castle(true));
-        assert!(board.has_queenside_castle(false));
+        board.w_queenside_castling = Castling::Unavailiable;
+        assert_eq!(board.queenside_castle_status(true), Castling::Unavailiable);
+        assert_eq!(board.queenside_castle_status(false), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
 
-        board.b_queenside_castling = false;
-        assert!(!board.has_queenside_castle(true));
-        assert!(!board.has_queenside_castle(false));
+        board.b_queenside_castling = Castling::Unavailiable;
+        assert_eq!(board.queenside_castle_status(true), Castling::Unavailiable);
+        assert_eq!(board.queenside_castle_status(false), Castling::Unavailiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(true), Castling::Availiable);
     }
 
     #[test]
