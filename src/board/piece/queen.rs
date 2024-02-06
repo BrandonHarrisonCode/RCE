@@ -9,12 +9,12 @@ impl Piece for Queen {
     const WHITE_SYMBOL: &'static str = "♛";
     const BLACK_SYMBOL: &'static str = "♕";
 
-    fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
         let move_mask =
             square.get_rank_mask() | square.get_file_mask() | square.get_diagonals_mask();
         let squares = Square::get_squares_from_mask(move_mask);
 
-        squares.into_iter().map(|s| Ply::new(*square, s)).collect()
+        squares.into_iter().map(|s| Ply::new(square, s)).collect()
     }
 }
 
@@ -22,7 +22,7 @@ impl Piece for Queen {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::PieceKind;
+    use crate::board::Kind;
     use super::{Color, Piece, Ply, Queen, Square};
     use std::collections::HashSet;
 
@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_queen_get_piece_symbol_white() {
-        let piece = PieceKind::Queen(Color::White);
+        let piece = Kind::Queen(Color::White);
         let correct = "♛";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_queen_get_piece_symbol_black() {
-        let piece = PieceKind::Queen(Color::Black);
+        let piece = Kind::Queen(Color::Black);
         let correct = "♕";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -68,16 +68,16 @@ mod tests {
 
     #[test]
     fn test_queen_eq() {
-        let left = PieceKind::Queen(Color::White);
-        let right = PieceKind::Queen(Color::White);
+        let left = Kind::Queen(Color::White);
+        let right = Kind::Queen(Color::White);
 
         assert_eq!(left, right);
     }
 
     #[test]
     fn test_queen_neq() {
-        let left = PieceKind::Queen(Color::White);
-        let right = PieceKind::Queen(Color::Black);
+        let left = Kind::Queen(Color::White);
+        let right = Kind::Queen(Color::Black);
 
         assert_ne!(left, right);
     }
@@ -85,18 +85,18 @@ mod tests {
     #[test]
     fn test_queen_neq_rev() {
         // Test if addition is commutative
-        let right = PieceKind::Queen(Color::White);
-        let left = PieceKind::Queen(Color::Black);
+        let right = Kind::Queen(Color::White);
+        let left = Kind::Queen(Color::Black);
 
         assert_ne!(left, right);
     }
 
     #[test]
     fn test_queen_get_moveset_white_a1() {
-        let piece = PieceKind::Queen(Color::White);
+        let piece = Kind::Queen(Color::White);
         let start_square = Square::new("a1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("b2")),
             Ply::new(start_square, Square::new("c3")),
@@ -128,10 +128,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_b1() {
-        let piece = PieceKind::Queen(Color::White);
+        let piece = Kind::Queen(Color::White);
         let start_square = Square::new("b1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("c2")),
             Ply::new(start_square, Square::new("d3")),
@@ -163,10 +163,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_e4() {
-        let piece = PieceKind::Queen(Color::White);
+        let piece = Kind::Queen(Color::White);
         let start_square = Square::new("e4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("f5")),
             Ply::new(start_square, Square::new("g6")),
@@ -204,10 +204,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_d4() {
-        let piece = PieceKind::Queen(Color::White);
+        let piece = Kind::Queen(Color::White);
         let start_square = Square::new("d4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("e5")),
             Ply::new(start_square, Square::new("f6")),
@@ -245,10 +245,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_g6() {
-        let piece = PieceKind::Queen(Color::White);
+        let piece = Kind::Queen(Color::White);
         let start_square = Square::new("g6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("h7")),
             Ply::new(start_square, Square::new("h5")),
@@ -282,10 +282,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_h6() {
-        let piece = PieceKind::Queen(Color::White);
+        let piece = Kind::Queen(Color::White);
         let start_square = Square::new("h6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("g7")),
             Ply::new(start_square, Square::new("f8")),
@@ -317,10 +317,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_a1() {
-        let piece = PieceKind::Queen(Color::Black);
+        let piece = Kind::Queen(Color::Black);
         let start_square = Square::new("a1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("b2")),
             Ply::new(start_square, Square::new("c3")),
@@ -352,10 +352,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_b1() {
-        let piece = PieceKind::Queen(Color::Black);
+        let piece = Kind::Queen(Color::Black);
         let start_square = Square::new("b1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("c2")),
             Ply::new(start_square, Square::new("d3")),
@@ -387,10 +387,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_e4() {
-        let piece = PieceKind::Queen(Color::Black);
+        let piece = Kind::Queen(Color::Black);
         let start_square = Square::new("e4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("f5")),
             Ply::new(start_square, Square::new("g6")),
@@ -428,10 +428,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_d4() {
-        let piece = PieceKind::Queen(Color::Black);
+        let piece = Kind::Queen(Color::Black);
         let start_square = Square::new("d4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("e5")),
             Ply::new(start_square, Square::new("f6")),
@@ -469,10 +469,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_g6() {
-        let piece = PieceKind::Queen(Color::Black);
+        let piece = Kind::Queen(Color::Black);
         let start_square = Square::new("g6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("h7")),
             Ply::new(start_square, Square::new("h5")),
@@ -506,10 +506,10 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_h6() {
-        let piece = PieceKind::Queen(Color::Black);
+        let piece = Kind::Queen(Color::Black);
         let start_square = Square::new("h6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("g7")),
             Ply::new(start_square, Square::new("f8")),

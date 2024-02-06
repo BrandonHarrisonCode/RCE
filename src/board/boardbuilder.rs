@@ -1,5 +1,6 @@
 use super::ply::Ply;
 use super::Board;
+use super::piece::Color;
 use super::Castling;
 
 #[derive(Default)]
@@ -29,8 +30,8 @@ pub struct BoardBuilder {
 
 impl BoardBuilder {
     #[allow(dead_code)]
-    pub fn default() -> BoardBuilder {
-        BoardBuilder {
+    pub const fn default() -> Self {
+        Self {
             is_white_turn: true,
 
             w_kingside_castling: Castling::Availiable,
@@ -57,85 +58,85 @@ impl BoardBuilder {
 
 
     #[allow(dead_code)]
-    pub fn white_turn(mut self, white: bool) -> BoardBuilder {
+    pub const fn white_turn(mut self, white: bool) -> Self {
         self.is_white_turn = white;
         self
     }
 
     #[allow(dead_code)]
-    pub fn kingside_castling(mut self, white: bool, value: Castling) -> BoardBuilder {
-        match white {
-            true => self.w_kingside_castling = value,
-            false => self.b_kingside_castling = value,
+    pub const fn kingside_castling(mut self, color: Color, value: Castling) -> Self {
+        match color {
+            Color::White => self.w_kingside_castling = value,
+            Color::Black => self.b_kingside_castling = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn queenside_castling(mut self, white: bool, value: Castling) -> BoardBuilder {
-        match white {
-            true => self.w_queenside_castling = value,
-            false => self.b_queenside_castling = value,
+    pub const fn queenside_castling(mut self, color: Color, value: Castling) -> Self {
+        match color {
+            Color::White => self.w_queenside_castling = value,
+            Color::Black => self.b_queenside_castling = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn pawns(mut self, white: bool, value: u64) -> BoardBuilder {
-        match white {
-            true => self.w_pawns = value,
-            false => self.b_pawns = value,
+    pub const fn pawns(mut self, color: Color, value: u64) -> Self {
+        match color {
+            Color::White => self.w_pawns = value,
+            Color::Black => self.b_pawns = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn king(mut self, white: bool, value: u64) -> BoardBuilder {
-        match white {
-            true => self.w_king = value,
-            false => self.b_king = value,
+    pub const fn king(mut self, color: Color, value: u64) -> Self {
+        match color {
+            Color::White => self.w_king = value,
+            Color::Black => self.b_king = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn queens(mut self, white: bool, value: u64) -> BoardBuilder {
-        match white {
-            true => self.w_queens = value,
-            false => self.b_queens = value,
+    pub const fn queens(mut self, color: Color, value: u64) -> Self {
+        match color {
+            Color::White => self.w_queens = value,
+            Color::Black => self.b_queens = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn rooks(mut self, white: bool, value: u64) -> BoardBuilder {
-        match white {
-            true => self.w_rooks = value,
-            false => self.b_rooks = value,
+    pub const fn rooks(mut self, color: Color, value: u64) -> Self {
+        match color {
+            Color::White => self.w_rooks = value,
+            Color::Black => self.b_rooks = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn bishops(mut self, white: bool, value: u64) -> BoardBuilder {
-        match white {
-            true => self.w_bishops = value,
-            false => self.b_bishops = value,
+    pub const fn bishops(mut self, color: Color, value: u64) -> Self {
+        match color {
+            Color::White => self.w_bishops = value,
+            Color::Black => self.b_bishops = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn knights(mut self, white: bool, value: u64) -> BoardBuilder {
-        match white {
-            true => self.w_knights = value,
-            false => self.b_knights = value,
+    pub const fn knights(mut self, color: Color, value: u64) -> Self {
+        match color {
+            Color::White => self.w_knights = value,
+            Color::Black => self.b_knights = value,
         }
         self
     }
 
     #[allow(dead_code)]
-    pub fn history(mut self, history: &[Ply]) -> BoardBuilder {
+    pub fn history(mut self, history: &[Ply]) -> Self {
         self.history = history.to_vec();
         self
     }
@@ -263,7 +264,7 @@ mod tests {
 
     #[test]
     fn board_builder_white_kingside_castling() {
-        let board = BoardBuilder::default().kingside_castling(true, Castling::Unavailiable).build();
+        let board = BoardBuilder::default().kingside_castling(Color::White, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -292,7 +293,7 @@ mod tests {
 
     #[test]
     fn board_builder_black_kingside_castling() {
-        let board = BoardBuilder::default().kingside_castling(false, Castling::Unavailiable).build();
+        let board = BoardBuilder::default().kingside_castling(Color::Black, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -321,7 +322,7 @@ mod tests {
 
     #[test]
     fn board_builder_white_queenside_castling() {
-        let board = BoardBuilder::default().queenside_castling(true, Castling::Unavailiable).build();
+        let board = BoardBuilder::default().queenside_castling(Color::White, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -350,7 +351,7 @@ mod tests {
 
     #[test]
     fn board_builder_black_queenside_castling() {
-        let board = BoardBuilder::default().queenside_castling(false, Castling::Unavailiable).build();
+        let board = BoardBuilder::default().queenside_castling(Color::Black, Castling::Unavailiable).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -379,7 +380,7 @@ mod tests {
 
     #[test]
     fn board_builder_pawns() {
-        let board = BoardBuilder::default().pawns(true, 1).pawns(false, 2).build();
+        let board = BoardBuilder::default().pawns(Color::White, 1).pawns(Color::Black, 2).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -408,7 +409,7 @@ mod tests {
 
     #[test]
     fn board_builder_king() {
-        let board = BoardBuilder::default().king(true, 1).king(false, 2).build();
+        let board = BoardBuilder::default().king(Color::White, 1).king(Color::Black, 2).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -437,7 +438,7 @@ mod tests {
 
     #[test]
     fn board_builder_queens() {
-        let board = BoardBuilder::default().queens(true, 1).queens(false, 2).build();
+        let board = BoardBuilder::default().queens(Color::White, 1).queens(Color::Black, 2).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -466,7 +467,7 @@ mod tests {
 
     #[test]
     fn board_builder_rooks() {
-        let board = BoardBuilder::default().rooks(true, 1).rooks(false, 2).build();
+        let board = BoardBuilder::default().rooks(Color::White, 1).rooks(Color::Black, 2).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -495,7 +496,7 @@ mod tests {
 
     #[test]
     fn board_builder_bishops() {
-        let board = BoardBuilder::default().bishops(true, 1).bishops(false, 2).build();
+        let board = BoardBuilder::default().bishops(Color::White, 1).bishops(Color::Black, 2).build();
         let correct = Board {
             is_white_turn: true,
 
@@ -524,7 +525,7 @@ mod tests {
 
     #[test]
     fn board_builder_knights() {
-        let board = BoardBuilder::default().knights(true, 1).knights(false, 2).build();
+        let board = BoardBuilder::default().knights(Color::White, 1).knights(Color::Black, 2).build();
         let correct = Board {
             is_white_turn: true,
 

@@ -17,14 +17,14 @@ use pawn::Pawn;
 use queen::Queen;
 use rook::Rook;
 
-#[derive(Clone, Copy, PartialEq, Hash, Display, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Display, Debug)]
 pub enum Color {
     White,
     Black,
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug)]
-pub enum PieceKind {
+pub enum Kind {
     Pawn(Color),
     King(Color),
     Queen(Color),
@@ -33,45 +33,45 @@ pub enum PieceKind {
     Knight(Color),
 }
 
-impl Eq for PieceKind {}
+impl Eq for Kind {}
 
-impl fmt::Display for PieceKind {
+impl fmt::Display for Kind {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.get_piece_symbol())
     }
 }
 
-impl PieceKind {
-    pub fn get_color(&self) -> Color {
+impl Kind {
+    pub const fn get_color(self) -> Color {
         match self {
-            PieceKind::Pawn(c) => *c,
-            PieceKind::King(c) => *c,
-            PieceKind::Queen(c) => *c,
-            PieceKind::Rook(c) => *c,
-            PieceKind::Bishop(c) => *c,
-            PieceKind::Knight(c) => *c,
+            Self::Pawn(c) 
+                | Self::King(c) 
+                | Self::Queen(c) 
+                | Self::Rook(c) 
+                | Self::Bishop(c) 
+                | Self::Knight(c) => c,
         }
     }
 
-    pub fn get_piece_symbol(&self) -> &'static str {
+    pub fn get_piece_symbol(self) -> &'static str {
         match self {
-            PieceKind::Pawn(c) => Pawn::get_piece_symbol(c),
-            PieceKind::King(c) => King::get_piece_symbol(c),
-            PieceKind::Queen(c) => Queen::get_piece_symbol(c),
-            PieceKind::Rook(c) => Rook::get_piece_symbol(c),
-            PieceKind::Bishop(c) => Bishop::get_piece_symbol(c),
-            PieceKind::Knight(c) => Knight::get_piece_symbol(c),
+            Self::Pawn(c) => Pawn::get_piece_symbol(c),
+            Self::King(c) => King::get_piece_symbol(c),
+            Self::Queen(c) => Queen::get_piece_symbol(c),
+            Self::Rook(c) => Rook::get_piece_symbol(c),
+            Self::Bishop(c) => Bishop::get_piece_symbol(c),
+            Self::Knight(c) => Knight::get_piece_symbol(c),
         }
     }
 
-    pub fn get_moveset(&self, square: &Square) -> Vec<Ply> {
+    pub fn get_moveset(self, square: Square) -> Vec<Ply> {
         let moveset = match self {
-            PieceKind::Pawn(color) => Pawn::get_moveset(square, color),
-            PieceKind::King(color) => King::get_moveset(square, color),
-            PieceKind::Queen(color) => Queen::get_moveset(square, color),
-            PieceKind::Rook(color) => Rook::get_moveset(square, color),
-            PieceKind::Bishop(color) => Bishop::get_moveset(square, color),
-            PieceKind::Knight(color) => Knight::get_moveset(square, color),
+            Self::Pawn(color) => Pawn::get_moveset(square, color),
+            Self::King(color) => King::get_moveset(square, color),
+            Self::Queen(color) => Queen::get_moveset(square, color),
+            Self::Rook(color) => Rook::get_moveset(square, color),
+            Self::Bishop(color) => Bishop::get_moveset(square, color),
+            Self::Knight(color) => Knight::get_moveset(square, color),
         };
 
         moveset
@@ -91,14 +91,14 @@ pub trait Piece: Clone + PartialEq + Eq {
     const WHITE_SYMBOL: &'static str;
     const BLACK_SYMBOL: &'static str;
     
-    fn get_piece_symbol(color: &Color) -> &'static str {
+    fn get_piece_symbol(color: Color) -> &'static str {
         match color {
             Color::White => Self::WHITE_SYMBOL,
             Color::Black => Self::BLACK_SYMBOL,
         }
     }
 
-    fn get_moveset(square: &Square, color: &Color) -> Vec<Ply>;
+    fn get_moveset(square: Square, color: Color) -> Vec<Ply>;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn test_derived_traits_piece() {
-        let piece = PieceKind::Pawn(Color::White);
+        let piece = Kind::Pawn(Color::White);
         dbg!(&piece);
 
         assert_eq!(piece, piece.clone());
@@ -117,63 +117,63 @@ mod tests {
 
     #[test]
     fn display() {
-        PieceKind::Pawn(Color::White).to_string();
-        PieceKind::King(Color::White).to_string();
-        PieceKind::Queen(Color::White).to_string();
-        PieceKind::Rook(Color::White).to_string();
-        PieceKind::Bishop(Color::White).to_string();
-        PieceKind::Knight(Color::White).to_string();
+        Kind::Pawn(Color::White).to_string();
+        Kind::King(Color::White).to_string();
+        Kind::Queen(Color::White).to_string();
+        Kind::Rook(Color::White).to_string();
+        Kind::Bishop(Color::White).to_string();
+        Kind::Knight(Color::White).to_string();
 
-        PieceKind::Pawn(Color::Black).to_string();
-        PieceKind::King(Color::Black).to_string();
-        PieceKind::Queen(Color::Black).to_string();
-        PieceKind::Rook(Color::Black).to_string();
-        PieceKind::Bishop(Color::Black).to_string();
-        PieceKind::Knight(Color::Black).to_string();
+        Kind::Pawn(Color::Black).to_string();
+        Kind::King(Color::Black).to_string();
+        Kind::Queen(Color::Black).to_string();
+        Kind::Rook(Color::Black).to_string();
+        Kind::Bishop(Color::Black).to_string();
+        Kind::Knight(Color::Black).to_string();
     }
 
     #[test]
     fn test_get_color() {
-        assert_eq!(PieceKind::Pawn(Color::White).get_color(), Color::White);
-        assert_eq!(PieceKind::King(Color::White).get_color(), Color::White);
-        assert_eq!(PieceKind::Queen(Color::White).get_color(), Color::White);
-        assert_eq!(PieceKind::Rook(Color::White).get_color(), Color::White);
-        assert_eq!(PieceKind::Bishop(Color::White).get_color(), Color::White);
-        assert_eq!(PieceKind::Knight(Color::White).get_color(), Color::White);
+        assert_eq!(Kind::Pawn(Color::White).get_color(), Color::White);
+        assert_eq!(Kind::King(Color::White).get_color(), Color::White);
+        assert_eq!(Kind::Queen(Color::White).get_color(), Color::White);
+        assert_eq!(Kind::Rook(Color::White).get_color(), Color::White);
+        assert_eq!(Kind::Bishop(Color::White).get_color(), Color::White);
+        assert_eq!(Kind::Knight(Color::White).get_color(), Color::White);
 
-        assert_eq!(PieceKind::Pawn(Color::Black).get_color(), Color::Black);
-        assert_eq!(PieceKind::King(Color::Black).get_color(), Color::Black);
-        assert_eq!(PieceKind::Queen(Color::Black).get_color(), Color::Black);
-        assert_eq!(PieceKind::Rook(Color::Black).get_color(), Color::Black);
-        assert_eq!(PieceKind::Bishop(Color::Black).get_color(), Color::Black);
-        assert_eq!(PieceKind::Knight(Color::Black).get_color(), Color::Black);
+        assert_eq!(Kind::Pawn(Color::Black).get_color(), Color::Black);
+        assert_eq!(Kind::King(Color::Black).get_color(), Color::Black);
+        assert_eq!(Kind::Queen(Color::Black).get_color(), Color::Black);
+        assert_eq!(Kind::Rook(Color::Black).get_color(), Color::Black);
+        assert_eq!(Kind::Bishop(Color::Black).get_color(), Color::Black);
+        assert_eq!(Kind::Knight(Color::Black).get_color(), Color::Black);
     }
 
     #[test]
     fn check_eq() {
-        let piece1 = PieceKind::Pawn(Color::White);
-        let piece2 = PieceKind::Pawn(Color::White);
+        let piece1 = Kind::Pawn(Color::White);
+        let piece2 = Kind::Pawn(Color::White);
         assert_eq!(piece1, piece2);
     }
 
     #[test]
     fn check_ne_color() {
-        let piece1 = PieceKind::Pawn(Color::White);
-        let piece2 = PieceKind::Pawn(Color::Black);
+        let piece1 = Kind::Pawn(Color::White);
+        let piece2 = Kind::Pawn(Color::Black);
         assert_ne!(piece1, piece2);
     }
 
     #[test]
     fn check_ne_kind() {
-        let piece1 = PieceKind::Pawn(Color::White);
-        let piece2 = PieceKind::Queen(Color::White);
+        let piece1 = Kind::Pawn(Color::White);
+        let piece2 = Kind::Queen(Color::White);
         assert_ne!(piece1, piece2);
     }
 
     #[test]
     fn check_ne_both() {
-        let piece1 = PieceKind::Pawn(Color::White);
-        let piece2 = PieceKind::Queen(Color::Black);
+        let piece1 = Kind::Pawn(Color::White);
+        let piece2 = Kind::Queen(Color::Black);
         assert_ne!(piece1, piece2);
     }
 

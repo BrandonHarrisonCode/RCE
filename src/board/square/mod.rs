@@ -6,8 +6,8 @@ pub struct Square {
     pub file: u8,
 }
 impl Square {
-    #[allow(dead_code)]
-    pub fn new(algebraic_notation: &str) -> Square {
+    #[allow(clippy::cast_possible_truncation)]
+    pub fn new(algebraic_notation: &str) -> Self {
         let mut iter = algebraic_notation.chars();
         let filechar: char = iter.next().unwrap();
 
@@ -21,11 +21,11 @@ impl Square {
             .unwrap()
             - 1) as u8;
 
-        Square { rank, file }
+        Self { rank, file }
     }
 
-    pub fn get_transit_squares(&self, dest: &Square) -> Vec<Square> {
-        let mut squares: Vec<Square> = vec![];
+    pub fn get_transit_squares(self, dest: Self) -> Vec<Self> {
+        let mut squares: Vec<Self> = vec![];
 
         let mut rank = self.rank;
         let mut file = self.file;
@@ -43,7 +43,7 @@ impl Square {
                 std::cmp::Ordering::Equal => {}
             }
 
-            squares.push(Square { rank, file });
+            squares.push(Self { rank, file });
         }
 
         squares.pop(); // Remove the destination square from the list of transit squares
@@ -60,7 +60,7 @@ impl Square {
     /// ```
     /// let mask = Square::new("e2").get_mask();
     /// ```
-    pub fn get_mask(&self) -> u64 {
+    pub const fn get_mask(self) -> u64 {
         self.get_rank_mask() & self.get_file_mask()
     }
 
@@ -74,7 +74,7 @@ impl Square {
     /// ```
     /// let rank_mask = Square::new("a1").get_rank_mask());
     /// ```
-    pub fn get_rank_mask(&self) -> u64 {
+    pub const fn get_rank_mask(self) -> u64 {
         0xFF << (self.rank * 8)
     }
 
@@ -88,8 +88,8 @@ impl Square {
     /// ```
     /// let file_mask = Square::new("a1").get_file_mask();
     /// ```
-    pub fn get_file_mask(&self) -> u64 {
-        0x0101010101010101 << (8 - (self.file + 1))
+    pub const fn get_file_mask(self) -> u64 {
+        0x_01010101_01010101 << (8 - (self.file + 1))
     }
 
     /// Creates a mask that marks both diagonals of a given square
@@ -102,11 +102,11 @@ impl Square {
     /// ```
     /// let diagonals_mask = Square::new("a1").get_diagonals_mask();
     /// ```
-    pub fn get_diagonals_mask(&self) -> u64 {
+    pub fn get_diagonals_mask(self) -> u64 {
         let start = self.u64();
         let mut mask = 0u64;
 
-        let mut step: i128 = start as i128;
+        let mut step: i128 = i128::from(start);
         while step < 64 {
             mask |= 1 << step;
             if step % 8 == 0 {
@@ -115,7 +115,7 @@ impl Square {
             step += 7;
         }
 
-        step = start as i128;
+        step = i128::from(start);
         while step < 64 {
             mask |= 1 << step;
             if (step + 1) % 8 == 0 {
@@ -124,7 +124,7 @@ impl Square {
             step += 9;
         }
 
-        step = start as i128;
+        step = i128::from(start);
         while step >= 0 {
             mask |= 1 << step;
             if (step + 1) % 8 == 0 {
@@ -133,7 +133,7 @@ impl Square {
             step -= 7;
         }
 
-        step = start as i128;
+        step = i128::from(start);
         while step >= 0 {
             mask |= 1 << step;
             if step % 8 == 0 {
@@ -155,7 +155,7 @@ impl Square {
     /// ```
     /// let num = Square::new("a1").u64();
     /// ```
-    fn u64(&self) -> u64 {
+    fn u64(self) -> u64 {
         (self.rank * 8 + (7 - self.file)).into()
     }
 
@@ -169,12 +169,12 @@ impl Square {
     /// ```
     /// let squares = Square::get_squares_from_mask(0xFF);
     /// ```
-    pub fn get_squares_from_mask(mask: u64) -> Vec<Square> {
-        let mut squares: Vec<Square> = vec![];
+    pub fn get_squares_from_mask(mask: u64) -> Vec<Self> {
+        let mut squares: Vec<Self> = vec![];
 
         for i in 0..64 {
             if mask & (1 << i) != 0 {
-                squares.push(Square {
+                squares.push(Self {
                     rank: i / 8,
                     file: 7 - (i % 8),
                 });
@@ -185,51 +185,52 @@ impl Square {
     }
 }
 
-impl std::ops::Add<SquareDelta> for Square {
-    type Output = Square;
+impl std::ops::Add<Delta> for Square {
+    type Output = Self;
 
-    fn add(self, other: SquareDelta) -> Square {
-        Square {
-            rank: (self.rank as i16 + other.rank_delta as i16) as u8,
-            file: (self.file as i16 + other.file_delta as i16) as u8,
+    #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+    fn add(self, other: Delta) -> Self {
+        Self {
+            rank: (i16::from(self.rank) + i16::from(other.rank_delta)) as u8,
+            file: (i16::from(self.file) + i16::from(other.file_delta)) as u8,
         }
     }
 }
 
 impl std::ops::Add<Direction> for Square {
-    type Output = Square;
+    type Output = Self;
 
-    fn add(self, direction: Direction) -> Square {
+    fn add(self, direction: Direction) -> Self {
         let delta = match direction {
-            Direction::North => SquareDelta {
+            Direction::North => Delta {
                 rank_delta: 1,
                 file_delta: 0,
             },
-            Direction::NorthEast => SquareDelta {
+            Direction::NorthEast => Delta {
                 rank_delta: 1,
                 file_delta: 1,
             },
-            Direction::East => SquareDelta {
+            Direction::East => Delta {
                 rank_delta: 0,
                 file_delta: 1,
             },
-            Direction::SouthEast => SquareDelta {
+            Direction::SouthEast => Delta {
                 rank_delta: -1,
                 file_delta: 1,
             },
-            Direction::South => SquareDelta {
+            Direction::South => Delta {
                 rank_delta: -1,
                 file_delta: 0,
             },
-            Direction::SouthWest => SquareDelta {
+            Direction::SouthWest => Delta {
                 rank_delta: -1,
                 file_delta: -1,
             },
-            Direction::West => SquareDelta {
+            Direction::West => Delta {
                 rank_delta: 0,
                 file_delta: -1,
             },
-            Direction::NorthWest => SquareDelta {
+            Direction::NorthWest => Delta {
                 rank_delta: 1,
                 file_delta: -1,
             },
@@ -251,7 +252,7 @@ impl fmt::Display for Square {
     }
 }
 
-pub struct SquareDelta {
+pub struct Delta {
     rank_delta: i8,
     file_delta: i8,
 }
@@ -476,8 +477,8 @@ mod tests {
             result,
             correct,
             "Rank mask for h6 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(&correct),
-            debug_bitboard(&result),
+            debug_bitboard(correct),
+            debug_bitboard(result),
         );
     }
 
@@ -491,8 +492,8 @@ mod tests {
             result,
             correct,
             "Rank mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(&correct),
-            debug_bitboard(&result),
+            debug_bitboard(correct),
+            debug_bitboard(result),
         );
     }
 
@@ -506,8 +507,8 @@ mod tests {
             result,
             correct,
             "Rank mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(&correct),
-            debug_bitboard(&result),
+            debug_bitboard(correct),
+            debug_bitboard(result),
         );
     }
 
@@ -521,8 +522,8 @@ mod tests {
             result,
             correct,
             "File mask for h6 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(&correct),
-            debug_bitboard(&result),
+            debug_bitboard(correct),
+            debug_bitboard(result),
         );
     }
 
@@ -536,8 +537,8 @@ mod tests {
             result,
             correct,
             "File mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(&correct),
-            debug_bitboard(&result),
+            debug_bitboard(correct),
+            debug_bitboard(result),
         );
     }
 
@@ -551,8 +552,8 @@ mod tests {
             result,
             correct,
             "File mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(&correct),
-            debug_bitboard(&result),
+            debug_bitboard(correct),
+            debug_bitboard(result),
         );
     }
 
@@ -892,7 +893,7 @@ mod tests {
     fn test_transit_squares_a1_to_h8() {
         let start_square = Square::new("a1");
         let dest_square = Square::new("h8");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
             Square::new("b2"),
             Square::new("c3"),
@@ -909,7 +910,7 @@ mod tests {
     fn test_transit_squares_h8_to_a1() {
         let start_square = Square::new("h8");
         let dest_square = Square::new("a1");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
             Square::new("g7"),
             Square::new("f6"),
@@ -926,7 +927,7 @@ mod tests {
     fn test_transit_squares_a8_to_h1() {
         let start_square = Square::new("a8");
         let dest_square = Square::new("h1");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
             Square::new("b7"),
             Square::new("c6"),
@@ -943,7 +944,7 @@ mod tests {
     fn test_transit_squares_h1_to_a8() {
         let start_square = Square::new("h1");
         let dest_square = Square::new("a8");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
             Square::new("g2"),
             Square::new("f3"),
@@ -960,7 +961,7 @@ mod tests {
     fn test_transit_squares_e4_to_e7() {
         let start_square = Square::new("e4");
         let dest_square = Square::new("e7");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![Square::new("e5"), Square::new("e6")];
 
         assert_eq!(result, correct);
@@ -970,7 +971,7 @@ mod tests {
     fn test_transit_squares_e7_to_e4() {
         let start_square = Square::new("e7");
         let dest_square = Square::new("e4");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![Square::new("e6"), Square::new("e5")];
 
         assert_eq!(result, correct);
@@ -980,7 +981,7 @@ mod tests {
     fn test_transit_squares_d3_to_f3() {
         let start_square = Square::new("d3");
         let dest_square = Square::new("f3");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![Square::new("e3")];
 
         assert_eq!(result, correct);
@@ -990,7 +991,7 @@ mod tests {
     fn test_transit_squares_f3_to_d3() {
         let start_square = Square::new("f3");
         let dest_square = Square::new("d3");
-        let result = start_square.get_transit_squares(&dest_square);
+        let result = start_square.get_transit_squares(dest_square);
         let correct = vec![Square::new("e3")];
 
         assert_eq!(result, correct);

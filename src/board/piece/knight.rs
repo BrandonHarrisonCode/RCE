@@ -9,60 +9,60 @@ impl Piece for Knight {
     const WHITE_SYMBOL: &'static str = "♞";
     const BLACK_SYMBOL: &'static str = "♘";
 
-    fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
         vec![
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::North
                     + Direction::North
                     + Direction::West,
             ),
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::North
                     + Direction::North
                     + Direction::East,
             ),
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::South
                     + Direction::South
                     + Direction::West,
             ),
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::South
                     + Direction::South
                     + Direction::East,
             ),
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::East
                     + Direction::East
                     + Direction::North,
             ),
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::East
                     + Direction::East
                     + Direction::South,
             ),
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::West
                     + Direction::West
                     + Direction::North,
             ),
             Ply::new(
-                *square,
-                *square
+                square,
+                square
                     + Direction::West
                     + Direction::West
                     + Direction::South,
@@ -75,7 +75,7 @@ impl Piece for Knight {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::PieceKind;
+    use crate::board::Kind;
     use super::{Color, Ply, Square, Piece, Knight};
     use std::collections::HashSet;
 
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_piece_symbol_white() {
-        let piece = PieceKind::Knight(Color::White);
+        let piece = Kind::Knight(Color::White);
         let correct = "♞";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_piece_symbol_black() {
-        let piece = PieceKind::Knight(Color::Black);
+        let piece = Kind::Knight(Color::Black);
         let correct = "♘";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -121,16 +121,16 @@ mod tests {
 
     #[test]
     fn test_knight_eq() {
-        let left = PieceKind::Knight(Color::White);
-        let right = PieceKind::Knight(Color::White);
+        let left = Kind::Knight(Color::White);
+        let right = Kind::Knight(Color::White);
 
         assert_eq!(left, right);
     }
 
     #[test]
     fn test_knight_neq() {
-        let left = PieceKind::Knight(Color::White);
-        let right = PieceKind::Knight(Color::Black);
+        let left = Kind::Knight(Color::White);
+        let right = Kind::Knight(Color::Black);
 
         assert_ne!(left, right);
     }
@@ -138,18 +138,18 @@ mod tests {
     #[test]
     fn test_knight_neq_rev() {
         // Test if addition is commutative
-        let right = PieceKind::Knight(Color::White);
-        let left = PieceKind::Knight(Color::Black);
+        let right = Kind::Knight(Color::White);
+        let left = Kind::Knight(Color::Black);
 
         assert_ne!(left, right);
     }
 
     #[test]
     fn test_knight_get_moveset_white_b1() {
-        let piece = PieceKind::Knight(Color::White);
+        let piece = Kind::Knight(Color::White);
         let start_square = Square::new("b1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a3")),
             Ply::new(start_square, Square::new("c3")),
@@ -161,10 +161,10 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_white_d4() {
-        let piece = PieceKind::Knight(Color::White);
+        let piece = Kind::Knight(Color::White);
         let start_square = Square::new("d4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("c2")), // Down 2, Left 1
             Ply::new(start_square, Square::new("e2")), // Down 2, Right 1
@@ -183,10 +183,10 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_white_h6() {
-        let piece = PieceKind::Knight(Color::White);
+        let piece = Kind::Knight(Color::White);
         let start_square = Square::new("h6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("g4")), // Down 2, Left 1
             Ply::new(start_square, Square::new("g8")), // Up 2, Left 1
@@ -201,10 +201,10 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_black_b1() {
-        let piece = PieceKind::Knight(Color::Black);
+        let piece = Kind::Knight(Color::Black);
         let start_square = Square::new("b1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a3")),
             Ply::new(start_square, Square::new("c3")),
@@ -216,10 +216,10 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_black_d4() {
-        let piece = PieceKind::Knight(Color::Black);
+        let piece = Kind::Knight(Color::Black);
         let start_square = Square::new("d4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("c2")), // Down 2, Left 1
             Ply::new(start_square, Square::new("e2")), // Down 2, Right 1
@@ -238,10 +238,10 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_black_h6() {
-        let piece = PieceKind::Knight(Color::Black);
+        let piece = Kind::Knight(Color::Black);
         let start_square = Square::new("h6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("g4")), // Down 2, Left 1
             Ply::new(start_square, Square::new("g8")), // Up 2, Left 1

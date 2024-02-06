@@ -1,3 +1,10 @@
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::cargo,
+)]
+
 #[macro_use]
 extern crate strum_macros;
 extern crate derive_more;
@@ -14,13 +21,13 @@ fn main() {
     println!("{TITLE} - {SHORT_TITLE}");
     let mut board = Board::construct_starting_board();
 
-    println!("{}", board);
+    println!("{board}");
 
     let moves = board.get_legal_moves();
 
     for pmove in moves {
-        board.make_move(&pmove);
-        println!("{}:\n{}", pmove, board);
+        board.make_move(pmove);
+        println!("{pmove}:\n{board}");
         // println!("Iterating moves...");
         // let new_moves = board.get_all_moves();
         // for npmove in new_moves {
@@ -31,6 +38,6 @@ fn main() {
         //     board.unmake_move(npmove);
         // }
         // println!("Ending iteration...");
-        board.unmake_move(&pmove);
+        board.unmake_move(pmove);
     }
 }

@@ -14,29 +14,29 @@ impl Piece for Pawn {
     /// - [X] Takes diagonally forward
     /// - [ ] En passant
     /// - [ ] Promotion
-    fn get_moveset(square: &Square, color: &Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, color: Color) -> Vec<Ply> {
         let (direction, starting_rank) = match color {
             Color::White => (Direction::North, 1),
             Color::Black => (Direction::South, 6),
         };
         let mut output: Vec<Ply> = vec![
-            Ply::new(*square, *square + direction),
+            Ply::new(square, square + direction),
             Ply::builder(
-                *square,
-                *square + direction + Direction::East,
+                square,
+                square + direction + Direction::East,
             )
             .build(),
             Ply::builder(
-                *square,
-                *square + direction + Direction::West,
+                square,
+                square + direction + Direction::West,
             )
             .build(),
         ];
 
         if square.rank == starting_rank {
             output.push(Ply::new(
-                *square,
-                *square + direction + direction,
+                square,
+                square + direction + direction,
             ));
         }
         output
@@ -47,7 +47,7 @@ impl Piece for Pawn {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::PieceKind;
+    use crate::board::Kind;
     use super::{Color, Piece, Pawn, Ply, Square};
     use std::collections::HashSet;
 
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_piece_symbol_white() {
-        let piece = PieceKind::Pawn(Color::White);
+        let piece = Kind::Pawn(Color::White);
         let correct = "♟";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_piece_symbol_black() {
-        let piece = PieceKind::Pawn(Color::Black);
+        let piece = Kind::Pawn(Color::Black);
         let correct = "♙";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -93,16 +93,16 @@ mod tests {
 
     #[test]
     fn test_pawn_eq() {
-        let left = PieceKind::Pawn(Color::White);
-        let right = PieceKind::Pawn(Color::White);
+        let left = Kind::Pawn(Color::White);
+        let right = Kind::Pawn(Color::White);
 
         assert_eq!(left, right);
     }
 
     #[test]
     fn test_pawn_neq() {
-        let left = PieceKind::Pawn(Color::White);
-        let right = PieceKind::Pawn(Color::Black);
+        let left = Kind::Pawn(Color::White);
+        let right = Kind::Pawn(Color::Black);
 
         assert_ne!(left, right);
     }
@@ -110,18 +110,18 @@ mod tests {
     #[test]
     fn test_pawn_neq_rev() {
         // Test if addition is commutative
-        let right = PieceKind::Pawn(Color::White);
-        let left = PieceKind::Pawn(Color::Black);
+        let right = Kind::Pawn(Color::White);
+        let left = Kind::Pawn(Color::Black);
 
         assert_ne!(left, right);
     }
 
     #[test]
     fn test_pawn_get_moveset_white_a2() {
-        let piece = PieceKind::Pawn(Color::White);
+        let piece = Kind::Pawn(Color::White);
         let start_square = Square::new("a2");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a3")),
             Ply::new(start_square, Square::new("b3")),
@@ -135,10 +135,10 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_d2() {
-        let piece = PieceKind::Pawn(Color::White);
+        let piece = Kind::Pawn(Color::White);
         let start_square = Square::new("d2");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("d3")),
             Ply::new(start_square, Square::new("c3")),
@@ -153,10 +153,10 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_h6() {
-        let piece = PieceKind::Pawn(Color::White);
+        let piece = Kind::Pawn(Color::White);
         let start_square = Square::new("h6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("h7")),
             Ply::new(start_square, Square::new("g7")),
@@ -169,10 +169,10 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_a3() {
-        let piece = PieceKind::Pawn(Color::Black);
+        let piece = Kind::Pawn(Color::Black);
         let start_square = Square::new("a3");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a2")),
             Ply::new(start_square, Square::new("b2")),
@@ -185,10 +185,10 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_d5() {
-        let piece = PieceKind::Pawn(Color::Black);
+        let piece = Kind::Pawn(Color::Black);
         let start_square = Square::new("d5");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("d4")),
             Ply::new(start_square, Square::new("c4")),
@@ -202,10 +202,10 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_h7() {
-        let piece = PieceKind::Pawn(Color::Black);
+        let piece = Kind::Pawn(Color::Black);
         let start_square = Square::new("h7");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("h6")),
             Ply::new(start_square, Square::new("h5")),

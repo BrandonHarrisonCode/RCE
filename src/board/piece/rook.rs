@@ -9,11 +9,11 @@ impl Piece for Rook {
     const WHITE_SYMBOL: &'static str = "♜";
     const BLACK_SYMBOL: &'static str = "♖";
 
-    fn get_moveset(square: &Square, _: &Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
         let move_mask = square.get_rank_mask() | square.get_file_mask();
         let squares = Square::get_squares_from_mask(move_mask);
 
-        squares.into_iter().map(|s| Ply::new(*square, s)).collect()
+        squares.into_iter().map(|s| Ply::new(square, s)).collect()
     }
 }
 
@@ -21,7 +21,7 @@ impl Piece for Rook {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::PieceKind;
+    use crate::board::Kind;
     use super::{Color, Piece, Ply, Rook, Square};
     use std::collections::HashSet;
 
@@ -51,7 +51,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_piece_symbol_white() {
-        let piece = PieceKind::Rook(Color::White);
+        let piece = Kind::Rook(Color::White);
         let correct = "♜";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -59,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_piece_symbol_black() {
-        let piece = PieceKind::Rook(Color::Black);
+        let piece = Kind::Rook(Color::Black);
         let correct = "♖";
 
         assert_eq!(piece.get_piece_symbol(), correct);
@@ -67,16 +67,16 @@ mod tests {
 
     #[test]
     fn test_rook_eq() {
-        let left = PieceKind::Rook(Color::White);
-        let right = PieceKind::Rook(Color::White);
+        let left = Kind::Rook(Color::White);
+        let right = Kind::Rook(Color::White);
 
         assert_eq!(left, right);
     }
 
     #[test]
     fn test_rook_neq() {
-        let left = PieceKind::Rook(Color::White);
-        let right = PieceKind::Rook(Color::Black);
+        let left = Kind::Rook(Color::White);
+        let right = Kind::Rook(Color::Black);
 
         assert_ne!(left, right);
     }
@@ -84,18 +84,18 @@ mod tests {
     #[test]
     fn test_rook_neq_rev() {
         // Test if addition is commutative
-        let right = PieceKind::Rook(Color::White);
-        let left = PieceKind::Rook(Color::Black);
+        let right = Kind::Rook(Color::White);
+        let left = Kind::Rook(Color::Black);
 
         assert_ne!(left, right);
     }
 
     #[test]
     fn test_rook_get_moveset_white_b1() {
-        let piece = PieceKind::Rook(Color::White);
+        let piece = Kind::Rook(Color::White);
         let start_square = Square::new("b1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a1")),
             Ply::new(start_square, Square::new("c1")),
@@ -120,10 +120,10 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_white_d4() {
-        let piece = PieceKind::Rook(Color::White);
+        let piece = Kind::Rook(Color::White);
         let start_square = Square::new("d4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a4")),
             Ply::new(start_square, Square::new("b4")),
@@ -148,10 +148,10 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_white_h6() {
-        let piece = PieceKind::Rook(Color::White);
+        let piece = Kind::Rook(Color::White);
         let start_square = Square::new("h6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a6")),
             Ply::new(start_square, Square::new("b6")),
@@ -176,10 +176,10 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_b1() {
-        let piece = PieceKind::Rook(Color::Black);
+        let piece = Kind::Rook(Color::Black);
         let start_square = Square::new("b1");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a1")),
             Ply::new(start_square, Square::new("c1")),
@@ -204,10 +204,10 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_d4() {
-        let piece = PieceKind::Rook(Color::Black);
+        let piece = Kind::Rook(Color::Black);
         let start_square = Square::new("d4");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a4")),
             Ply::new(start_square, Square::new("b4")),
@@ -232,10 +232,10 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_h6() {
-        let piece = PieceKind::Rook(Color::Black);
+        let piece = Kind::Rook(Color::Black);
         let start_square = Square::new("h6");
 
-        let result = piece.get_moveset(&start_square);
+        let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("a6")),
             Ply::new(start_square, Square::new("b6")),
