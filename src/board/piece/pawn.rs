@@ -21,23 +21,12 @@ impl Piece for Pawn {
         };
         let mut output: Vec<Ply> = vec![
             Ply::new(square, square + direction),
-            Ply::builder(
-                square,
-                square + direction + Direction::East,
-            )
-            .build(),
-            Ply::builder(
-                square,
-                square + direction + Direction::West,
-            )
-            .build(),
+            Ply::builder(square, square + direction + Direction::East).build(),
+            Ply::builder(square, square + direction + Direction::West).build(),
         ];
 
         if square.rank == starting_rank {
-            output.push(Ply::new(
-                square,
-                square + direction + direction,
-            ));
+            output.push(Ply::new(square, square + direction + direction));
         }
         output
     }
@@ -47,8 +36,8 @@ impl Piece for Pawn {
 
 #[cfg(test)]
 mod tests {
+    use super::{Color, Pawn, Piece, Ply, Square};
     use crate::board::Kind;
-    use super::{Color, Piece, Pawn, Ply, Square};
     use std::collections::HashSet;
 
     #[test]

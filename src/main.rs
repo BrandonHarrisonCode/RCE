@@ -1,8 +1,4 @@
-#![warn(
-    clippy::all,
-    clippy::pedantic,
-    clippy::nursery,
-)]
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 #[macro_use]
 extern crate strum_macros;

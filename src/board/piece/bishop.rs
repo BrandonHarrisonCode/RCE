@@ -21,8 +21,8 @@ impl Piece for Bishop {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::Kind;
     use super::{Bishop, Color, Piece, Ply, Square};
+    use crate::board::Kind;
     use std::collections::HashSet;
 
     #[test]

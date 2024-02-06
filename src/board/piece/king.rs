@@ -22,13 +22,29 @@ impl Piece for King {
         ];
 
         if square == Square::new("e1") {
-            moveset.push(Ply::builder(square, Square::new("g1")).is_castles(true).build());
-            moveset.push(Ply::builder(square, Square::new("c1")).is_castles(true).build());
+            moveset.push(
+                Ply::builder(square, Square::new("g1"))
+                    .is_castles(true)
+                    .build(),
+            );
+            moveset.push(
+                Ply::builder(square, Square::new("c1"))
+                    .is_castles(true)
+                    .build(),
+            );
         }
 
         if square == Square::new("e8") {
-            moveset.push(Ply::builder(square, Square::new("g8")).is_castles(true).build());
-            moveset.push(Ply::builder(square, Square::new("c8")).is_castles(true).build());
+            moveset.push(
+                Ply::builder(square, Square::new("g8"))
+                    .is_castles(true)
+                    .build(),
+            );
+            moveset.push(
+                Ply::builder(square, Square::new("c8"))
+                    .is_castles(true)
+                    .build(),
+            );
         }
 
         moveset
@@ -39,8 +55,8 @@ impl Piece for King {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::Kind;
     use super::{Color, King, Piece, Ply, Square};
+    use crate::board::Kind;
     use std::collections::HashSet;
 
     #[test]
@@ -240,8 +256,12 @@ mod tests {
             Ply::new(start_square, Square::new("e2")),
             Ply::new(start_square, Square::new("f1")),
             Ply::new(start_square, Square::new("f2")),
-            Ply::builder(start_square, Square::new("g1")).is_castles(true).build(),
-            Ply::builder(start_square, Square::new("c1")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("g1"))
+                .is_castles(true)
+                .build(),
+            Ply::builder(start_square, Square::new("c1"))
+                .is_castles(true)
+                .build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -261,8 +281,12 @@ mod tests {
             Ply::new(start_square, Square::new("e2")),
             Ply::new(start_square, Square::new("f1")),
             Ply::new(start_square, Square::new("f2")),
-            Ply::builder(start_square, Square::new("g1")).is_castles(true).build(),
-            Ply::builder(start_square, Square::new("c1")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("g1"))
+                .is_castles(true)
+                .build(),
+            Ply::builder(start_square, Square::new("c1"))
+                .is_castles(true)
+                .build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -282,8 +306,12 @@ mod tests {
             Ply::new(start_square, Square::new("e7")),
             Ply::new(start_square, Square::new("f8")),
             Ply::new(start_square, Square::new("f7")),
-            Ply::builder(start_square, Square::new("g8")).is_castles(true).build(),
-            Ply::builder(start_square, Square::new("c8")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("g8"))
+                .is_castles(true)
+                .build(),
+            Ply::builder(start_square, Square::new("c8"))
+                .is_castles(true)
+                .build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -303,8 +331,12 @@ mod tests {
             Ply::new(start_square, Square::new("e7")),
             Ply::new(start_square, Square::new("f8")),
             Ply::new(start_square, Square::new("f7")),
-            Ply::builder(start_square, Square::new("g8")).is_castles(true).build(),
-            Ply::builder(start_square, Square::new("c8")).is_castles(true).build(),
+            Ply::builder(start_square, Square::new("g8"))
+                .is_castles(true)
+                .build(),
+            Ply::builder(start_square, Square::new("c8"))
+                .is_castles(true)
+                .build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();

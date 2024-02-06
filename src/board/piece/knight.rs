@@ -13,59 +13,35 @@ impl Piece for Knight {
         vec![
             Ply::new(
                 square,
-                square
-                    + Direction::North
-                    + Direction::North
-                    + Direction::West,
+                square + Direction::North + Direction::North + Direction::West,
             ),
             Ply::new(
                 square,
-                square
-                    + Direction::North
-                    + Direction::North
-                    + Direction::East,
+                square + Direction::North + Direction::North + Direction::East,
             ),
             Ply::new(
                 square,
-                square
-                    + Direction::South
-                    + Direction::South
-                    + Direction::West,
+                square + Direction::South + Direction::South + Direction::West,
             ),
             Ply::new(
                 square,
-                square
-                    + Direction::South
-                    + Direction::South
-                    + Direction::East,
+                square + Direction::South + Direction::South + Direction::East,
             ),
             Ply::new(
                 square,
-                square
-                    + Direction::East
-                    + Direction::East
-                    + Direction::North,
+                square + Direction::East + Direction::East + Direction::North,
             ),
             Ply::new(
                 square,
-                square
-                    + Direction::East
-                    + Direction::East
-                    + Direction::South,
+                square + Direction::East + Direction::East + Direction::South,
             ),
             Ply::new(
                 square,
-                square
-                    + Direction::West
-                    + Direction::West
-                    + Direction::North,
+                square + Direction::West + Direction::West + Direction::North,
             ),
             Ply::new(
                 square,
-                square
-                    + Direction::West
-                    + Direction::West
-                    + Direction::South,
+                square + Direction::West + Direction::West + Direction::South,
             ),
         ]
     }
@@ -75,8 +51,8 @@ impl Piece for Knight {
 
 #[cfg(test)]
 mod tests {
+    use super::{Color, Knight, Piece, Ply, Square};
     use crate::board::Kind;
-    use super::{Color, Ply, Square, Piece, Knight};
     use std::collections::HashSet;
 
     #[test]

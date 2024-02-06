@@ -21,8 +21,8 @@ impl Piece for Rook {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::Kind;
     use super::{Color, Piece, Ply, Rook, Square};
+    use crate::board::Kind;
     use std::collections::HashSet;
 
     #[test]
