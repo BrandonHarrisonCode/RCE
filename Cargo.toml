@@ -1,6 +1,13 @@
 [package]
 name = "rust_chess_engine"
 version = "0.1.0"
+description = "A chess engine written in Rust."
+authors = ["Brandon Harrison"]
+repository = "https://github.com/BrandonHarrisonCode/RCE"
+readme = "README.md"
+license = "MIT"
+keywords = ["chess", "engine", "ai"]
+categories = ["games"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

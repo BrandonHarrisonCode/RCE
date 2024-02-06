@@ -2,7 +2,6 @@
     clippy::all,
     clippy::pedantic,
     clippy::nursery,
-    clippy::cargo,
 )]
 
 #[macro_use]
