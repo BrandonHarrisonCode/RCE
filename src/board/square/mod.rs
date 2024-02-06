@@ -234,7 +234,6 @@ impl std::ops::Add<Direction> for Square {
                 rank_delta: 1,
                 file_delta: -1,
             },
-
         };
 
         self + delta
@@ -401,22 +400,10 @@ mod tests {
     fn test_direction_inverse() {
         let square = Square { rank: 4, file: 4 };
 
-        assert_eq!(
-            square,
-            square + Direction::North + Direction::South
-        );
-        assert_eq!(
-            square,
-            square + Direction::East + Direction::West
-        );
-        assert_eq!(
-            square,
-            square + Direction::NorthWest + Direction::SouthEast
-        );
-        assert_eq!(
-            square,
-            square + Direction::NorthEast + Direction::SouthWest
-        );
+        assert_eq!(square, square + Direction::North + Direction::South);
+        assert_eq!(square, square + Direction::East + Direction::West);
+        assert_eq!(square, square + Direction::NorthWest + Direction::SouthEast);
+        assert_eq!(square, square + Direction::NorthEast + Direction::SouthWest);
     }
 
     #[test]
@@ -471,7 +458,7 @@ mod tests {
     fn test_get_rank_mask_h6() {
         let start_square = Square::new("h6");
         let result = start_square.get_rank_mask();
-        let correct = 0b0000000000000000111111110000000000000000000000000000000000000000;
+        let correct = 0b_00000000_00000000_11111111_00000000_00000000_00000000_00000000_00000000;
 
         assert_eq!(
             result,
@@ -486,7 +473,7 @@ mod tests {
     fn test_get_rank_mask_a1() {
         let start_square = Square::new("a1");
         let result = start_square.get_rank_mask();
-        let correct = 0b0000000000000000000000000000000000000000000000000000000011111111;
+        let correct = 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111;
 
         assert_eq!(
             result,
@@ -501,7 +488,7 @@ mod tests {
     fn test_get_rank_mask_b8() {
         let start_square = Square::new("b8");
         let result = start_square.get_rank_mask();
-        let correct = 0b1111111100000000000000000000000000000000000000000000000000000000;
+        let correct = 0b_11111111_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
 
         assert_eq!(
             result,
@@ -516,7 +503,7 @@ mod tests {
     fn test_get_file_mask_h6() {
         let start_square = Square::new("h6");
         let result = start_square.get_file_mask();
-        let correct = 0b0000000100000001000000010000000100000001000000010000000100000001;
+        let correct = 0b_00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
 
         assert_eq!(
             result,
@@ -531,7 +518,7 @@ mod tests {
     fn test_get_file_mask_a1() {
         let start_square = Square::new("a1");
         let result = start_square.get_file_mask();
-        let correct = 0b1000000010000000100000001000000010000000100000001000000010000000;
+        let correct = 0b_10000000_10000000_10000000_10000000_10000000_10000000_10000000_10000000;
 
         assert_eq!(
             result,
@@ -546,7 +533,7 @@ mod tests {
     fn test_get_file_mask_b8() {
         let start_square = Square::new("b8");
         let result = start_square.get_file_mask();
-        let correct = 0b0100000001000000010000000100000001000000010000000100000001000000;
+        let correct = 0b_01000000_01000000_01000000_01000000_01000000_01000000_01000000_01000000;
 
         assert_eq!(
             result,
@@ -976,7 +963,7 @@ mod tests {
 
         assert_eq!(result, correct);
     }
-    
+
     #[test]
     fn test_transit_squares_d3_to_f3() {
         let start_square = Square::new("d3");

@@ -1,6 +1,6 @@
+use super::piece::Color;
 use super::ply::Ply;
 use super::Board;
-use super::piece::Color;
 use super::Castling;
 
 #[derive(Default)]
@@ -55,7 +55,6 @@ impl BoardBuilder {
             history: Vec::new(),
         }
     }
-
 
     #[allow(dead_code)]
     pub const fn white_turn(mut self, white: bool) -> Self {
@@ -172,8 +171,8 @@ impl BoardBuilder {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::square::Square;
+    use super::*;
 
     #[test]
     fn board_builder_default() {
@@ -235,7 +234,10 @@ mod tests {
 
     #[test]
     fn board_builder_white_turn() {
-        let board = BoardBuilder::default().white_turn(false).white_turn(true).build();
+        let board = BoardBuilder::default()
+            .white_turn(false)
+            .white_turn(true)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -264,7 +266,9 @@ mod tests {
 
     #[test]
     fn board_builder_white_kingside_castling() {
-        let board = BoardBuilder::default().kingside_castling(Color::White, Castling::Unavailiable).build();
+        let board = BoardBuilder::default()
+            .kingside_castling(Color::White, Castling::Unavailiable)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -293,7 +297,9 @@ mod tests {
 
     #[test]
     fn board_builder_black_kingside_castling() {
-        let board = BoardBuilder::default().kingside_castling(Color::Black, Castling::Unavailiable).build();
+        let board = BoardBuilder::default()
+            .kingside_castling(Color::Black, Castling::Unavailiable)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -322,7 +328,9 @@ mod tests {
 
     #[test]
     fn board_builder_white_queenside_castling() {
-        let board = BoardBuilder::default().queenside_castling(Color::White, Castling::Unavailiable).build();
+        let board = BoardBuilder::default()
+            .queenside_castling(Color::White, Castling::Unavailiable)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -351,7 +359,9 @@ mod tests {
 
     #[test]
     fn board_builder_black_queenside_castling() {
-        let board = BoardBuilder::default().queenside_castling(Color::Black, Castling::Unavailiable).build();
+        let board = BoardBuilder::default()
+            .queenside_castling(Color::Black, Castling::Unavailiable)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -380,7 +390,10 @@ mod tests {
 
     #[test]
     fn board_builder_pawns() {
-        let board = BoardBuilder::default().pawns(Color::White, 1).pawns(Color::Black, 2).build();
+        let board = BoardBuilder::default()
+            .pawns(Color::White, 1)
+            .pawns(Color::Black, 2)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -409,7 +422,10 @@ mod tests {
 
     #[test]
     fn board_builder_king() {
-        let board = BoardBuilder::default().king(Color::White, 1).king(Color::Black, 2).build();
+        let board = BoardBuilder::default()
+            .king(Color::White, 1)
+            .king(Color::Black, 2)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -438,7 +454,10 @@ mod tests {
 
     #[test]
     fn board_builder_queens() {
-        let board = BoardBuilder::default().queens(Color::White, 1).queens(Color::Black, 2).build();
+        let board = BoardBuilder::default()
+            .queens(Color::White, 1)
+            .queens(Color::Black, 2)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -467,7 +486,10 @@ mod tests {
 
     #[test]
     fn board_builder_rooks() {
-        let board = BoardBuilder::default().rooks(Color::White, 1).rooks(Color::Black, 2).build();
+        let board = BoardBuilder::default()
+            .rooks(Color::White, 1)
+            .rooks(Color::Black, 2)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -496,7 +518,10 @@ mod tests {
 
     #[test]
     fn board_builder_bishops() {
-        let board = BoardBuilder::default().bishops(Color::White, 1).bishops(Color::Black, 2).build();
+        let board = BoardBuilder::default()
+            .bishops(Color::White, 1)
+            .bishops(Color::Black, 2)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -525,7 +550,10 @@ mod tests {
 
     #[test]
     fn board_builder_knights() {
-        let board = BoardBuilder::default().knights(Color::White, 1).knights(Color::Black, 2).build();
+        let board = BoardBuilder::default()
+            .knights(Color::White, 1)
+            .knights(Color::Black, 2)
+            .build();
         let correct = Board {
             is_white_turn: true,
 
@@ -576,7 +604,8 @@ mod tests {
             b_rooks: 0,
             b_bishops: 0,
             b_knights: 0,
-            history: history,
+
+            history,
         };
 
         assert_eq!(board, correct);

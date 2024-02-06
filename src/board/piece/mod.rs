@@ -44,12 +44,12 @@ impl fmt::Display for Kind {
 impl Kind {
     pub const fn get_color(self) -> Color {
         match self {
-            Self::Pawn(c) 
-                | Self::King(c) 
-                | Self::Queen(c) 
-                | Self::Rook(c) 
-                | Self::Bishop(c) 
-                | Self::Knight(c) => c,
+            Self::Pawn(c)
+            | Self::King(c)
+            | Self::Queen(c)
+            | Self::Rook(c)
+            | Self::Bishop(c)
+            | Self::Knight(c) => c,
         }
     }
 
@@ -90,7 +90,7 @@ impl Kind {
 pub trait Piece: Clone + PartialEq + Eq {
     const WHITE_SYMBOL: &'static str;
     const BLACK_SYMBOL: &'static str;
-    
+
     fn get_piece_symbol(color: Color) -> &'static str {
         match color {
             Color::White => Self::WHITE_SYMBOL,
@@ -181,7 +181,7 @@ mod tests {
     fn test_derived_traits_color() {
         let color = Color::White;
         dbg!(&color);
-        println!("{}", color);
+        println!("{color}");
 
         assert_eq!(color, color.clone());
     }

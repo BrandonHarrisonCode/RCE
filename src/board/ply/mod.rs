@@ -107,8 +107,8 @@ impl Builder {
 
 #[cfg(test)]
 mod tests {
+    use super::super::piece::{Color, Kind};
     use super::*;
-    use super::super::piece::{Kind, Color};
 
     #[test]
     fn test_derived_traits() {
@@ -127,7 +127,7 @@ mod tests {
         let ply = Ply::new(start, dest);
 
         let result = ply.to_string();
-        let correct = format!("{} -> {}", start, dest);
+        let correct = format!("{start} -> {dest}");
 
         assert_eq!(result, correct);
     }
@@ -140,7 +140,7 @@ mod tests {
         let ply = Ply::builder(start, dest).captured(captured_piece).build();
 
         let result = ply.to_string();
-        let correct = format!("{} -> {} (captured: ♟)", start, dest);
+        let correct = format!("{start} -> {dest} (captured: ♟)");
 
         assert_eq!(result, correct);
     }
@@ -153,7 +153,7 @@ mod tests {
         let ply = Ply::builder(start, dest).promoted_to(promoted_to).build();
 
         let result = ply.to_string();
-        let correct = format!("{} -> {} (promoted to: ♛)", start, dest);
+        let correct = format!("{start} -> {dest} (promoted to: ♛)");
 
         assert_eq!(result, correct);
     }
@@ -164,10 +164,13 @@ mod tests {
         let dest = Square::new("e8");
         let captured_piece = Kind::Rook(Color::Black);
         let promoted_to = Kind::Queen(Color::White);
-        let ply = Ply::builder(start, dest).captured(captured_piece).promoted_to(promoted_to).build();
+        let ply = Ply::builder(start, dest)
+            .captured(captured_piece)
+            .promoted_to(promoted_to)
+            .build();
 
         let result = ply.to_string();
-        let correct = format!("{} -> {} (captured: ♖) (promoted to: ♛)", start, dest);
+        let correct = format!("{start} -> {dest} (captured: ♖) (promoted to: ♛)");
 
         assert_eq!(result, correct);
     }
@@ -216,7 +219,10 @@ mod tests {
         let dest = Square::new("f8");
         let captured_piece = Kind::Queen(Color::White);
         let promoted_to = Kind::Rook(Color::Black);
-        let ply = Ply::builder(start, dest).captured(captured_piece).promoted_to(promoted_to).build();
+        let ply = Ply::builder(start, dest)
+            .captured(captured_piece)
+            .promoted_to(promoted_to)
+            .build();
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
@@ -232,6 +238,6 @@ mod tests {
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
-        assert_eq!(ply.is_castles, true);
+        assert!(ply.is_castles);
     }
 }
