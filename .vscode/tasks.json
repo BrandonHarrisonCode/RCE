@@ -15,7 +15,10 @@
 		},
 		{
 			"type": "cargo",
-			"command": "test",
+			"command": "nextest",
+			"args": [
+				"run"
+			],
 			"problemMatcher": [
 				"$rustc"
 			],
@@ -23,7 +26,7 @@
 				"kind": "test",
 				"isDefault": true
 			},
-			"label": "rust: cargo test"
+			"label": "rust: cargo nextest run"
 		},
 		{
 			"type": "cargo",
@@ -51,8 +54,7 @@
 				"$rustc"
 			],
 			"group": {
-				"kind": "test",
-				"isDefault": true
+				"kind": "test"
 			},
 			"label": "rust: cargo clippy"
 		},
@@ -64,6 +66,6 @@
 			],
 			"group": "build",
 			"label": "rust: cargo doc"
-		}
+		},
 	]
 }
