@@ -22,8 +22,8 @@ impl Piece for Queen {
 
 #[cfg(test)]
 mod tests {
-    use crate::board::Kind;
     use super::{Color, Piece, Ply, Queen, Square};
+    use crate::board::Kind;
     use std::collections::HashSet;
 
     #[test]
