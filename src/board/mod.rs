@@ -334,15 +334,14 @@ impl Board {
     /// assert!(!board.is_legal_move(ply));
     /// ```
     fn is_legal_move(&self, ply: Ply, depth: u64) -> Result<Ply, &'static str> {
-        let result: Result<Ply, &'static str> = self
-            .is_on_board(ply)
-            .and_then(|ply| self.is_self_capture(ply))
-            .and_then(|ply| self.is_illegal_jump(ply))
-            .and_then(|ply| self.is_illegal_pawn_move(ply))
-            .and_then(|ply| self.is_illegal_castling(ply));
+        self.is_on_board(ply)
+            .and_then(|_| self.is_self_capture(ply))
+            .and_then(|_| self.is_illegal_jump(ply))
+            .and_then(|_| self.is_illegal_pawn_move(ply))
+            .and_then(|_| self.is_illegal_castling(ply))?;
 
-        if result.is_err() || depth == 0 {
-            return result;
+        if depth == 0 {
+            return Ok(ply);
         }
         // Don't allow leaving your king in check
         if self.is_in_check_helper(depth - 1, Some(ply)) {
@@ -813,16 +812,32 @@ impl Board {
         self.history.push(new_move);
     }
 
-    fn replace_square(&mut self, start: Square, dest: Square) -> Option<Kind> {
-        let start_piece_kind = self.get_piece(start).unwrap();
-        self.remove_piece(start, start_piece_kind);
+    /// Replaces the piece at the dest square with the piece at the destination square
+    ///
+    /// # Arguments
+    ///
+    /// * `origin` - The square of the piece to move
+    /// * `to_replace` - The square to move the piece to
+    ///
+    /// # Returns
+    ///
+    /// An Option of the piece kind that was replaced, if any
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// let captured_piece = board.replace_square(Square::new("e2"), Square::new("e4"));
+    /// ```
+    fn replace_square(&mut self, origin: Square, to_replace: Square) -> Option<Kind> {
+        let start_piece_kind = self.get_piece(origin).unwrap();
+        self.remove_piece(origin, start_piece_kind);
 
-        let dest_piece_kind_option = self.get_piece(dest);
+        let dest_piece_kind_option = self.get_piece(to_replace);
         if let Some(dest_piece_kind) = dest_piece_kind_option {
-            self.remove_piece(dest, dest_piece_kind);
+            self.remove_piece(to_replace, dest_piece_kind);
         }
 
-        self.add_piece(dest, start_piece_kind);
+        self.add_piece(to_replace, start_piece_kind);
 
         dest_piece_kind_option
     }
