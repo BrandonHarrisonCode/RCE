@@ -6,6 +6,19 @@ pub struct Square {
     pub file: u8,
 }
 impl Square {
+    /// Creates a new square from a given algebraic notation
+    /// 
+    /// This function is case sensitive and expects the file to be a lowercase letter and the rank to be a number.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `algebraic_notation` - A string that represents the square in algebraic notation
+    /// 
+    /// # Examples
+    /// ```
+    /// let squareA1 = Square::new("a1");
+    /// let squareD4 = Square::new("d4");
+    /// ```
     #[allow(clippy::cast_possible_truncation)]
     pub fn new(algebraic_notation: &str) -> Self {
         let mut iter = algebraic_notation.chars();
@@ -24,6 +37,17 @@ impl Square {
         Self { rank, file }
     }
 
+    /// Returns a vec of squares that are between the start and destination squares
+    /// 
+    /// # Arguments
+    /// 
+    /// * `start` - The starting square
+    /// * `dest` - The destination square
+    /// 
+    /// # Examples
+    /// ```
+    /// let squares: Vec<Square> = Square::new("a1").get_transit_squares(Square::new("h8"));
+    /// ```
     pub fn get_transit_squares(self, dest: Self) -> Vec<Self> {
         let mut squares: Vec<Self> = vec![];
 
