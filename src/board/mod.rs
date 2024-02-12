@@ -439,10 +439,10 @@ impl Board {
 
         match self.get_piece(ply.start).unwrap() {
             Kind::Knight(_c) => Ok(ply),
-            _ => self
-                .no_pieces_between(ply.start, ply.dest)
-                .then_some(ply)
-                .ok_or("Move is not valid. The move jumps through other pieces."),
+            _ => self.no_pieces_between(ply.start, ply.dest).map_or(
+                Err("Move is not valid. The move jumps through other pieces."),
+                |()| Ok(ply),
+            ),
         }
     }
 
@@ -454,7 +454,6 @@ impl Board {
     ///
     /// Will panic if there is no piece at the start square of the move.
     ///   return false;
-
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
@@ -491,7 +490,7 @@ impl Board {
     /// let board = Board::construct_starting_board();
     /// let ply = Ply(Square::new("e1"), Square::new("g1"));
     /// assert!(board.is_illegal_castling(ply));
-    ///  
+    ///
     fn is_illegal_castling(&self, ply: Ply) -> Result<Ply, &'static str> {
         if !ply.is_castles {
             return Ok(ply);
@@ -499,28 +498,40 @@ impl Board {
         match &ply.dest {
             Square { rank: 0, file: 6 } => (self.kingside_castle_status(Color::White)
                 == Castling::Availiable
-                && self.no_pieces_between(Square::new("e1"), Square::new("h1"))
-                && self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                && self
+                    .no_pieces_between(Square::new("e1"), Square::new("h1"))
+                    .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                    .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle kingside."),
+
             Square { rank: 0, file: 2 } => (self.queenside_castle_status(Color::White)
                 == Castling::Availiable
-                && self.no_pieces_between(Square::new("e1"), Square::new("a1"))
-                && self.no_checks_between(Square::new("e1"), Square::new("c1")))
+                && self
+                    .no_pieces_between(Square::new("e1"), Square::new("a1"))
+                    .and(self.no_checks_between(Square::new("e1"), Square::new("c1")))
+                    .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle queenside."),
+
             Square { rank: 7, file: 6 } => (self.kingside_castle_status(Color::Black)
                 == Castling::Availiable
-                && self.no_pieces_between(Square::new("e8"), Square::new("g8"))
-                && self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                && self
+                    .no_pieces_between(Square::new("e8"), Square::new("g8"))
+                    .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                    .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle kingside."),
+
             Square { rank: 7, file: 2 } => (self.queenside_castle_status(Color::Black)
                 == Castling::Availiable
-                && self.no_pieces_between(Square::new("e8"), Square::new("c8"))
-                && self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                && self
+                    .no_pieces_between(Square::new("e8"), Square::new("c8"))
+                    .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                    .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle queenside."),
+
             _ => Err(
                 "Move is not valid. The destination square is not a valid castling destination.",
             ),
@@ -567,16 +578,53 @@ impl Board {
         self.current_turn = self.current_turn.get_opposite();
     }
 
-    fn no_pieces_between(&self, start: Square, dest: Square) -> bool {
+    /// Returns a Result representing whether or not there are no pieces between two squares
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The starting square
+    /// * `dest` - The destination square
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(board.no_pieces_between(Square::new("a4"), Square::new("h4")).is_ok());
+    /// assert!(board.no_pieces_between(Square::new("a1"), Square::new("h1")).is_err());
+    /// ```
+    fn no_pieces_between(&self, start: Square, dest: Square) -> Result<(), &'static str> {
         let squares = start.get_transit_squares(dest);
-        squares.into_iter().all(|sq| self.get_piece(sq).is_none())
+        if squares.into_iter().any(|sq| self.get_piece(sq).is_some()) {
+            Err("There are pieces between the start and destination squares.")
+        } else {
+            Ok(())
+        }
     }
 
-    fn no_checks_between(&self, start: Square, dest: Square) -> bool {
+    /// Returns a Result representing whether or not there are no squares in check between two squares
+    ///
+    /// This method is mostly used for calculating castling rights
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The starting square
+    /// * `dest` - The destination square
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(board.no_checks_between(Square::new("a1"), Square::new("h1")).is_ok());
+    /// assert!(board.no_checks_between(Square::new("a8"), Square::new("h8")).is_err());
+    /// ```
+    fn no_checks_between(&self, start: Square, dest: Square) -> Result<(), &'static str> {
         let squares = start.get_transit_squares(dest);
-        squares
+        if squares
             .into_iter()
             .all(|sq| self.is_legal_move(Ply::new(start, sq), 1).is_ok())
+        {
+            Ok(())
+        } else {
+            Err("There are checks between the start and destination squares.")
+        }
     }
 
     /// Returns a boolean representing whether or not the current side is in check
