@@ -528,7 +528,7 @@ impl Board {
     }
 
     /// Skip the current turn if possible, updating the state information of the board
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
@@ -540,7 +540,7 @@ impl Board {
     }
 
     /// Reverses a skiped turn, updating the state information of the board
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
@@ -554,7 +554,7 @@ impl Board {
     }
 
     /// Switches the current turn to the other player
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();

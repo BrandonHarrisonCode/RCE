@@ -7,13 +7,13 @@ pub struct Square {
 }
 impl Square {
     /// Creates a new square from a given algebraic notation
-    /// 
+    ///
     /// This function is case sensitive and expects the file to be a lowercase letter and the rank to be a number.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `algebraic_notation` - A string that represents the square in algebraic notation
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let squareA1 = Square::new("a1");
@@ -38,12 +38,12 @@ impl Square {
     }
 
     /// Returns a vec of squares that are between the start and destination squares
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `start` - The starting square
     /// * `dest` - The destination square
-    /// 
+    ///
     /// # Examples
     /// ```
     /// let squares: Vec<Square> = Square::new("a1").get_transit_squares(Square::new("h8"));

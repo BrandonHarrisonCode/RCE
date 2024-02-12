@@ -57,21 +57,21 @@ impl BoardBuilder {
     }
 
     /// Set the color of the player who is currently playing
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `color` - The color of the player who is currently playing
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Self` - The current builder
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use chess::board::BoardBuilder;
     /// use chess::piece::Color;
-    /// 
+    ///
     /// let builder = BoardBuilder::default().white_turn(false);
     /// ```
     #[allow(dead_code)]
