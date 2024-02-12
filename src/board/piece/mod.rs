@@ -17,10 +17,24 @@ use pawn::Pawn;
 use queen::Queen;
 use rook::Rook;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Display, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Display, Debug, Default)]
 pub enum Color {
+    #[default]
     White,
     Black,
+}
+
+impl Color {
+    pub const fn default() -> Self {
+        Self::White
+    }
+
+    pub const fn get_opposite(self) -> Self {
+        match self {
+            Self::White => Self::Black,
+            Self::Black => Self::White,
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Hash, Debug)]

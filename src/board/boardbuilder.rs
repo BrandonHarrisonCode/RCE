@@ -5,7 +5,7 @@ use super::Castling;
 
 #[derive(Default)]
 pub struct BoardBuilder {
-    is_white_turn: bool,
+    current_turn: Color,
 
     w_kingside_castling: Castling,
     w_queenside_castling: Castling,
@@ -32,7 +32,7 @@ impl BoardBuilder {
     #[allow(dead_code)]
     pub const fn default() -> Self {
         Self {
-            is_white_turn: true,
+            current_turn: Color::default(),
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -56,9 +56,27 @@ impl BoardBuilder {
         }
     }
 
+    /// Set the color of the player who is currently playing
+    /// 
+    /// # Arguments
+    /// 
+    /// * `color` - The color of the player who is currently playing
+    /// 
+    /// # Returns
+    /// 
+    /// * `Self` - The current builder
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use chess::board::BoardBuilder;
+    /// use chess::piece::Color;
+    /// 
+    /// let builder = BoardBuilder::default().white_turn(false);
+    /// ```
     #[allow(dead_code)]
-    pub const fn white_turn(mut self, white: bool) -> Self {
-        self.is_white_turn = white;
+    pub const fn set_turn(mut self, color: Color) -> Self {
+        self.current_turn = color;
         self
     }
 
@@ -143,7 +161,7 @@ impl BoardBuilder {
     #[allow(dead_code)]
     pub fn build(&mut self) -> Board {
         Board {
-            is_white_turn: self.is_white_turn,
+            current_turn: self.current_turn,
 
             w_kingside_castling: self.w_kingside_castling,
             w_queenside_castling: self.w_queenside_castling,
@@ -178,7 +196,7 @@ mod tests {
     fn board_builder_default() {
         let board = BoardBuilder::default().build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -205,9 +223,9 @@ mod tests {
 
     #[test]
     fn board_builder_black_white_turn() {
-        let board = BoardBuilder::default().white_turn(false).build();
+        let board = BoardBuilder::default().set_turn(Color::Black).build();
         let correct = Board {
-            is_white_turn: false,
+            current_turn: Color::Black,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -235,11 +253,11 @@ mod tests {
     #[test]
     fn board_builder_white_turn() {
         let board = BoardBuilder::default()
-            .white_turn(false)
-            .white_turn(true)
+            .set_turn(Color::Black)
+            .set_turn(Color::White)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -270,7 +288,7 @@ mod tests {
             .kingside_castling(Color::White, Castling::Unavailiable)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Unavailiable,
             w_queenside_castling: Castling::Availiable,
@@ -301,7 +319,7 @@ mod tests {
             .kingside_castling(Color::Black, Castling::Unavailiable)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -332,7 +350,7 @@ mod tests {
             .queenside_castling(Color::White, Castling::Unavailiable)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Unavailiable,
@@ -363,7 +381,7 @@ mod tests {
             .queenside_castling(Color::Black, Castling::Unavailiable)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -395,7 +413,7 @@ mod tests {
             .pawns(Color::Black, 2)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -427,7 +445,7 @@ mod tests {
             .king(Color::Black, 2)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -459,7 +477,7 @@ mod tests {
             .queens(Color::Black, 2)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -491,7 +509,7 @@ mod tests {
             .rooks(Color::Black, 2)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -523,7 +541,7 @@ mod tests {
             .bishops(Color::Black, 2)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -555,7 +573,7 @@ mod tests {
             .knights(Color::Black, 2)
             .build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -585,7 +603,7 @@ mod tests {
         let history = vec![Ply::new(Square::new("a1"), Square::new("a2"))];
         let board = BoardBuilder::default().history(&history).build();
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,

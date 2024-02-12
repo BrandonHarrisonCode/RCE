@@ -22,7 +22,7 @@ pub enum Castling {
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
-    is_white_turn: bool,
+    current_turn: Color,
 
     w_kingside_castling: Castling,
     w_queenside_castling: Castling,
@@ -109,9 +109,9 @@ impl Board {
             idx += 1;
         }
 
-        let is_white_turn = match fields[1].chars().next().unwrap_or('w') {
-            'w' => true,
-            'b' => false,
+        let current_turn = match fields[1].chars().next().unwrap_or('w') {
+            'w' => Color::White,
+            'b' => Color::Black,
             _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
         };
 
@@ -136,7 +136,7 @@ impl Board {
         // TODO: Fullmove number
 
         Self {
-            is_white_turn,
+            current_turn,
 
             w_kingside_castling,
             w_queenside_castling,
@@ -162,7 +162,7 @@ impl Board {
     /// Creates a new board object that represents the starting board state in a normal game
     pub const fn construct_starting_board() -> Self {
         Self {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -194,8 +194,8 @@ impl Board {
     /// assert!(board.is_white_turn());
     /// ```
     #[allow(dead_code)]
-    pub const fn is_white_turn(&self) -> bool {
-        self.is_white_turn
+    pub const fn current_turn(&self) -> Color {
+        self.current_turn
     }
 
     /// Returns a boolean representing whether or not the specified player has kingside castling rights
@@ -282,7 +282,7 @@ impl Board {
             for j in 0..8 {
                 let square = Square { rank: i, file: j };
                 if let Some(piece) = self.get_piece(square) {
-                    if !self.is_white_turn ^ (piece.get_color() == Color::White) {
+                    if self.current_turn() == piece.get_color() {
                         let mut square_moveset = piece
                             .get_moveset(square)
                             .into_iter()
@@ -527,12 +527,44 @@ impl Board {
         }
     }
 
+    /// Skip the current turn if possible, updating the state information of the board
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// board.skip_turn();
+    /// assert_eq!(Color::Black, board.current_turn());
+    /// ```
     pub fn skip_turn(&mut self) {
-        self.is_white_turn = !self.is_white_turn;
+        self.switch_turn();
     }
 
+    /// Reverses a skiped turn, updating the state information of the board
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// board.skip_turn();
+    /// assert_eq!(Color::Black, board.current_turn());
+    /// board.undo_skip_turn();
+    /// assert_eq!(Color::White, board.current_turn());
+    /// ```
     pub fn undo_skip_turn(&mut self) {
         self.skip_turn();
+    }
+
+    /// Switches the current turn to the other player
+    /// 
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// board.switch_turn();
+    /// assert_eq!(Color::Black, board.current_turn());
+    /// board.switch_turn();
+    /// assert_eq!(Color::White, board.current_turn());
+    /// ```
+    pub fn switch_turn(&mut self) {
+        self.current_turn = self.current_turn.get_opposite();
     }
 
     fn no_pieces_between(&self, start: Square, dest: Square) -> bool {
@@ -729,7 +761,7 @@ impl Board {
             };
         }
 
-        self.is_white_turn = !self.is_white_turn;
+        self.switch_turn();
         self.history.push(new_move);
     }
 
@@ -786,7 +818,7 @@ impl Board {
             };
         }
 
-        self.is_white_turn = !self.is_white_turn;
+        self.switch_turn();
     }
 }
 
@@ -823,7 +855,7 @@ mod tests {
     fn from_fen_white_position1() {
         let fen = "1k1r3r/p6p/1pp1pp2/2Np1qp1/1Q1P4/2P1PP2/PP4PP/R4nK1 w - - 0 21";
         let correct = Board {
-            is_white_turn: true,
+            current_turn: Color::White,
 
             w_kingside_castling: Castling::Unavailiable,
             w_queenside_castling: Castling::Unavailiable,
@@ -852,7 +884,7 @@ mod tests {
     fn from_fen_black_position1() {
         let fen = "5b2/pp1N2pk/2pn1q1p/3n1p1Q/3P1P2/2PB3R/PP3KPP/R1B1r3 b - - 12 31";
         let correct = Board {
-            is_white_turn: false,
+            current_turn: Color::Black,
 
             w_kingside_castling: Castling::Unavailiable,
             w_queenside_castling: Castling::Unavailiable,
@@ -972,13 +1004,13 @@ mod tests {
     #[test]
     fn test_is_white_turn() {
         let board = Board::construct_starting_board();
-        assert!(board.is_white_turn());
+        assert!(board.current_turn() == Color::White);
     }
 
     #[test]
     fn test_is_black_turn() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
-        assert!(!board.is_white_turn());
+        assert!(board.current_turn() == Color::Black);
     }
 
     #[test]
@@ -1128,18 +1160,18 @@ mod tests {
         let dest = Square::new("a3");
         let ply = Ply::new(start, dest);
 
-        assert!(board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::White);
 
         assert!(board.get_piece(dest).is_none());
         board.make_move(ply);
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::White));
-        assert!(!board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::Black);
 
         assert!(board.get_piece(start).is_none());
 
         board.unmake_move(ply);
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
-        assert!(board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::White);
 
         assert!(board.get_piece(dest).is_none());
     }
@@ -1154,7 +1186,7 @@ mod tests {
         let ply1 = Ply::new(start, dest1);
         let ply2 = Ply::new(dest1, dest2);
 
-        assert!(board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::White);
 
         assert!(board.get_piece(dest1).is_none());
         assert!(board.get_piece(dest2).is_none());
@@ -1162,25 +1194,25 @@ mod tests {
         assert_eq!(board.get_piece(dest1).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(start).is_none());
         assert!(board.get_piece(dest2).is_none());
-        assert!(!board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::Black);
 
         board.make_move(ply2);
         assert_eq!(board.get_piece(dest2).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(start).is_none());
         assert!(board.get_piece(dest1).is_none());
-        assert!(board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::White);
 
         board.unmake_move(ply2);
         assert_eq!(board.get_piece(dest1).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(dest2).is_none());
         assert!(board.get_piece(start).is_none());
-        assert!(!board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::Black);
 
         board.unmake_move(ply1);
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(dest2).is_none());
         assert!(board.get_piece(dest1).is_none());
-        assert!(board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::White);
     }
 
     #[test]
@@ -1191,19 +1223,19 @@ mod tests {
         let ply = Ply::builder(start, dest)
             .captured(Kind::Pawn(Color::Black))
             .build();
-        assert!(board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::White);
 
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::Black));
         board.make_move(ply);
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(start).is_none());
-        assert!(!board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::Black);
 
         board.unmake_move(ply);
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::Black));
-        assert!(board.is_white_turn);
+        assert_eq!(board.current_turn(), Color::White);
     }
 
     #[test]
