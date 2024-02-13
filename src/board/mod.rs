@@ -788,6 +788,12 @@ impl Board {
         let dest_piece_kind = self.replace_square(new_move.start, new_move.dest);
         assert_eq!(new_move.captured_piece, dest_piece_kind);
 
+        if let (Some(promoted_to), Some(Kind::Pawn(c))) =
+            (new_move.promoted_to, self.get_piece(new_move.dest))
+        {
+            self.remove_piece(new_move.dest, Kind::Pawn(c));
+            self.add_piece(new_move.dest, promoted_to);
+        }
         if new_move.is_castles {
             let (rook_start, rook_dest) = match new_move.dest {
                 Square { rank: 0, file: 6 } => (Square::new("h1"), Square::new("f1")),
@@ -856,6 +862,11 @@ impl Board {
     /// ```
     pub fn unmake_move(&mut self, old_move: Ply) {
         self.replace_square(old_move.dest, old_move.start);
+
+        if let Some(promoted_piece) = old_move.promoted_to {
+            self.remove_piece(old_move.start, promoted_piece);
+            self.add_piece(old_move.start, Kind::Pawn(self.current_turn.get_opposite()));
+        }
 
         if let Some(captured_piece) = self.history.pop().unwrap().captured_piece {
             self.add_piece(old_move.dest, captured_piece);
@@ -1302,6 +1313,55 @@ mod tests {
     }
 
     #[test]
+    fn test_make_unmake_move_promotion() {
+        let mut board = Board::from_fen("8/5P2/2k5/8/4K3/8/8/8 w - - 0 1");
+        let start = Square::new("f7"); // White Pawn
+        let dest = Square::new("f8");
+        let ply = Ply::builder(start, dest)
+            .promoted_to(Kind::Queen(Color::White))
+            .build();
+
+        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
+        assert_eq!(board.get_piece(dest), None);
+
+        board.make_move(ply);
+        assert_eq!(board.get_piece(dest), Some(Kind::Queen(Color::White)));
+        assert!(board.get_piece(start).is_none());
+        assert_eq!(board.current_turn(), Color::Black);
+
+        board.unmake_move(ply);
+        assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
+        assert!(board.get_piece(dest).is_none());
+        assert_eq!(board.current_turn(), Color::White);
+    }
+
+    #[test]
+    fn test_make_unmake_move_promotion_capture() {
+        let mut board = Board::from_fen("6n1/5P2/2k5/8/4K3/8/8/8 w - - 0 1");
+        let start = Square::new("f7"); // White Pawn
+        let dest = Square::new("g8"); // Black Knight
+        let ply = Ply::builder(start, dest)
+            .captured(Kind::Knight(Color::Black))
+            .promoted_to(Kind::Queen(Color::White))
+            .build();
+
+        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
+        assert_eq!(board.get_piece(dest), Some(Kind::Knight(Color::Black)));
+
+        board.make_move(ply);
+        assert_eq!(board.get_piece(dest), Some(Kind::Queen(Color::White)));
+        assert!(board.get_piece(start).is_none());
+        assert_eq!(board.current_turn(), Color::Black);
+
+        board.unmake_move(ply);
+        assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
+        assert_eq!(board.get_piece(dest), Some(Kind::Knight(Color::Black)));
+        assert_eq!(board.current_turn(), Color::White);
+    }
+
+    #[test]
     fn test_is_not_in_check() {
         let board = Board::construct_starting_board();
         assert!(!board.is_in_check());
@@ -1443,6 +1503,42 @@ mod tests {
             Board::from_fen("r2q1rk1/pp3ppb/2p1pn1p/4Q2P/2B5/3P2N1/PPP2PP1/2KR3R b - - 2 15");
         let result = board.get_legal_moves().len();
         let correct = 33;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_14() {
+        let board = Board::from_fen("8/6P1/8/2k5/8/5K2/8/8 w - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 12;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_15() {
+        let board = Board::from_fen("8/1K6/8/8/5k2/8/6p1/5B2 b - - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 16;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_16() {
+        let board = Board::from_fen("8/p1KP1p2/5rkp/8/8/8/8/3R4 w - - 0 46");
+        let result = board.get_legal_moves().len();
+        let correct = 20;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_17() {
+        let board = Board::from_fen("8/p1KPrp2/6kp/8/8/8/8/3R4 w - - 0 46");
+        let result = board.get_legal_moves().len();
+        let correct = 18;
 
         assert_eq!(result, correct);
     }

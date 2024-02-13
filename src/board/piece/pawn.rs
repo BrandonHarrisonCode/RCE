@@ -1,9 +1,32 @@
-use super::{Color, Direction, Piece, Ply, Square};
+use super::{Color, Direction, Kind, Piece, Ply, Square};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Pawn;
 
 impl Eq for Pawn {}
+
+impl Pawn {
+    fn explode_promotion(ply: Ply, color: Color, back_rank: u8) -> Vec<Ply> {
+        if ply.dest.rank == back_rank {
+            vec![
+                Ply::builder(ply.start, ply.dest)
+                    .promoted_to(Kind::Queen(color))
+                    .build(),
+                Ply::builder(ply.start, ply.dest)
+                    .promoted_to(Kind::Rook(color))
+                    .build(),
+                Ply::builder(ply.start, ply.dest)
+                    .promoted_to(Kind::Knight(color))
+                    .build(),
+                Ply::builder(ply.start, ply.dest)
+                    .promoted_to(Kind::Bishop(color))
+                    .build(),
+            ]
+        } else {
+            vec![ply]
+        }
+    }
+}
 
 impl Piece for Pawn {
     const WHITE_SYMBOL: &'static str = "♟";
@@ -15,20 +38,28 @@ impl Piece for Pawn {
     /// - [ ] En passant
     /// - [ ] Promotion
     fn get_moveset(square: Square, color: Color) -> Vec<Ply> {
-        let (direction, starting_rank) = match color {
-            Color::White => (Direction::North, 1),
-            Color::Black => (Direction::South, 6),
+        let (direction, starting_rank, back_rank) = match color {
+            Color::White => (Direction::North, 1, 7),
+            Color::Black => (Direction::South, 6, 0),
         };
+
+        // Directional captures
         let mut output: Vec<Ply> = vec![
             Ply::new(square, square + direction),
             Ply::builder(square, square + direction + Direction::East).build(),
             Ply::builder(square, square + direction + Direction::West).build(),
         ];
 
+        // Double pawn push
         if square.rank == starting_rank {
             output.push(Ply::new(square, square + direction + direction));
         }
+
+        // Promotion
         output
+            .iter()
+            .flat_map(|ply| Self::explode_promotion(*ply, color, back_rank))
+            .collect()
     }
 }
 
@@ -199,6 +230,182 @@ mod tests {
             Ply::new(start_square, Square::new("h6")),
             Ply::new(start_square, Square::new("h5")),
             Ply::new(start_square, Square::new("g6")),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_pawn_get_moveset_white_h7() {
+        let piece = Kind::Pawn(Color::White);
+        let start_square = Square::new("h7");
+
+        let result = piece.get_moveset(start_square);
+        let correct = vec![
+            Ply::builder(start_square, Square::new("h8"))
+                .promoted_to(Kind::Queen(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("h8"))
+                .promoted_to(Kind::Rook(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("h8"))
+                .promoted_to(Kind::Knight(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("h8"))
+                .promoted_to(Kind::Bishop(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("g8"))
+                .promoted_to(Kind::Queen(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("g8"))
+                .promoted_to(Kind::Rook(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("g8"))
+                .promoted_to(Kind::Knight(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("g8"))
+                .promoted_to(Kind::Bishop(Color::White))
+                .build(),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_pawn_get_moveset_black_h2() {
+        let piece = Kind::Pawn(Color::Black);
+        let start_square = Square::new("h2");
+
+        let result = piece.get_moveset(start_square);
+        let correct = vec![
+            Ply::builder(start_square, Square::new("h1"))
+                .promoted_to(Kind::Queen(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("h1"))
+                .promoted_to(Kind::Rook(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("h1"))
+                .promoted_to(Kind::Knight(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("h1"))
+                .promoted_to(Kind::Bishop(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("g1"))
+                .promoted_to(Kind::Queen(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("g1"))
+                .promoted_to(Kind::Rook(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("g1"))
+                .promoted_to(Kind::Knight(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("g1"))
+                .promoted_to(Kind::Bishop(Color::Black))
+                .build(),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_pawn_get_moveset_white_d7() {
+        let piece = Kind::Pawn(Color::White);
+        let start_square = Square::new("d7");
+
+        let result = piece.get_moveset(start_square);
+        let correct = vec![
+            Ply::builder(start_square, Square::new("d8"))
+                .promoted_to(Kind::Queen(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("d8"))
+                .promoted_to(Kind::Rook(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("d8"))
+                .promoted_to(Kind::Knight(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("d8"))
+                .promoted_to(Kind::Bishop(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("e8"))
+                .promoted_to(Kind::Queen(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("e8"))
+                .promoted_to(Kind::Rook(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("e8"))
+                .promoted_to(Kind::Knight(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("e8"))
+                .promoted_to(Kind::Bishop(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("c8"))
+                .promoted_to(Kind::Queen(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("c8"))
+                .promoted_to(Kind::Rook(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("c8"))
+                .promoted_to(Kind::Knight(Color::White))
+                .build(),
+            Ply::builder(start_square, Square::new("c8"))
+                .promoted_to(Kind::Bishop(Color::White))
+                .build(),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
+
+    #[test]
+    fn test_pawn_get_moveset_black_d2() {
+        let piece = Kind::Pawn(Color::Black);
+        let start_square = Square::new("d2");
+
+        let result = piece.get_moveset(start_square);
+        let correct = vec![
+            Ply::builder(start_square, Square::new("d1"))
+                .promoted_to(Kind::Queen(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("d1"))
+                .promoted_to(Kind::Rook(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("d1"))
+                .promoted_to(Kind::Knight(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("d1"))
+                .promoted_to(Kind::Bishop(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("e1"))
+                .promoted_to(Kind::Queen(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("e1"))
+                .promoted_to(Kind::Rook(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("e1"))
+                .promoted_to(Kind::Knight(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("e1"))
+                .promoted_to(Kind::Bishop(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("c1"))
+                .promoted_to(Kind::Queen(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("c1"))
+                .promoted_to(Kind::Rook(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("c1"))
+                .promoted_to(Kind::Knight(Color::Black))
+                .build(),
+            Ply::builder(start_square, Square::new("c1"))
+                .promoted_to(Kind::Bishop(Color::Black))
+                .build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
