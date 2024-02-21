@@ -1,10 +1,10 @@
-use crate::utils::FENInstruction;
 use std::collections::HashMap;
 use std::fmt;
 
 mod boardbuilder;
 pub mod piece;
 pub mod ply;
+pub mod serialize;
 pub mod square;
 
 use boardbuilder::BoardBuilder;
@@ -47,143 +47,14 @@ pub struct Board {
     history: Vec<Ply>,
 }
 
-impl Board {
-    /// Creates a `BoardBuilder` object to construct a new board
-    ///
-    /// # Examples
-    /// ```
-    /// let board = Board::builder().kingside_castling(true, true).build();
-    /// ```
-    #[allow(dead_code)]
-    pub const fn builder() -> BoardBuilder {
-        BoardBuilder::default()
-    }
-
-    /// Returns a new board given a FEN string
-    ///
-    /// # Examples
-    /// ```
-    /// let board = Board::from_fen("8/8/8/8/8/8/8/8 w - - 0 1");
-    /// ```
-    #[allow(dead_code)]
-    pub fn from_fen(fen: &str) -> Self {
-        let fields: Vec<&str> = fen.split_ascii_whitespace().collect();
-
-        let mut w_pawns: u64 = 0;
-        let mut w_king: u64 = 0;
-        let mut w_queens: u64 = 0;
-        let mut w_rooks: u64 = 0;
-        let mut w_bishops: u64 = 0;
-        let mut w_knights: u64 = 0;
-        let mut b_pawns: u64 = 0;
-        let mut b_king: u64 = 0;
-        let mut b_queens: u64 = 0;
-        let mut b_rooks: u64 = 0;
-        let mut b_bishops: u64 = 0;
-        let mut b_knights: u64 = 0;
-
-        let mut idx: u64 = 0;
-        for chr in fields[0].chars() {
-            let instruction = match chr {
-                'P' => FENInstruction::Bitboard(&mut w_pawns),
-                'K' => FENInstruction::Bitboard(&mut w_king),
-                'Q' => FENInstruction::Bitboard(&mut w_queens),
-                'R' => FENInstruction::Bitboard(&mut w_rooks),
-                'B' => FENInstruction::Bitboard(&mut w_bishops),
-                'N' => FENInstruction::Bitboard(&mut w_knights),
-                'p' => FENInstruction::Bitboard(&mut b_pawns),
-                'k' => FENInstruction::Bitboard(&mut b_king),
-                'q' => FENInstruction::Bitboard(&mut b_queens),
-                'r' => FENInstruction::Bitboard(&mut b_rooks),
-                'b' => FENInstruction::Bitboard(&mut b_bishops),
-                'n' => FENInstruction::Bitboard(&mut b_knights),
-                '1'..='8' => FENInstruction::Skip(chr.to_string().parse().ok().unwrap()),
-                '/' => FENInstruction::NewRow(),
-                _ => panic!("Unknown FEN instruction: {chr}"),
-            };
-
-            let mask: u64 = 1 << (63 - idx);
-            match instruction {
-                FENInstruction::Bitboard(bb) => *bb |= mask,
-                FENInstruction::Skip(num) => idx += num - 1,
-                FENInstruction::NewRow() => idx -= 1,
-            }
-            idx += 1;
-        }
-
-        let current_turn = match fields[1].chars().next().unwrap_or('w') {
-            'w' => Color::White,
-            'b' => Color::Black,
-            _ => panic!("Not given a valid FEN. The second field must either be a 'b' or a 'w'"),
-        };
-
-        let mut w_kingside_castling: Castling = Castling::Unavailiable;
-        let mut b_kingside_castling: Castling = Castling::Unavailiable;
-        let mut w_queenside_castling: Castling = Castling::Unavailiable;
-        let mut b_queenside_castling: Castling = Castling::Unavailiable;
-
-        for chr in fields[2].chars() {
-            match chr {
-                'K' => w_kingside_castling = Castling::Availiable,
-                'k' => b_kingside_castling = Castling::Availiable,
-                'Q' => w_queenside_castling = Castling::Availiable,
-                'q' => b_queenside_castling = Castling::Availiable,
-                '-' => (),
-                _ => panic!("Unknown FEN castling notation: {chr}"),
-            };
-        }
-
-        #[allow(clippy::cast_possible_truncation)]
-        let en_passant_file = match fields[3].chars().next().unwrap_or('-') {
-            '-' => None,
-            'a'..='h' => Some((fields[3].chars().next().unwrap() as u128 - 'a' as u128) as u8),
-            _ => panic!("Unknown FEN en passant notation: {}", fields[3]),
-        };
-
-        // If the first move is en passant, add the previous pawn push to the
-        // history so we can restore en passant rights
-        let mut history = Vec::new();
-        if let Some(file) = en_passant_file {
-            let (start, dest) = match current_turn {
-                Color::White => (Square { rank: 1, file }, Square { rank: 3, file }),
-                Color::Black => (Square { rank: 6, file }, Square { rank: 4, file }),
-            };
-
-            history.push(Ply::builder(start, dest).en_passant(true).build());
-        }
-
-        // TODO: Halfmove clock
-        // TODO: Fullmove number
-
-        Self {
-            current_turn,
-
-            w_kingside_castling,
-            w_queenside_castling,
-            b_kingside_castling,
-            b_queenside_castling,
-
-            en_passant_file,
-
-            w_pawns,
-            w_king,
-            w_queens,
-            w_rooks,
-            w_bishops,
-            w_knights,
-            b_pawns,
-            b_king,
-            b_queens,
-            b_rooks,
-            b_bishops,
-            b_knights,
-
-            history,
-        }
-    }
-
+impl Default for Board {
     /// Creates a new board object that represents the starting board state in a normal game
-    pub const fn construct_starting_board() -> Self {
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::default();
+    /// ```
+    fn default() -> Self {
         Self {
             current_turn: Color::White,
 
@@ -210,54 +81,55 @@ impl Board {
             history: Vec::new(),
         }
     }
+}
 
-    /// Returns a boolean representing whether or not it is white's turn
+impl Board {
+    /// Creates a `BoardBuilder` object to construct a new board
     ///
     /// # Examples
     /// ```
-    /// let board = Board::construct_starting_board();
-    /// assert!(board.is_white_turn());
+    /// let board = Board::builder().kingside_castling(true, true).build();
     /// ```
     #[allow(dead_code)]
-    pub const fn current_turn(&self) -> Color {
-        self.current_turn
+    pub const fn builder() -> BoardBuilder {
+        BoardBuilder::default()
     }
 
-    /// Returns a boolean representing whether or not the specified player has kingside castling rights
-    ///
-    /// # Arguments
-    ///
-    /// * `white` - A boolean representing whether or not we are checking white or black's castling rights
+    /// Creates a new board object that represents the starting board state in a normal game
     ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
-    /// assert!(board.has_kingside_castle(true));
-    /// assert!(board.has_kingside_castle(false));
+    /// ```
+    pub fn construct_starting_board() -> Self {
+        Self::default()
+    }
+
+    /// Returns a boolean representing whether or not the current player has kingside castling rights
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert_eq!(board.kingside_castle_status(), Castling::Availiable);
     /// ```
     #[allow(dead_code)]
-    pub const fn kingside_castle_status(&self, color: Color) -> Castling {
-        match color {
+    pub const fn kingside_castle_status(&self) -> Castling {
+        match self.current_turn {
             Color::White => self.w_kingside_castling,
             Color::Black => self.b_kingside_castling,
         }
     }
 
-    /// Returns a boolean representing whether or not the specified player has queenside castling rights
-    ///
-    /// # Arguments
-    ///
-    /// * `white` - A boolean representing whether or not we are checqueen white or black's castling rights
+    /// Returns a boolean representing whether or not the current player has queenside castling rights
     ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
-    /// assert!(board.has_queenside_castle(true));
-    /// assert!(board.has_queenside_castle(false));
+    /// assert_eq!(board.queenside_castle_status(), Castling::Availiable);
     /// ```
     #[allow(dead_code)]
-    pub const fn queenside_castle_status(&self, color: Color) -> Castling {
-        match color {
+    pub const fn queenside_castle_status(&self) -> Castling {
+        match self.current_turn {
             Color::White => self.w_queenside_castling,
             Color::Black => self.b_queenside_castling,
         }
@@ -307,7 +179,7 @@ impl Board {
             for j in 0..8 {
                 let square = Square { rank: i, file: j };
                 if let Some(piece) = self.get_piece(square) {
-                    if self.current_turn() == piece.get_color() {
+                    if self.current_turn == piece.get_color() {
                         let mut square_moveset = piece
                             .get_moveset(square)
                             .into_iter()
@@ -560,8 +432,9 @@ impl Board {
         if !ply.is_castles {
             return Ok(ply);
         }
-        match &ply.dest {
-            Square { rank: 0, file: 6 } => (self.kingside_castle_status(Color::White)
+
+        match (self.current_turn, &ply.dest) {
+            (Color::White, Square { rank: 0, file: 6 }) => (self.kingside_castle_status()
                 == Castling::Availiable
                 && self
                     .no_pieces_between(Square::new("e1"), Square::new("h1"))
@@ -570,7 +443,7 @@ impl Board {
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle kingside."),
 
-            Square { rank: 0, file: 2 } => (self.queenside_castle_status(Color::White)
+            (Color::White, Square { rank: 0, file: 2 }) => (self.queenside_castle_status()
                 == Castling::Availiable
                 && self
                     .no_pieces_between(Square::new("e1"), Square::new("a1"))
@@ -579,7 +452,7 @@ impl Board {
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle queenside."),
 
-            Square { rank: 7, file: 6 } => (self.kingside_castle_status(Color::Black)
+            (Color::Black, Square { rank: 7, file: 6 }) => (self.kingside_castle_status()
                 == Castling::Availiable
                 && self
                     .no_pieces_between(Square::new("e8"), Square::new("g8"))
@@ -588,7 +461,7 @@ impl Board {
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle kingside."),
 
-            Square { rank: 7, file: 2 } => (self.queenside_castle_status(Color::Black)
+            (Color::Black, Square { rank: 7, file: 2 }) => (self.queenside_castle_status()
                 == Castling::Availiable
                 && self
                     .no_pieces_between(Square::new("e8"), Square::new("c8"))
@@ -609,7 +482,7 @@ impl Board {
     /// ```
     /// let board = Board::construct_starting_board();
     /// board.skip_turn();
-    /// assert_eq!(Color::Black, board.current_turn());
+    /// assert_eq!(Color::Black, board.current_turn);
     /// ```
     pub fn skip_turn(&mut self) {
         self.switch_turn();
@@ -621,9 +494,9 @@ impl Board {
     /// ```
     /// let board = Board::construct_starting_board();
     /// board.skip_turn();
-    /// assert_eq!(Color::Black, board.current_turn());
+    /// assert_eq!(Color::Black, board.current_turn);
     /// board.undo_skip_turn();
-    /// assert_eq!(Color::White, board.current_turn());
+    /// assert_eq!(Color::White, board.current_turn);
     /// ```
     pub fn undo_skip_turn(&mut self) {
         self.switch_turn();
@@ -635,9 +508,9 @@ impl Board {
     /// ```
     /// let board = Board::construct_starting_board();
     /// board.switch_turn();
-    /// assert_eq!(Color::Black, board.current_turn());
+    /// assert_eq!(Color::Black, board.current_turn);
     /// board.switch_turn();
-    /// assert_eq!(Color::White, board.current_turn());
+    /// assert_eq!(Color::White, board.current_turn);
     /// ```
     pub fn switch_turn(&mut self) {
         self.current_turn = self.current_turn.opposite();
@@ -1192,153 +1065,77 @@ mod tests {
     #[test]
     fn test_is_white_turn() {
         let board = Board::construct_starting_board();
-        assert!(board.current_turn() == Color::White);
+        assert!(board.current_turn == Color::White);
     }
 
     #[test]
     fn test_is_black_turn() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR b KQkq - 0 1");
-        assert!(board.current_turn() == Color::Black);
+        assert!(board.current_turn == Color::Black);
     }
 
     #[test]
     fn test_kingside_castle_true() {
-        let board = Board::construct_starting_board();
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
+        let mut board = Board::construct_starting_board();
+        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
+        board.skip_turn();
+        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
     }
 
     #[test]
     fn test_queenside_castle_true() {
-        let board = Board::construct_starting_board();
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
+        let mut board = Board::construct_starting_board();
+        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
+        board.skip_turn();
+        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
     }
 
     #[test]
-    fn test_kingside_castle_false() {
-        let mut board = Board::construct_starting_board();
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Availiable
-        );
-
-        board.w_kingside_castling = Castling::Unavailiable;
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Unavailiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::Black),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Availiable
-        );
-
-        board.b_kingside_castling = Castling::Unavailiable;
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Unavailiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::Black),
-            Castling::Unavailiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Availiable
-        );
+    fn test_kingside_castle_false_white() {
+        let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Qkq - 0 1");
+        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+        board.skip_turn();
+        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
     }
 
     #[test]
-    fn test_queenside_castle_false() {
-        let mut board = Board::construct_starting_board();
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::Black),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
+    fn test_kingside_castle_false_black() {
+        let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1");
+        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
+        board.skip_turn();
+        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+    }
 
-        board.w_queenside_castling = Castling::Unavailiable;
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Unavailiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::Black),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
+    #[test]
+    fn test_kingside_castle_false_both() {
+        let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Qq - 0 1");
+        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+        board.skip_turn();
+        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+    }
 
-        board.b_queenside_castling = Castling::Unavailiable;
-        assert_eq!(
-            board.queenside_castle_status(Color::White),
-            Castling::Unavailiable
-        );
-        assert_eq!(
-            board.queenside_castle_status(Color::Black),
-            Castling::Unavailiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
-        assert_eq!(
-            board.kingside_castle_status(Color::White),
-            Castling::Availiable
-        );
+    #[test]
+    fn test_queenside_castle_false_white() {
+        let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kkq - 0 1");
+        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
+        board.skip_turn();
+        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
+    }
+
+    #[test]
+    fn test_queenside_castle_false_black() {
+        let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1");
+        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
+        board.skip_turn();
+        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
+    }
+
+    #[test]
+    fn test_queenside_castle_false_both() {
+        let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kk - 0 1");
+        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
+        board.skip_turn();
+        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
     }
 
     #[test]
@@ -1348,18 +1145,18 @@ mod tests {
         let dest = Square::new("a3");
         let ply = Ply::new(start, dest);
 
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
 
         assert!(board.get_piece(dest).is_none());
         board.make_move(ply);
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::White));
-        assert_eq!(board.current_turn(), Color::Black);
+        assert_eq!(board.current_turn, Color::Black);
 
         assert!(board.get_piece(start).is_none());
 
         board.unmake_move();
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
 
         assert!(board.get_piece(dest).is_none());
     }
@@ -1371,7 +1168,7 @@ mod tests {
         let ply1 = Ply::new(Square::new("e2"), Square::new("e4"));
         let ply2 = Ply::new(Square::new("e7"), Square::new("e5"));
 
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
 
         assert!(board.get_piece(ply1.dest).is_none());
         assert!(board.get_piece(ply2.dest).is_none());
@@ -1382,7 +1179,7 @@ mod tests {
         );
         assert!(board.get_piece(ply1.start).is_none());
         assert!(board.get_piece(ply2.dest).is_none());
-        assert_eq!(board.current_turn(), Color::Black);
+        assert_eq!(board.current_turn, Color::Black);
 
         board.make_move(ply2);
         assert_eq!(
@@ -1391,7 +1188,7 @@ mod tests {
         );
         assert!(board.get_piece(ply2.start).is_none());
         assert!(board.get_piece(ply1.start).is_none());
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
 
         board.unmake_move();
         assert_eq!(
@@ -1400,7 +1197,7 @@ mod tests {
         );
         assert!(board.get_piece(ply2.dest).is_none());
         assert!(board.get_piece(ply1.start).is_none());
-        assert_eq!(board.current_turn(), Color::Black);
+        assert_eq!(board.current_turn, Color::Black);
 
         board.unmake_move();
         assert_eq!(
@@ -1409,7 +1206,7 @@ mod tests {
         );
         assert!(board.get_piece(ply1.dest).is_none());
         assert!(board.get_piece(ply2.dest).is_none());
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
     }
 
     #[test]
@@ -1420,19 +1217,19 @@ mod tests {
         let ply = Ply::builder(start, dest)
             .captured(Kind::Pawn(Color::Black))
             .build();
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
 
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::Black));
         board.make_move(ply);
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(start).is_none());
-        assert_eq!(board.current_turn(), Color::Black);
+        assert_eq!(board.current_turn, Color::Black);
 
         board.unmake_move();
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::Black));
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
     }
 
     #[test]
@@ -1444,19 +1241,19 @@ mod tests {
             .promoted_to(Kind::Queen(Color::White))
             .build();
 
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
         assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
         assert_eq!(board.get_piece(dest), None);
 
         board.make_move(ply);
         assert_eq!(board.get_piece(dest), Some(Kind::Queen(Color::White)));
         assert!(board.get_piece(start).is_none());
-        assert_eq!(board.current_turn(), Color::Black);
+        assert_eq!(board.current_turn, Color::Black);
 
         board.unmake_move();
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(dest).is_none());
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
     }
 
     #[test]
@@ -1469,19 +1266,19 @@ mod tests {
             .promoted_to(Kind::Queen(Color::White))
             .build();
 
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
         assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
         assert_eq!(board.get_piece(dest), Some(Kind::Knight(Color::Black)));
 
         board.make_move(ply);
         assert_eq!(board.get_piece(dest), Some(Kind::Queen(Color::White)));
         assert!(board.get_piece(start).is_none());
-        assert_eq!(board.current_turn(), Color::Black);
+        assert_eq!(board.current_turn, Color::Black);
 
         board.unmake_move();
         assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
         assert_eq!(board.get_piece(dest), Some(Kind::Knight(Color::Black)));
-        assert_eq!(board.current_turn(), Color::White);
+        assert_eq!(board.current_turn, Color::White);
     }
 
     #[test]
