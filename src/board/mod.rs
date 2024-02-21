@@ -29,6 +29,8 @@ pub struct Board {
     b_kingside_castling: Castling,
     b_queenside_castling: Castling,
 
+    en_passant_file: Option<u8>,
+
     w_pawns: u64,
     w_king: u64,
     w_queens: u64,
@@ -131,7 +133,25 @@ impl Board {
             };
         }
 
-        // TODO: En passant target square
+        #[allow(clippy::cast_possible_truncation)]
+        let en_passant_file = match fields[3].chars().next().unwrap_or('-') {
+            '-' => None,
+            'a'..='h' => Some((fields[3].chars().next().unwrap() as u128 - 'a' as u128) as u8),
+            _ => panic!("Unknown FEN en passant notation: {}", fields[3]),
+        };
+
+        // If the first move is en passant, add the previous pawn push to the
+        // history so we can restore en passant rights
+        let mut history = Vec::new();
+        if let Some(file) = en_passant_file {
+            let (start, dest) = match current_turn {
+                Color::White => (Square { rank: 1, file }, Square { rank: 3, file }),
+                Color::Black => (Square { rank: 6, file }, Square { rank: 4, file }),
+            };
+
+            history.push(Ply::builder(start, dest).en_passant(true).build());
+        }
+
         // TODO: Halfmove clock
         // TODO: Fullmove number
 
@@ -143,7 +163,8 @@ impl Board {
             b_kingside_castling,
             b_queenside_castling,
 
-            history: Vec::new(),
+            en_passant_file,
+
             w_pawns,
             w_king,
             w_queens,
@@ -156,6 +177,8 @@ impl Board {
             b_rooks,
             b_bishops,
             b_knights,
+
+            history,
         }
     }
 
@@ -168,6 +191,8 @@ impl Board {
             w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: None,
 
             w_pawns: 0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000,
             w_king: 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000,
@@ -287,7 +312,15 @@ impl Board {
                             .get_moveset(square)
                             .into_iter()
                             .map(|mut mv| {
-                                mv.captured_piece = self.get_piece(mv.dest);
+                                if mv.en_passant {
+                                    mv.captured_piece = self.get_piece(Square {
+                                        rank: square.rank,
+                                        file: mv.dest.file,
+                                    });
+                                } else {
+                                    mv.captured_piece = self.get_piece(mv.dest);
+                                }
+
                                 mv
                             })
                             .collect::<Vec<Ply>>();
@@ -447,12 +480,17 @@ impl Board {
 
     /// Returns a boolean representing whether or not a given move is an illegal pawn move
     ///
-    /// Checks if a pawn is capturing forward, or moving diagonally without capturing.
+    /// Checks if a pawn is capturing forward, moving diagonally without
+    /// capturing, or is performing an en passant when it is not allowed.
+    ///
+    /// # Assumptions
+    ///
+    /// Assumes that a pawn only changes a file by 1 when capturing.
     ///
     /// # Panics
     ///
     /// Will panic if there is no piece at the start square of the move.
-    ///   return false;
+    ///
     /// # Examples
     /// ```
     /// let board = Board::construct_starting_board();
@@ -471,8 +509,36 @@ impl Board {
             if self.get_piece(ply.dest).is_some() {
                 return Err("Move is not valid. The pawn is capturing forward.");
             }
-        } else if self.get_piece(ply.dest).is_none() {
+        } else if !ply.en_passant && self.get_piece(ply.dest).is_none() {
             return Err("Move is not valid. The pawn is moving diagonally without capturing.");
+        }
+
+        let ep_captured_piece = match start_piece {
+            Kind::Pawn(Color::White) if ply.start.rank == 4 => self.get_piece(Square {
+                rank: ply.dest.rank - 1,
+                file: ply.dest.file,
+            }),
+            Kind::Pawn(Color::Black) if ply.start.rank == 3 => self.get_piece(Square {
+                rank: ply.dest.rank + 1,
+                file: ply.dest.file,
+            }),
+            _ => None,
+        };
+
+        if ply.en_passant
+            && !(self
+                .en_passant_file
+                .is_some_and(|ep_file| ep_file == ply.dest.file)
+                && ply.start.file != ply.dest.file
+                && matches!(
+                    ep_captured_piece,
+                    Some(Kind::Pawn(color))
+                    if color != start_piece.get_color()
+                ))
+        {
+            return Err(
+                "Move is not valid. The pawn is performing an en passant when it is not allowed.",
+            );
         }
 
         Ok(ply)
@@ -560,7 +626,7 @@ impl Board {
     /// assert_eq!(Color::White, board.current_turn());
     /// ```
     pub fn undo_skip_turn(&mut self) {
-        self.skip_turn();
+        self.switch_turn();
     }
 
     /// Switches the current turn to the other player
@@ -574,7 +640,7 @@ impl Board {
     /// assert_eq!(Color::White, board.current_turn());
     /// ```
     pub fn switch_turn(&mut self) {
-        self.current_turn = self.current_turn.get_opposite();
+        self.current_turn = self.current_turn.opposite();
     }
 
     /// Returns a Result representing whether or not there are no pieces between two squares
@@ -785,8 +851,25 @@ impl Board {
     /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
     pub fn make_move(&mut self, new_move: Ply) {
+        if new_move.is_double_pawn_push {
+            self.en_passant_file = Some(new_move.dest.file);
+        } else {
+            self.en_passant_file = None;
+        }
+
         let dest_piece_kind = self.replace_square(new_move.start, new_move.dest);
-        assert_eq!(new_move.captured_piece, dest_piece_kind);
+
+        if new_move.en_passant {
+            self.remove_piece(
+                Square {
+                    file: new_move.dest.file,
+                    rank: new_move.start.rank,
+                },
+                Kind::Pawn(self.current_turn.opposite()),
+            );
+        } else {
+            assert_eq!(new_move.captured_piece, dest_piece_kind);
+        }
 
         if let (Some(promoted_to), Some(Kind::Pawn(c))) =
             (new_move.promoted_to, self.get_piece(new_move.dest))
@@ -794,6 +877,7 @@ impl Board {
             self.remove_piece(new_move.dest, Kind::Pawn(c));
             self.add_piece(new_move.dest, promoted_to);
         }
+
         if new_move.is_castles {
             let (rook_start, rook_dest) = match new_move.dest {
                 Square { rank: 0, file: 6 } => (Square::new("h1"), Square::new("f1")),
@@ -820,7 +904,7 @@ impl Board {
 
     /// Replaces the piece at the dest square with the piece at the destination square
     ///
-    /// # Arguments
+    /// # ArgumentSome(file)s
     ///
     /// * `origin` - The square of the piece to move
     /// * `to_replace` - The square to move the piece to
@@ -860,16 +944,31 @@ impl Board {
     /// # Examples
     /// ```
     /// ```
-    pub fn unmake_move(&mut self, old_move: Ply) {
+    pub fn unmake_move(&mut self) {
+        let old_move = self
+            .history
+            .pop()
+            .expect("No previous move in the board history!");
+
         self.replace_square(old_move.dest, old_move.start);
 
         if let Some(promoted_piece) = old_move.promoted_to {
             self.remove_piece(old_move.start, promoted_piece);
-            self.add_piece(old_move.start, Kind::Pawn(self.current_turn.get_opposite()));
+            self.add_piece(old_move.start, Kind::Pawn(self.current_turn.opposite()));
         }
 
-        if let Some(captured_piece) = self.history.pop().unwrap().captured_piece {
-            self.add_piece(old_move.dest, captured_piece);
+        if let Some(captured_piece) = old_move.captured_piece {
+            if old_move.en_passant {
+                self.add_piece(
+                    Square {
+                        file: old_move.dest.file,
+                        rank: old_move.start.rank,
+                    },
+                    captured_piece,
+                );
+            } else {
+                self.add_piece(old_move.dest, captured_piece);
+            }
         }
 
         if old_move.is_castles {
@@ -890,6 +989,16 @@ impl Board {
                 Square { rank: 7, file: 2 } => self.b_queenside_castling = Castling::Availiable,
                 _ => panic!("Invalid castling king destination {}", old_move.dest),
             };
+        }
+
+        if self
+            .history
+            .last()
+            .map_or(false, |mv| mv.is_double_pawn_push)
+        {
+            self.en_passant_file = Some(self.history.last().unwrap().start.file);
+        } else {
+            self.en_passant_file = None;
         }
 
         self.switch_turn();
@@ -936,6 +1045,8 @@ mod tests {
             b_kingside_castling: Castling::Unavailiable,
             b_queenside_castling: Castling::Unavailiable,
 
+            en_passant_file: None,
+
             w_pawns: 271_368_960,
             w_king: 2,
             w_queens: 1_073_741_824,
@@ -964,6 +1075,8 @@ mod tests {
             w_queenside_castling: Castling::Unavailiable,
             b_kingside_castling: Castling::Unavailiable,
             b_queenside_castling: Castling::Unavailiable,
+
+            en_passant_file: None,
 
             w_pawns: 337_691_392,
             w_king: 1024,
@@ -1243,7 +1356,7 @@ mod tests {
 
         assert!(board.get_piece(start).is_none());
 
-        board.unmake_move(ply);
+        board.unmake_move();
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert_eq!(board.current_turn(), Color::White);
 
@@ -1254,38 +1367,47 @@ mod tests {
     fn test_make_unmake_move_double() {
         // Make and unmake two moves in a row
         let mut board = Board::construct_starting_board();
-        let start = Square::new("a2");
-        let dest1 = Square::new("a3");
-        let dest2 = Square::new("a4");
-        let ply1 = Ply::new(start, dest1);
-        let ply2 = Ply::new(dest1, dest2);
+        let ply1 = Ply::new(Square::new("e2"), Square::new("e4"));
+        let ply2 = Ply::new(Square::new("e7"), Square::new("e5"));
 
         assert_eq!(board.current_turn(), Color::White);
 
-        assert!(board.get_piece(dest1).is_none());
-        assert!(board.get_piece(dest2).is_none());
+        assert!(board.get_piece(ply1.dest).is_none());
+        assert!(board.get_piece(ply2.dest).is_none());
         board.make_move(ply1);
-        assert_eq!(board.get_piece(dest1).unwrap(), Kind::Pawn(Color::White));
-        assert!(board.get_piece(start).is_none());
-        assert!(board.get_piece(dest2).is_none());
+        assert_eq!(
+            board.get_piece(ply1.dest).unwrap(),
+            Kind::Pawn(Color::White)
+        );
+        assert!(board.get_piece(ply1.start).is_none());
+        assert!(board.get_piece(ply2.dest).is_none());
         assert_eq!(board.current_turn(), Color::Black);
 
         board.make_move(ply2);
-        assert_eq!(board.get_piece(dest2).unwrap(), Kind::Pawn(Color::White));
-        assert!(board.get_piece(start).is_none());
-        assert!(board.get_piece(dest1).is_none());
+        assert_eq!(
+            board.get_piece(ply2.dest).unwrap(),
+            Kind::Pawn(Color::Black)
+        );
+        assert!(board.get_piece(ply2.start).is_none());
+        assert!(board.get_piece(ply1.start).is_none());
         assert_eq!(board.current_turn(), Color::White);
 
-        board.unmake_move(ply2);
-        assert_eq!(board.get_piece(dest1).unwrap(), Kind::Pawn(Color::White));
-        assert!(board.get_piece(dest2).is_none());
-        assert!(board.get_piece(start).is_none());
+        board.unmake_move();
+        assert_eq!(
+            board.get_piece(ply2.start).unwrap(),
+            Kind::Pawn(Color::Black)
+        );
+        assert!(board.get_piece(ply2.dest).is_none());
+        assert!(board.get_piece(ply1.start).is_none());
         assert_eq!(board.current_turn(), Color::Black);
 
-        board.unmake_move(ply1);
-        assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
-        assert!(board.get_piece(dest2).is_none());
-        assert!(board.get_piece(dest1).is_none());
+        board.unmake_move();
+        assert_eq!(
+            board.get_piece(ply1.start).unwrap(),
+            Kind::Pawn(Color::White)
+        );
+        assert!(board.get_piece(ply1.dest).is_none());
+        assert!(board.get_piece(ply2.dest).is_none());
         assert_eq!(board.current_turn(), Color::White);
     }
 
@@ -1306,7 +1428,7 @@ mod tests {
         assert!(board.get_piece(start).is_none());
         assert_eq!(board.current_turn(), Color::Black);
 
-        board.unmake_move(ply);
+        board.unmake_move();
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::Black));
         assert_eq!(board.current_turn(), Color::White);
@@ -1330,7 +1452,7 @@ mod tests {
         assert!(board.get_piece(start).is_none());
         assert_eq!(board.current_turn(), Color::Black);
 
-        board.unmake_move(ply);
+        board.unmake_move();
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert!(board.get_piece(dest).is_none());
         assert_eq!(board.current_turn(), Color::White);
@@ -1355,7 +1477,7 @@ mod tests {
         assert!(board.get_piece(start).is_none());
         assert_eq!(board.current_turn(), Color::Black);
 
-        board.unmake_move(ply);
+        board.unmake_move();
         assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
         assert_eq!(board.get_piece(dest), Some(Kind::Knight(Color::Black)));
         assert_eq!(board.current_turn(), Color::White);
@@ -1539,6 +1661,24 @@ mod tests {
         let board = Board::from_fen("8/p1KPrp2/6kp/8/8/8/8/3R4 w - - 0 46");
         let result = board.get_legal_moves().len();
         let correct = 18;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_18() {
+        let board = Board::from_fen("rnbqkbnr/ppp2ppp/8/3pP3/8/8/PPPP1PPP/RNBQKBNR w KQkq d6 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 31;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_19() {
+        let board = Board::from_fen("1k6/8/8/4Pp2/1K6/8/8/8 w - f6 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 10;
 
         assert_eq!(result, correct);
     }

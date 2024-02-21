@@ -36,11 +36,11 @@ impl Piece for Pawn {
     /// - [X] Advances 2 squares forward if on second rank
     /// - [X] Takes diagonally forward
     /// - [ ] En passant
-    /// - [ ] Promotion
+    /// - [X] Promotion
     fn get_moveset(square: Square, color: Color) -> Vec<Ply> {
-        let (direction, starting_rank, back_rank) = match color {
-            Color::White => (Direction::North, 1, 7),
-            Color::Black => (Direction::South, 6, 0),
+        let (direction, starting_rank, en_passant_rank, back_rank) = match color {
+            Color::White => (Direction::North, 1, 4, 7),
+            Color::Black => (Direction::South, 6, 3, 0),
         };
 
         // Directional captures
@@ -52,7 +52,27 @@ impl Piece for Pawn {
 
         // Double pawn push
         if square.rank == starting_rank {
-            output.push(Ply::new(square, square + direction + direction));
+            output.push(
+                Ply::builder(square, square + direction + direction)
+                    .double_pawn_push(true)
+                    .build(),
+            );
+        }
+
+        // En Passant
+        if square.rank == en_passant_rank {
+            output.push(
+                Ply::builder(square, square + direction + Direction::East)
+                    .en_passant(true)
+                    .captured(Kind::Pawn(color.opposite()))
+                    .build(),
+            );
+            output.push(
+                Ply::builder(square, square + direction + Direction::West)
+                    .en_passant(true)
+                    .captured(Kind::Pawn(color.opposite()))
+                    .build(),
+            );
         }
 
         // Promotion
@@ -145,7 +165,9 @@ mod tests {
         let correct = vec![
             Ply::new(start_square, Square::new("a3")),
             Ply::new(start_square, Square::new("b3")),
-            Ply::new(start_square, Square::new("a4")),
+            Ply::builder(start_square, Square::new("a4"))
+                .double_pawn_push(true)
+                .build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -163,7 +185,9 @@ mod tests {
             Ply::new(start_square, Square::new("d3")),
             Ply::new(start_square, Square::new("c3")),
             Ply::new(start_square, Square::new("e3")),
-            Ply::new(start_square, Square::new("d4")),
+            Ply::builder(start_square, Square::new("d4"))
+                .double_pawn_push(true)
+                .build(),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -228,7 +252,9 @@ mod tests {
         let result = piece.get_moveset(start_square);
         let correct = vec![
             Ply::new(start_square, Square::new("h6")),
-            Ply::new(start_square, Square::new("h5")),
+            Ply::builder(start_square, Square::new("h5"))
+                .double_pawn_push(true)
+                .build(),
             Ply::new(start_square, Square::new("g6")),
         ];
 

@@ -29,7 +29,7 @@ impl Color {
         Self::White
     }
 
-    pub const fn get_opposite(self) -> Self {
+    pub const fn opposite(self) -> Self {
         match self {
             Self::White => Self::Black,
             Self::Black => Self::White,

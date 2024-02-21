@@ -9,6 +9,8 @@ pub struct Ply {
     pub captured_piece: Option<Kind>,
     pub promoted_to: Option<Kind>,
     pub is_castles: bool,
+    pub en_passant: bool,
+    pub is_double_pawn_push: bool,
 }
 
 impl Ply {
@@ -19,6 +21,8 @@ impl Ply {
             captured_piece: None,
             promoted_to: None,
             is_castles: false,
+            en_passant: false,
+            is_double_pawn_push: false,
         }
     }
 
@@ -29,7 +33,9 @@ impl Ply {
             dest,
             captured_piece: None,
             promoted_to: None,
-            is_castles: false,
+            castles: false,
+            en_passant: false,
+            double_pawn_push: false,
         }
     }
 }
@@ -59,7 +65,9 @@ pub struct Builder {
     dest: Square,
     captured_piece: Option<Kind>,
     promoted_to: Option<Kind>,
-    is_castles: bool,
+    castles: bool,
+    en_passant: bool,
+    double_pawn_push: bool,
 }
 
 impl Builder {
@@ -87,8 +95,21 @@ impl Builder {
         self
     }
 
-    pub fn is_castles(&mut self, is_castle: bool) -> &mut Self {
-        self.is_castles = is_castle;
+    #[allow(dead_code)]
+    pub fn castles(&mut self, is_castles: bool) -> &mut Self {
+        self.castles = is_castles;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn en_passant(&mut self, is_en_passant: bool) -> &mut Self {
+        self.en_passant = is_en_passant;
+        self
+    }
+
+    #[allow(dead_code)]
+    pub fn double_pawn_push(&mut self, is_double_pawn_push: bool) -> &mut Self {
+        self.double_pawn_push = is_double_pawn_push;
         self
     }
 
@@ -98,7 +119,9 @@ impl Builder {
             dest: self.dest,
             captured_piece: self.captured_piece,
             promoted_to: self.promoted_to,
-            is_castles: self.is_castles,
+            is_castles: self.castles,
+            en_passant: self.en_passant,
+            is_double_pawn_push: self.double_pawn_push,
         }
     }
 }
@@ -231,13 +254,24 @@ mod tests {
     }
 
     #[test]
-    fn test_builder_is_castles() {
+    fn test_builder_castles() {
         let start = Square::new("e1");
         let dest = Square::new("g1");
-        let ply = Ply::builder(start, dest).is_castles(true).build();
+        let ply = Ply::builder(start, dest).castles(true).build();
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
         assert!(ply.is_castles);
+    }
+
+    #[test]
+    fn test_builder_en_passant() {
+        let start = Square::new("e6");
+        let dest = Square::new("d7");
+        let ply = Ply::builder(start, dest).en_passant(true).build();
+
+        assert_eq!(ply.start, start);
+        assert_eq!(ply.dest, dest);
+        assert!(ply.en_passant);
     }
 }

@@ -12,6 +12,8 @@ pub struct BoardBuilder {
     b_kingside_castling: Castling,
     b_queenside_castling: Castling,
 
+    en_passant_file: Option<u8>,
+
     w_pawns: u64,
     w_king: u64,
     w_queens: u64,
@@ -38,6 +40,8 @@ impl BoardBuilder {
             w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: None,
 
             w_pawns: 0,
             w_king: 0,
@@ -159,6 +163,12 @@ impl BoardBuilder {
     }
 
     #[allow(dead_code)]
+    pub const fn en_passant_file(mut self, en_passant_file: Option<u8>) -> Self {
+        self.en_passant_file = en_passant_file;
+        self
+    }
+
+    #[allow(dead_code)]
     pub fn build(&mut self) -> Board {
         Board {
             current_turn: self.current_turn,
@@ -167,6 +177,8 @@ impl BoardBuilder {
             w_queenside_castling: self.w_queenside_castling,
             b_kingside_castling: self.b_kingside_castling,
             b_queenside_castling: self.b_queenside_castling,
+
+            en_passant_file: self.en_passant_file,
 
             history: self.history.clone(),
             w_pawns: self.w_pawns,
@@ -203,6 +215,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -231,6 +245,8 @@ mod tests {
             w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: None,
 
             w_pawns: 0,
             w_king: 0,
@@ -264,6 +280,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -294,6 +312,8 @@ mod tests {
             w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: None,
 
             w_pawns: 0,
             w_king: 0,
@@ -326,6 +346,8 @@ mod tests {
             b_kingside_castling: Castling::Unavailiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -357,6 +379,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -387,6 +411,8 @@ mod tests {
             w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Unavailiable,
+
+            en_passant_file: None,
 
             w_pawns: 0,
             w_king: 0,
@@ -420,6 +446,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 1,
             w_king: 0,
             w_queens: 0,
@@ -451,6 +479,8 @@ mod tests {
             w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: None,
 
             w_pawns: 0,
             w_king: 1,
@@ -484,6 +514,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 1,
@@ -515,6 +547,8 @@ mod tests {
             w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: None,
 
             w_pawns: 0,
             w_king: 0,
@@ -548,6 +582,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -580,6 +616,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -610,6 +648,8 @@ mod tests {
             b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Availiable,
 
+            en_passant_file: None,
+
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -624,6 +664,38 @@ mod tests {
             b_knights: 0,
 
             history,
+        };
+
+        assert_eq!(board, correct);
+    }
+
+    #[test]
+    fn board_builder_en_passant() {
+        let board = BoardBuilder::default().en_passant_file(Some(1)).build();
+        let correct = Board {
+            current_turn: Color::White,
+
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: Some(1),
+
+            w_pawns: 0,
+            w_king: 0,
+            w_queens: 0,
+            w_rooks: 0,
+            w_bishops: 0,
+            w_knights: 0,
+            b_pawns: 0,
+            b_king: 0,
+            b_queens: 0,
+            b_rooks: 0,
+            b_bishops: 0,
+            b_knights: 0,
+
+            history: Vec::new(),
         };
 
         assert_eq!(board, correct);

@@ -24,12 +24,12 @@ impl Piece for King {
         if square == Square::new("e1") {
             moveset.push(
                 Ply::builder(square, Square::new("g1"))
-                    .is_castles(true)
+                    .castles(true)
                     .build(),
             );
             moveset.push(
                 Ply::builder(square, Square::new("c1"))
-                    .is_castles(true)
+                    .castles(true)
                     .build(),
             );
         }
@@ -37,12 +37,12 @@ impl Piece for King {
         if square == Square::new("e8") {
             moveset.push(
                 Ply::builder(square, Square::new("g8"))
-                    .is_castles(true)
+                    .castles(true)
                     .build(),
             );
             moveset.push(
                 Ply::builder(square, Square::new("c8"))
-                    .is_castles(true)
+                    .castles(true)
                     .build(),
             );
         }
@@ -257,10 +257,10 @@ mod tests {
             Ply::new(start_square, Square::new("f1")),
             Ply::new(start_square, Square::new("f2")),
             Ply::builder(start_square, Square::new("g1"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
             Ply::builder(start_square, Square::new("c1"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
         ];
 
@@ -282,10 +282,10 @@ mod tests {
             Ply::new(start_square, Square::new("f1")),
             Ply::new(start_square, Square::new("f2")),
             Ply::builder(start_square, Square::new("g1"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
             Ply::builder(start_square, Square::new("c1"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
         ];
 
@@ -307,10 +307,10 @@ mod tests {
             Ply::new(start_square, Square::new("f8")),
             Ply::new(start_square, Square::new("f7")),
             Ply::builder(start_square, Square::new("g8"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
             Ply::builder(start_square, Square::new("c8"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
         ];
 
@@ -332,10 +332,10 @@ mod tests {
             Ply::new(start_square, Square::new("f8")),
             Ply::new(start_square, Square::new("f7")),
             Ply::builder(start_square, Square::new("g8"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
             Ply::builder(start_square, Square::new("c8"))
-                .is_castles(true)
+                .castles(true)
                 .build(),
         ];
 

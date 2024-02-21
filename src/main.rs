@@ -33,6 +33,6 @@ fn main() {
         //     board.unmake_move(npmove);
         // }
         // println!("Ending iteration...");
-        board.unmake_move(pmove);
+        board.unmake_move();
     }
 }
