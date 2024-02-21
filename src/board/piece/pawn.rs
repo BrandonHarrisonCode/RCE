@@ -35,7 +35,7 @@ impl Piece for Pawn {
     /// - [X] Advances 1 square forward
     /// - [X] Advances 2 squares forward if on second rank
     /// - [X] Takes diagonally forward
-    /// - [ ] En passant
+    /// - [X] En passant
     /// - [X] Promotion
     fn get_moveset(square: Square, color: Color) -> Vec<Ply> {
         let (direction, starting_rank, en_passant_rank, back_rank) = match color {

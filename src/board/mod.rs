@@ -4,12 +4,12 @@ use std::fmt;
 
 mod boardbuilder;
 pub mod piece;
-mod ply;
-mod square;
+pub mod ply;
+pub mod square;
 
 use boardbuilder::BoardBuilder;
 use piece::{Color, Kind};
-use ply::Ply;
+pub use ply::Ply;
 use square::Square;
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
@@ -22,7 +22,7 @@ pub enum Castling {
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
-    current_turn: Color,
+    pub current_turn: Color,
 
     w_kingside_castling: Castling,
     w_queenside_castling: Castling,
