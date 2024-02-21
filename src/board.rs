@@ -944,6 +944,7 @@ impl Board {
     /// # Examples
     /// ```
     /// ```
+    #[allow(dead_code)]
     pub fn unmake_move(&mut self) {
         let old_move = self
             .history
