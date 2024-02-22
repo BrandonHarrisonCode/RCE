@@ -110,19 +110,14 @@ impl Board {
     }
 
     #[allow(dead_code)]
-    pub const fn construct_empty_board() -> Self {
+    /// Creates a new board object without any pieces on the board
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_empty_board();
+    /// ```
+    pub fn construct_empty_board() -> Self {
         Self {
-            current_turn: Color::White,
-            halfmove_clock: 0,
-            fullmove_counter: 1,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
             w_pawns: 0,
             w_king: 0,
             w_queens: 0,
@@ -135,8 +130,7 @@ impl Board {
             b_rooks: 0,
             b_bishops: 0,
             b_knights: 0,
-
-            history: Vec::new(),
+            ..Self::default()
         }
     }
 

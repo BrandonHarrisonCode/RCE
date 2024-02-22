@@ -82,13 +82,28 @@ impl BoardBuilder {
     ///
     /// let builder = BoardBuilder::default().white_turn(false);
     /// ```
-    #[allow(dead_code)]
     pub const fn turn(mut self, color: Color) -> Self {
         self.current_turn = color;
         self
     }
 
-    #[allow(dead_code)]
+    /// Set the kingside castling rights of the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color to set the kingside castling rights for
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().kingside_castling(Color::Black, Castling::Unavailiable);
+    /// ```
     pub const fn kingside_castling(mut self, color: Color, value: Castling) -> Self {
         match color {
             Color::White => self.w_kingside_castling = value,
@@ -97,7 +112,23 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
+    /// Set the queenside castling rights of the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color to set the queenside castling rights for
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().queenside_castling(Color::Black, Castling::Unavailiable);
+    /// ```
     pub const fn queenside_castling(mut self, color: Color, value: Castling) -> Self {
         match color {
             Color::White => self.w_queenside_castling = value,
@@ -106,6 +137,23 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the pawn bitmap for the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the pawns being set
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().pawns(Color::Black, 0);
+    /// ```
     pub const fn pawns(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_pawns = value,
@@ -114,6 +162,23 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the king bitmap for the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the king being set
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().king(Color::Black, 0);
+    /// ```
     pub const fn king(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_king = value,
@@ -122,6 +187,23 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the queen bitmap for the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the queens being set
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().queens(Color::Black, 0);
+    /// ```
     pub const fn queens(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_queens = value,
@@ -130,6 +212,23 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the rook bitmap for the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the rooks being set
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().rooks(Color::Black, 0);
+    /// ```
     pub const fn rooks(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_rooks = value,
@@ -138,6 +237,23 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the bishop bitmap for the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the bishops being set
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().bishops(Color::Black, 0);
+    /// ```
     pub const fn bishops(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_bishops = value,
@@ -146,6 +262,23 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the knight bitmap for the specified color
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the knights being set
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().knights(Color::Black, 0);
+    /// ```
     pub const fn knights(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_knights = value,
@@ -154,27 +287,107 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the history of the board
+    ///
+    /// # Arguments
+    ///
+    /// * `history` - The history of the board
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().history(Vec::new());
+    /// ```
     pub fn history(mut self, history: &[Ply]) -> Self {
         self.history = history.to_vec();
         self
     }
 
+    /// Set the en passant capture file
+    ///
+    /// # Arguments
+    ///
+    /// * `en_passant_file` - The file that is availiable for en passant capturing
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().en_passant_file(Some(2));
+    /// ```
     pub const fn en_passant_file(mut self, en_passant_file: Option<u8>) -> Self {
         self.en_passant_file = en_passant_file;
         self
     }
 
+    /// Set the halfmove clock of the board
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value of the halfmove clock
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().halfmove_clock(5);
+    /// ```
     pub const fn halfmove_clock(mut self, value: u8) -> Self {
         self.halfmove_clock = value;
         self
     }
 
+    /// Set the fullmove counter of the board
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The value of the fullmove counter
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().fullmove_counter(5);
+    /// ```
     pub const fn fullmove_counter(mut self, value: u16) -> Self {
         self.fullmove_counter = value;
         self
     }
 
-    #[allow(dead_code)]
+    /// Consume the `BoardBuilder` to create a `Board`
+    ///
+    /// # Returns
+    ///
+    /// * `Board` - The board represented by the builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let board: Board = BoardBuilder::default().fullmove_counter(5).build();
+    /// ```
     pub fn build(&mut self) -> Board {
         Board {
             current_turn: self.current_turn,
