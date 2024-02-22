@@ -5,29 +5,31 @@ use super::Castling;
 
 #[derive(Default)]
 pub struct BoardBuilder {
-    current_turn: Color,
+    pub current_turn: Color,
+    pub halfmove_clock: u8,
+    pub fullmove_counter: u16,
 
-    w_kingside_castling: Castling,
-    w_queenside_castling: Castling,
-    b_kingside_castling: Castling,
-    b_queenside_castling: Castling,
+    pub w_kingside_castling: Castling,
+    pub w_queenside_castling: Castling,
+    pub b_kingside_castling: Castling,
+    pub b_queenside_castling: Castling,
 
-    en_passant_file: Option<u8>,
+    pub en_passant_file: Option<u8>,
 
-    w_pawns: u64,
-    w_king: u64,
-    w_queens: u64,
-    w_rooks: u64,
-    w_bishops: u64,
-    w_knights: u64,
-    b_pawns: u64,
-    b_king: u64,
-    b_queens: u64,
-    b_rooks: u64,
-    b_bishops: u64,
-    b_knights: u64,
+    pub w_pawns: u64,
+    pub w_king: u64,
+    pub w_queens: u64,
+    pub w_rooks: u64,
+    pub w_bishops: u64,
+    pub w_knights: u64,
+    pub b_pawns: u64,
+    pub b_king: u64,
+    pub b_queens: u64,
+    pub b_rooks: u64,
+    pub b_bishops: u64,
+    pub b_knights: u64,
 
-    history: Vec<Ply>,
+    pub history: Vec<Ply>,
 }
 
 impl BoardBuilder {
@@ -35,6 +37,8 @@ impl BoardBuilder {
     pub const fn default() -> Self {
         Self {
             current_turn: Color::default(),
+            halfmove_clock: 0,
+            fullmove_counter: 1,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -79,7 +83,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().white_turn(false);
     /// ```
     #[allow(dead_code)]
-    pub const fn set_turn(mut self, color: Color) -> Self {
+    pub const fn turn(mut self, color: Color) -> Self {
         self.current_turn = color;
         self
     }
@@ -102,7 +106,6 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub const fn pawns(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_pawns = value,
@@ -111,7 +114,6 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub const fn king(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_king = value,
@@ -120,7 +122,6 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub const fn queens(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_queens = value,
@@ -129,7 +130,6 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub const fn rooks(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_rooks = value,
@@ -138,7 +138,6 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub const fn bishops(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_bishops = value,
@@ -147,7 +146,6 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub const fn knights(mut self, color: Color, value: u64) -> Self {
         match color {
             Color::White => self.w_knights = value,
@@ -156,15 +154,23 @@ impl BoardBuilder {
         self
     }
 
-    #[allow(dead_code)]
     pub fn history(mut self, history: &[Ply]) -> Self {
         self.history = history.to_vec();
         self
     }
 
-    #[allow(dead_code)]
     pub const fn en_passant_file(mut self, en_passant_file: Option<u8>) -> Self {
         self.en_passant_file = en_passant_file;
+        self
+    }
+
+    pub const fn halfmove_clock(mut self, value: u8) -> Self {
+        self.halfmove_clock = value;
+        self
+    }
+
+    pub const fn fullmove_counter(mut self, value: u16) -> Self {
+        self.fullmove_counter = value;
         self
     }
 
@@ -172,6 +178,8 @@ impl BoardBuilder {
     pub fn build(&mut self) -> Board {
         Board {
             current_turn: self.current_turn,
+            halfmove_clock: self.halfmove_clock,
+            fullmove_counter: self.fullmove_counter,
 
             w_kingside_castling: self.w_kingside_castling,
             w_queenside_castling: self.w_queenside_castling,
@@ -207,60 +215,17 @@ mod tests {
     #[test]
     fn board_builder_default() {
         let board = BoardBuilder::default().build();
-        let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
-        };
+        let correct = Board::construct_empty_board();
 
         assert_eq!(board, correct);
     }
 
     #[test]
-    fn board_builder_black_white_turn() {
-        let board = BoardBuilder::default().set_turn(Color::Black).build();
+    fn board_builder_black_turn() {
+        let board = BoardBuilder::default().turn(Color::Black).build();
         let correct = Board {
             current_turn: Color::Black,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -269,33 +234,10 @@ mod tests {
     #[test]
     fn board_builder_white_turn() {
         let board = BoardBuilder::default()
-            .set_turn(Color::Black)
-            .set_turn(Color::White)
+            .turn(Color::Black)
+            .turn(Color::White)
             .build();
-        let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
-        };
+        let correct = Board::construct_empty_board();
 
         assert_eq!(board, correct);
     }
@@ -306,28 +248,8 @@ mod tests {
             .kingside_castling(Color::White, Castling::Unavailiable)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
             w_kingside_castling: Castling::Unavailiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -339,28 +261,8 @@ mod tests {
             .kingside_castling(Color::Black, Castling::Unavailiable)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
             b_kingside_castling: Castling::Unavailiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -372,28 +274,8 @@ mod tests {
             .queenside_castling(Color::White, Castling::Unavailiable)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Unavailiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -405,28 +287,8 @@ mod tests {
             .queenside_castling(Color::Black, Castling::Unavailiable)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
             b_queenside_castling: Castling::Unavailiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -439,28 +301,9 @@ mod tests {
             .pawns(Color::Black, 2)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
             w_pawns: 1,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
             b_pawns: 2,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -473,28 +316,9 @@ mod tests {
             .king(Color::Black, 2)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
             w_king: 1,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
             b_king: 2,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -507,28 +331,9 @@ mod tests {
             .queens(Color::Black, 2)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
             w_queens: 1,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
             b_queens: 2,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -541,28 +346,9 @@ mod tests {
             .rooks(Color::Black, 2)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
             w_rooks: 1,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
             b_rooks: 2,
-            b_bishops: 0,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -575,28 +361,9 @@ mod tests {
             .bishops(Color::Black, 2)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
             w_bishops: 1,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
             b_bishops: 2,
-            b_knights: 0,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -609,28 +376,9 @@ mod tests {
             .knights(Color::Black, 2)
             .build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
             w_knights: 1,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
             b_knights: 2,
-            history: Vec::new(),
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -641,29 +389,8 @@ mod tests {
         let history = vec![Ply::new(Square::new("a1"), Square::new("a2"))];
         let board = BoardBuilder::default().history(&history).build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
-            en_passant_file: None,
-
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
-
             history,
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -673,29 +400,30 @@ mod tests {
     fn board_builder_en_passant() {
         let board = BoardBuilder::default().en_passant_file(Some(1)).build();
         let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
-
             en_passant_file: Some(1),
+            ..Board::construct_empty_board()
+        };
 
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
+        assert_eq!(board, correct);
+    }
 
-            history: Vec::new(),
+    #[test]
+    fn board_builder_halfmove_clock() {
+        let board = BoardBuilder::default().halfmove_clock(5).build();
+        let correct = Board {
+            halfmove_clock: 5,
+            ..Board::construct_empty_board()
+        };
+
+        assert_eq!(board, correct);
+    }
+
+    #[test]
+    fn board_builder_fullmove_counter() {
+        let board = BoardBuilder::default().fullmove_counter(5).build();
+        let correct = Board {
+            fullmove_counter: 5,
+            ..Board::construct_empty_board()
         };
 
         assert_eq!(board, correct);

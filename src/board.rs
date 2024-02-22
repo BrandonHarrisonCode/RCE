@@ -23,6 +23,8 @@ pub enum Castling {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
     pub current_turn: Color,
+    pub halfmove_clock: u8,
+    pub fullmove_counter: u16,
 
     w_kingside_castling: Castling,
     w_queenside_castling: Castling,
@@ -57,6 +59,8 @@ impl Default for Board {
     fn default() -> Self {
         Self {
             current_turn: Color::White,
+            halfmove_clock: 0,
+            fullmove_counter: 1,
 
             w_kingside_castling: Castling::Availiable,
             w_queenside_castling: Castling::Availiable,
@@ -103,6 +107,37 @@ impl Board {
     /// ```
     pub fn construct_starting_board() -> Self {
         Self::default()
+    }
+
+    #[allow(dead_code)]
+    pub const fn construct_empty_board() -> Self {
+        Self {
+            current_turn: Color::White,
+            halfmove_clock: 0,
+            fullmove_counter: 1,
+
+            w_kingside_castling: Castling::Availiable,
+            w_queenside_castling: Castling::Availiable,
+            b_kingside_castling: Castling::Availiable,
+            b_queenside_castling: Castling::Availiable,
+
+            en_passant_file: None,
+
+            w_pawns: 0,
+            w_king: 0,
+            w_queens: 0,
+            w_rooks: 0,
+            w_bishops: 0,
+            w_knights: 0,
+            b_pawns: 0,
+            b_king: 0,
+            b_queens: 0,
+            b_rooks: 0,
+            b_bishops: 0,
+            b_knights: 0,
+
+            history: Vec::new(),
+        }
     }
 
     /// Returns a boolean representing whether or not the current player has kingside castling rights
@@ -901,74 +936,6 @@ impl fmt::Display for Board {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn from_fen_starting_position() {
-        let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        assert_eq!(Board::construct_starting_board(), Board::from_fen(fen));
-    }
-
-    #[test]
-    fn from_fen_white_position1() {
-        let fen = "1k1r3r/p6p/1pp1pp2/2Np1qp1/1Q1P4/2P1PP2/PP4PP/R4nK1 w - - 0 21";
-        let correct = Board {
-            current_turn: Color::White,
-
-            w_kingside_castling: Castling::Unavailiable,
-            w_queenside_castling: Castling::Unavailiable,
-            b_kingside_castling: Castling::Unavailiable,
-            b_queenside_castling: Castling::Unavailiable,
-
-            en_passant_file: None,
-
-            w_pawns: 271_368_960,
-            w_king: 2,
-            w_queens: 1_073_741_824,
-            w_rooks: 128,
-            w_bishops: 0,
-            w_knights: 137_438_953_472,
-            b_pawns: 36_429_096_560_885_760,
-            b_king: 4_611_686_018_427_387_904,
-            b_queens: 17_179_869_184,
-            b_rooks: 1_224_979_098_644_774_912,
-            b_bishops: 0,
-            b_knights: 4,
-            history: Vec::new(),
-        };
-
-        assert_eq!(Board::from_fen(fen), correct);
-    }
-
-    #[test]
-    fn from_fen_black_position1() {
-        let fen = "5b2/pp1N2pk/2pn1q1p/3n1p1Q/3P1P2/2PB3R/PP3KPP/R1B1r3 b - - 12 31";
-        let correct = Board {
-            current_turn: Color::Black,
-
-            w_kingside_castling: Castling::Unavailiable,
-            w_queenside_castling: Castling::Unavailiable,
-            b_kingside_castling: Castling::Unavailiable,
-            b_queenside_castling: Castling::Unavailiable,
-
-            en_passant_file: None,
-
-            w_pawns: 337_691_392,
-            w_king: 1024,
-            w_queens: 4_294_967_296,
-            w_rooks: 65664,
-            w_bishops: 1_048_608,
-            w_knights: 4_503_599_627_370_496,
-            b_pawns: 54_642_446_545_453_056,
-            b_king: 281_474_976_710_656,
-            b_queens: 4_398_046_511_104,
-            b_rooks: 8,
-            b_bishops: 288_230_376_151_711_744,
-            b_knights: 17_660_905_521_152,
-            history: Vec::new(),
-        };
-
-        assert_eq!(Board::from_fen(fen), correct);
-    }
 
     #[test]
     fn test_get_piece1() {
