@@ -204,12 +204,17 @@ impl Board {
     /// ```
     fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
-        for i in (0..8).rev() {
+
+        for i in 0..8 {
             for j in 0..8 {
                 let square = Square { rank: i, file: j };
                 if let Some(piece) = self.get_piece(square) {
-                    if self.current_turn == piece.get_color() {
-                        let mut square_moveset = piece
+                    if self.current_turn != piece.get_color() {
+                        continue;
+                    }
+
+                    all_moves.append(
+                        &mut piece
                             .get_moveset(square)
                             .into_iter()
                             .map(|mut mv| {
@@ -224,9 +229,8 @@ impl Board {
 
                                 mv
                             })
-                            .collect::<Vec<Ply>>();
-                        all_moves.append(&mut square_moveset);
-                    }
+                            .collect::<Vec<Ply>>(),
+                    );
                 }
             }
         }
