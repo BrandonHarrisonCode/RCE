@@ -53,6 +53,12 @@ impl BitBoards {
         }
     }
 
+    /// Instantiates a new `BitBoards` refering to the game start state
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::default();
+    /// ```
     pub const fn default() -> Self {
         let white_pawns =
             0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000;
@@ -103,12 +109,35 @@ impl BitBoards {
         }
     }
 
+    /// Creates a `Builder` object for constructing new `BitBoards`
+    ///
+    /// # Examples
+    /// ```
+    /// let builder = BitBoards::builder();
+    /// let bitboards = builder.build();
+    /// ```
     pub const fn builder() -> Builder {
         Builder::default()
     }
 
-    fn recompute_combinations(&mut self, kind: Option<Kind>) {
-        if kind.is_none() || kind.is_some_and(|k| k.get_color() == Color::White) {
+    /// Recomputes the meta data bitboards of `white_pieces`, `black_pieces`, and `all_pieces`
+    ///
+    /// This is useful after changing one of the more granular bitboards. This
+    /// method must be called after each change in order to keep the meta
+    /// bitboards up to date.
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - An optional `Color` that is used to cut down on recomputing unnescessary metadata.
+    ///
+    /// # Examples
+    /// ```
+    /// let bb = BitBoards::default();
+    /// bb.white_pawns = 1;
+    /// bb.recompute_combinatations();
+    /// ```
+    fn recompute_combinations(&mut self, color: Option<Color>) {
+        if color.is_none() || color.is_some_and(|c| c == Color::White) {
             self.white_pieces = self.white_pawns
                 | self.white_knights
                 | self.white_bishops
@@ -116,7 +145,7 @@ impl BitBoards {
                 | self.white_queens
                 | self.white_king;
         }
-        if kind.is_none() || kind.is_some_and(|k| k.get_color() == Color::Black) {
+        if color.is_none() || color.is_some_and(|c| c == Color::Black) {
             self.black_pieces = self.black_pawns
                 | self.black_knights
                 | self.black_bishops
@@ -181,6 +210,19 @@ impl BitBoards {
         }
     }
 
+    /// Adds the specified piece kind to the specified square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The designated square to add the piece to.
+    ///
+    /// * `kind` - The piece kind to add to the square.
+    ///
+    /// # Examples
+    /// ```
+    /// let bb = BitBoards::default();
+    /// bb.add_piece(Square("a4"), Kind::Rook(Color::White))
+    /// ```
     pub fn add_piece(&mut self, square: Square, kind: Kind) {
         let mask = square.get_mask();
 
@@ -199,9 +241,22 @@ impl BitBoards {
             Kind::King(Color::Black) => self.black_king |= mask,
         }
 
-        self.recompute_combinations(Some(kind));
+        self.recompute_combinations(Some(kind.get_color()));
     }
 
+    /// Removes the specified piece kind from the square.
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square to remove the piece from.
+    ///
+    /// * `kind` - The piece kind to remove from the square.
+    ///
+    /// # Examples
+    /// ```
+    /// let bb = BitBoards::default();
+    /// bb.remove_piece(Square("a2"), Kind::Pawn(Color::White));
+    /// ```
     pub fn remove_piece(&mut self, square: Square, kind: Kind) {
         let mask = !square.get_mask();
 
@@ -220,6 +275,6 @@ impl BitBoards {
             Kind::King(Color::Black) => self.black_king &= mask,
         }
 
-        self.recompute_combinations(Some(kind));
+        self.recompute_combinations(Some(kind.get_color()));
     }
 }

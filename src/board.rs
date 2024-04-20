@@ -595,6 +595,19 @@ impl Board {
         self.is_in_check_helper(1, None)
     }
 
+    /// The helper function for `is_in_check()` with an optional depth parameter
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The remaining depth to search for
+    ///
+    /// # `ply` - A potential move to make before testing for check
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(!board.is_in_check_helper(1, None));
+    /// ```
     pub fn is_in_check_helper(&self, depth: u64, ply: Option<Ply>) -> bool {
         let mut board_copy = self.clone();
         if let Some(ply) = ply {
