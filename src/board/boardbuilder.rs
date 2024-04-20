@@ -1,7 +1,7 @@
 use super::piece::Color;
 use super::ply::Ply;
 use super::Board;
-use super::Castling;
+use super::CastlingStatus;
 
 use super::bitboards::builder::Builder;
 use super::bitboards::BitBoards;
@@ -12,10 +12,10 @@ pub struct BoardBuilder {
     pub halfmove_clock: u8,
     pub fullmove_counter: u16,
 
-    pub white_kingside_castling: Castling,
-    pub white_queenside_castling: Castling,
-    pub black_kingside_castling: Castling,
-    pub black_queenside_castling: Castling,
+    pub white_kingside_castling: CastlingStatus,
+    pub white_queenside_castling: CastlingStatus,
+    pub black_kingside_castling: CastlingStatus,
+    pub black_queenside_castling: CastlingStatus,
 
     pub en_passant_file: Option<u8>,
 
@@ -32,10 +32,10 @@ impl BoardBuilder {
             halfmove_clock: 0,
             fullmove_counter: 1,
 
-            white_kingside_castling: Castling::Availiable,
-            white_queenside_castling: Castling::Availiable,
-            black_kingside_castling: Castling::Availiable,
-            black_queenside_castling: Castling::Availiable,
+            white_kingside_castling: CastlingStatus::Availiable,
+            white_queenside_castling: CastlingStatus::Availiable,
+            black_kingside_castling: CastlingStatus::Availiable,
+            black_queenside_castling: CastlingStatus::Availiable,
 
             en_passant_file: None,
 
@@ -85,7 +85,7 @@ impl BoardBuilder {
     ///
     /// let builder = BoardBuilder::default().kingside_castling(Color::Black, Castling::Unavailiable);
     /// ```
-    pub const fn kingside_castling(mut self, color: Color, value: Castling) -> Self {
+    pub const fn kingside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
         match color {
             Color::White => self.white_kingside_castling = value,
             Color::Black => self.black_kingside_castling = value,
@@ -110,7 +110,7 @@ impl BoardBuilder {
     ///
     /// let builder = BoardBuilder::default().queenside_castling(Color::Black, Castling::Unavailiable);
     /// ```
-    pub const fn queenside_castling(mut self, color: Color, value: Castling) -> Self {
+    pub const fn queenside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
         match color {
             Color::White => self.white_queenside_castling = value,
             Color::Black => self.black_queenside_castling = value,
@@ -410,10 +410,10 @@ mod tests {
     #[test]
     fn board_builder_white_kingside_castling() {
         let board = BoardBuilder::default()
-            .kingside_castling(Color::White, Castling::Unavailiable)
+            .kingside_castling(Color::White, CastlingStatus::Unavailiable)
             .build();
         let correct = Board {
-            white_kingside_castling: Castling::Unavailiable,
+            white_kingside_castling: CastlingStatus::Unavailiable,
             ..Board::construct_empty_board()
         };
 
@@ -423,10 +423,10 @@ mod tests {
     #[test]
     fn board_builder_black_kingside_castling() {
         let board = BoardBuilder::default()
-            .kingside_castling(Color::Black, Castling::Unavailiable)
+            .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
             .build();
         let correct = Board {
-            black_kingside_castling: Castling::Unavailiable,
+            black_kingside_castling: CastlingStatus::Unavailiable,
             ..Board::construct_empty_board()
         };
 
@@ -436,10 +436,10 @@ mod tests {
     #[test]
     fn board_builder_white_queenside_castling() {
         let board = BoardBuilder::default()
-            .queenside_castling(Color::White, Castling::Unavailiable)
+            .queenside_castling(Color::White, CastlingStatus::Unavailiable)
             .build();
         let correct = Board {
-            white_queenside_castling: Castling::Unavailiable,
+            white_queenside_castling: CastlingStatus::Unavailiable,
             ..Board::construct_empty_board()
         };
 
@@ -449,10 +449,10 @@ mod tests {
     #[test]
     fn board_builder_black_queenside_castling() {
         let board = BoardBuilder::default()
-            .queenside_castling(Color::Black, Castling::Unavailiable)
+            .queenside_castling(Color::Black, CastlingStatus::Unavailiable)
             .build();
         let correct = Board {
-            black_queenside_castling: Castling::Unavailiable,
+            black_queenside_castling: CastlingStatus::Unavailiable,
             ..Board::construct_empty_board()
         };
 

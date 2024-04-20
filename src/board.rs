@@ -14,10 +14,18 @@ pub use ply::Ply;
 use square::Square;
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Castling {
+pub enum CastlingStatus {
     #[default]
     Availiable,
     Unavailiable,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum CastlingKind {
+    WhiteKingside,
+    WhiteQueenside,
+    BlackKingside,
+    BlackQueenside,
 }
 
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
@@ -27,10 +35,10 @@ pub struct Board {
     pub halfmove_clock: u8,
     pub fullmove_counter: u16,
 
-    white_kingside_castling: Castling,
-    white_queenside_castling: Castling,
-    black_kingside_castling: Castling,
-    black_queenside_castling: Castling,
+    white_kingside_castling: CastlingStatus,
+    white_queenside_castling: CastlingStatus,
+    black_kingside_castling: CastlingStatus,
+    black_queenside_castling: CastlingStatus,
 
     en_passant_file: Option<u8>,
 
@@ -52,10 +60,10 @@ impl Default for Board {
             halfmove_clock: 0,
             fullmove_counter: 1,
 
-            white_kingside_castling: Castling::Availiable,
-            white_queenside_castling: Castling::Availiable,
-            black_kingside_castling: Castling::Availiable,
-            black_queenside_castling: Castling::Availiable,
+            white_kingside_castling: CastlingStatus::Availiable,
+            white_queenside_castling: CastlingStatus::Availiable,
+            black_kingside_castling: CastlingStatus::Availiable,
+            black_queenside_castling: CastlingStatus::Availiable,
 
             bitboards: BitBoards::default(),
 
@@ -110,7 +118,7 @@ impl Board {
     /// assert_eq!(board.kingside_castle_status(), Castling::Availiable);
     /// ```
     #[allow(dead_code)]
-    pub const fn kingside_castle_status(&self) -> Castling {
+    pub const fn kingside_castle_status(&self) -> CastlingStatus {
         match self.current_turn {
             Color::White => self.white_kingside_castling,
             Color::Black => self.black_kingside_castling,
@@ -125,7 +133,7 @@ impl Board {
     /// assert_eq!(board.queenside_castle_status(), Castling::Availiable);
     /// ```
     #[allow(dead_code)]
-    pub const fn queenside_castle_status(&self) -> Castling {
+    pub const fn queenside_castle_status(&self) -> CastlingStatus {
         match self.current_turn {
             Color::White => self.white_queenside_castling,
             Color::Black => self.black_queenside_castling,
@@ -430,36 +438,36 @@ impl Board {
 
         match (self.current_turn, &ply.dest) {
             (Color::White, Square { rank: 0, file: 6 }) => (self.kingside_castle_status()
-                == Castling::Availiable
+                == CastlingStatus::Availiable
                 && self
-                    .no_pieces_between(Square::new("e1"), Square::new("h1"))
+                    .no_pieces_between_castling(CastlingKind::WhiteKingside)
                     .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle kingside."),
 
             (Color::White, Square { rank: 0, file: 2 }) => (self.queenside_castle_status()
-                == Castling::Availiable
+                == CastlingStatus::Availiable
                 && self
-                    .no_pieces_between(Square::new("e1"), Square::new("a1"))
+                    .no_pieces_between_castling(CastlingKind::WhiteQueenside)
                     .and(self.no_checks_between(Square::new("e1"), Square::new("c1")))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle queenside."),
 
             (Color::Black, Square { rank: 7, file: 6 }) => (self.kingside_castle_status()
-                == Castling::Availiable
+                == CastlingStatus::Availiable
                 && self
-                    .no_pieces_between(Square::new("e8"), Square::new("g8"))
+                    .no_pieces_between_castling(CastlingKind::BlackKingside)
                     .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle kingside."),
 
             (Color::Black, Square { rank: 7, file: 2 }) => (self.queenside_castle_status()
-                == Castling::Availiable
+                == CastlingStatus::Availiable
                 && self
-                    .no_pieces_between(Square::new("e8"), Square::new("c8"))
+                    .no_pieces_between_castling(CastlingKind::BlackQueenside)
                     .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
                     .is_ok())
             .then_some(ply)
@@ -530,6 +538,21 @@ impl Board {
             Err("There are pieces between the start and destination squares.")
         } else {
             Ok(())
+        }
+    }
+
+    const fn no_pieces_between_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
+        let pieces_blocking = match kind {
+            CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0x_00000000_00000006,
+            CastlingKind::WhiteQueenside => self.bitboards.all_pieces & 0x_00000000_00000070,
+            CastlingKind::BlackKingside => self.bitboards.all_pieces & 0x_06000000_00000000,
+            CastlingKind::BlackQueenside => self.bitboards.all_pieces & 0x_70000000_00000000,
+        };
+
+        if pieces_blocking == 0 {
+            Ok(())
+        } else {
+            Err("There are pieces between the start and destination squares.")
         }
     }
 
@@ -677,16 +700,16 @@ impl Board {
 
             match new_move.dest {
                 Square { rank: 0, file: 6 } => {
-                    self.white_kingside_castling = Castling::Unavailiable;
+                    self.white_kingside_castling = CastlingStatus::Unavailiable;
                 }
                 Square { rank: 0, file: 2 } => {
-                    self.white_queenside_castling = Castling::Unavailiable;
+                    self.white_queenside_castling = CastlingStatus::Unavailiable;
                 }
                 Square { rank: 7, file: 6 } => {
-                    self.black_kingside_castling = Castling::Unavailiable;
+                    self.black_kingside_castling = CastlingStatus::Unavailiable;
                 }
                 Square { rank: 7, file: 2 } => {
-                    self.black_queenside_castling = Castling::Unavailiable;
+                    self.black_queenside_castling = CastlingStatus::Unavailiable;
                 }
                 _ => panic!("Invalid castling king destination {}", new_move.dest),
             };
@@ -778,10 +801,18 @@ impl Board {
             self.replace_square(rook_dest, rook_start);
 
             match old_move.dest {
-                Square { rank: 0, file: 6 } => self.white_kingside_castling = Castling::Availiable,
-                Square { rank: 0, file: 2 } => self.white_queenside_castling = Castling::Availiable,
-                Square { rank: 7, file: 6 } => self.black_kingside_castling = Castling::Availiable,
-                Square { rank: 7, file: 2 } => self.black_queenside_castling = Castling::Availiable,
+                Square { rank: 0, file: 6 } => {
+                    self.white_kingside_castling = CastlingStatus::Availiable;
+                }
+                Square { rank: 0, file: 2 } => {
+                    self.white_queenside_castling = CastlingStatus::Availiable;
+                }
+                Square { rank: 7, file: 6 } => {
+                    self.black_kingside_castling = CastlingStatus::Availiable;
+                }
+                Square { rank: 7, file: 2 } => {
+                    self.black_queenside_castling = CastlingStatus::Availiable;
+                }
                 _ => panic!("Invalid castling king destination {}", old_move.dest),
             };
         }
@@ -922,65 +953,77 @@ mod tests {
     #[test]
     fn test_kingside_castle_true() {
         let mut board = Board::construct_starting_board();
-        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Availiable);
         board.skip_turn();
-        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Availiable);
     }
 
     #[test]
     fn test_queenside_castle_true() {
         let mut board = Board::construct_starting_board();
-        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(), CastlingStatus::Availiable);
         board.skip_turn();
-        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(), CastlingStatus::Availiable);
     }
 
     #[test]
     fn test_kingside_castle_false_white() {
         let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Qkq - 0 1");
-        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Unavailiable);
         board.skip_turn();
-        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Availiable);
     }
 
     #[test]
     fn test_kingside_castle_false_black() {
         let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1");
-        assert_eq!(board.kingside_castle_status(), Castling::Availiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Availiable);
         board.skip_turn();
-        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Unavailiable);
     }
 
     #[test]
     fn test_kingside_castle_false_both() {
         let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Qq - 0 1");
-        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Unavailiable);
         board.skip_turn();
-        assert_eq!(board.kingside_castle_status(), Castling::Unavailiable);
+        assert_eq!(board.kingside_castle_status(), CastlingStatus::Unavailiable);
     }
 
     #[test]
     fn test_queenside_castle_false_white() {
         let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kkq - 0 1");
-        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
+        assert_eq!(
+            board.queenside_castle_status(),
+            CastlingStatus::Unavailiable
+        );
         board.skip_turn();
-        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(), CastlingStatus::Availiable);
     }
 
     #[test]
     fn test_queenside_castle_false_black() {
         let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1");
-        assert_eq!(board.queenside_castle_status(), Castling::Availiable);
+        assert_eq!(board.queenside_castle_status(), CastlingStatus::Availiable);
         board.skip_turn();
-        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
+        assert_eq!(
+            board.queenside_castle_status(),
+            CastlingStatus::Unavailiable
+        );
     }
 
     #[test]
     fn test_queenside_castle_false_both() {
         let mut board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kk - 0 1");
-        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
+        assert_eq!(
+            board.queenside_castle_status(),
+            CastlingStatus::Unavailiable
+        );
         board.skip_turn();
-        assert_eq!(board.queenside_castle_status(), Castling::Unavailiable);
+        assert_eq!(
+            board.queenside_castle_status(),
+            CastlingStatus::Unavailiable
+        );
     }
 
     #[test]

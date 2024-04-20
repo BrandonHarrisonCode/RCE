@@ -1,4 +1,4 @@
-use super::{Board, BoardBuilder, Castling, Color, Ply, Square};
+use super::{Board, BoardBuilder, CastlingStatus, Color, Ply, Square};
 
 pub enum FENInstruction<'a> {
     Bitboard(&'a mut u64),
@@ -74,17 +74,17 @@ fn current_turn(builder: BoardBuilder, str: &str) -> BoardBuilder {
 
 fn castling_rights(mut builder: BoardBuilder, str: &str) -> BoardBuilder {
     builder = builder
-        .kingside_castling(Color::White, Castling::Unavailiable)
-        .kingside_castling(Color::Black, Castling::Unavailiable)
-        .queenside_castling(Color::White, Castling::Unavailiable)
-        .queenside_castling(Color::Black, Castling::Unavailiable);
+        .kingside_castling(Color::White, CastlingStatus::Unavailiable)
+        .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
+        .queenside_castling(Color::White, CastlingStatus::Unavailiable)
+        .queenside_castling(Color::Black, CastlingStatus::Unavailiable);
 
     for chr in str.chars() {
         builder = match chr {
-            'K' => builder.kingside_castling(Color::White, Castling::Availiable),
-            'k' => builder.kingside_castling(Color::Black, Castling::Availiable),
-            'Q' => builder.queenside_castling(Color::White, Castling::Availiable),
-            'q' => builder.queenside_castling(Color::Black, Castling::Availiable),
+            'K' => builder.kingside_castling(Color::White, CastlingStatus::Availiable),
+            'k' => builder.kingside_castling(Color::Black, CastlingStatus::Availiable),
+            'Q' => builder.queenside_castling(Color::White, CastlingStatus::Availiable),
+            'q' => builder.queenside_castling(Color::Black, CastlingStatus::Availiable),
             '-' => builder,
             _ => panic!("Unknown FEN castling notation: {chr}"),
         };
@@ -171,10 +171,10 @@ mod tests {
             halfmove_clock: 0,
             fullmove_counter: 21,
 
-            white_kingside_castling: Castling::Unavailiable,
-            white_queenside_castling: Castling::Unavailiable,
-            black_kingside_castling: Castling::Unavailiable,
-            black_queenside_castling: Castling::Unavailiable,
+            white_kingside_castling: CastlingStatus::Unavailiable,
+            white_queenside_castling: CastlingStatus::Unavailiable,
+            black_kingside_castling: CastlingStatus::Unavailiable,
+            black_queenside_castling: CastlingStatus::Unavailiable,
 
             en_passant_file: None,
 
@@ -206,10 +206,10 @@ mod tests {
             halfmove_clock: 12,
             fullmove_counter: 31,
 
-            white_kingside_castling: Castling::Unavailiable,
-            white_queenside_castling: Castling::Unavailiable,
-            black_kingside_castling: Castling::Unavailiable,
-            black_queenside_castling: Castling::Unavailiable,
+            white_kingside_castling: CastlingStatus::Unavailiable,
+            white_queenside_castling: CastlingStatus::Unavailiable,
+            black_kingside_castling: CastlingStatus::Unavailiable,
+            black_queenside_castling: CastlingStatus::Unavailiable,
 
             en_passant_file: None,
 

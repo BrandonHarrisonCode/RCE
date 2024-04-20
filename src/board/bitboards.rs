@@ -175,7 +175,7 @@ impl BitBoards {
             } else if mask & self.black_bishops != 0 {
                 return Some(Kind::Bishop(Color::Black));
             }
-            unreachable!("black pieces collection is malformed! Detected a black piece at square {square}, but no piece was found!")
+            unreachable!("Black pieces collection is malformed! Detected a black piece at square {square}, but no piece was found!")
         } else {
             None
         }
