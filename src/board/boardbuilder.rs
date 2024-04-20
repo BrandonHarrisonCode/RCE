@@ -3,31 +3,23 @@ use super::ply::Ply;
 use super::Board;
 use super::Castling;
 
+use super::bitboards::builder::BitBoardsBuilder;
+use super::bitboards::BitBoards;
+
 #[derive(Default)]
 pub struct BoardBuilder {
     pub current_turn: Color,
     pub halfmove_clock: u8,
     pub fullmove_counter: u16,
 
-    pub w_kingside_castling: Castling,
-    pub w_queenside_castling: Castling,
-    pub b_kingside_castling: Castling,
-    pub b_queenside_castling: Castling,
+    pub white_kingside_castling: Castling,
+    pub white_queenside_castling: Castling,
+    pub black_kingside_castling: Castling,
+    pub black_queenside_castling: Castling,
 
     pub en_passant_file: Option<u8>,
 
-    pub w_pawns: u64,
-    pub w_king: u64,
-    pub w_queens: u64,
-    pub w_rooks: u64,
-    pub w_bishops: u64,
-    pub w_knights: u64,
-    pub b_pawns: u64,
-    pub b_king: u64,
-    pub b_queens: u64,
-    pub b_rooks: u64,
-    pub b_bishops: u64,
-    pub b_knights: u64,
+    pub bitboards: BitBoardsBuilder,
 
     pub history: Vec<Ply>,
 }
@@ -40,25 +32,14 @@ impl BoardBuilder {
             halfmove_clock: 0,
             fullmove_counter: 1,
 
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
+            white_kingside_castling: Castling::Availiable,
+            white_queenside_castling: Castling::Availiable,
+            black_kingside_castling: Castling::Availiable,
+            black_queenside_castling: Castling::Availiable,
 
             en_passant_file: None,
 
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
+            bitboards: BitBoards::builder(),
 
             history: Vec::new(),
         }
@@ -106,8 +87,8 @@ impl BoardBuilder {
     /// ```
     pub const fn kingside_castling(mut self, color: Color, value: Castling) -> Self {
         match color {
-            Color::White => self.w_kingside_castling = value,
-            Color::Black => self.b_kingside_castling = value,
+            Color::White => self.white_kingside_castling = value,
+            Color::Black => self.black_kingside_castling = value,
         }
         self
     }
@@ -131,8 +112,8 @@ impl BoardBuilder {
     /// ```
     pub const fn queenside_castling(mut self, color: Color, value: Castling) -> Self {
         match color {
-            Color::White => self.w_queenside_castling = value,
-            Color::Black => self.b_queenside_castling = value,
+            Color::White => self.white_queenside_castling = value,
+            Color::Black => self.black_queenside_castling = value,
         }
         self
     }
@@ -155,10 +136,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().pawns(Color::Black, 0);
     /// ```
     pub const fn pawns(mut self, color: Color, value: u64) -> Self {
-        match color {
-            Color::White => self.w_pawns = value,
-            Color::Black => self.b_pawns = value,
-        }
+        self.bitboards = self.bitboards.pawns(color, value);
         self
     }
 
@@ -180,10 +158,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().king(Color::Black, 0);
     /// ```
     pub const fn king(mut self, color: Color, value: u64) -> Self {
-        match color {
-            Color::White => self.w_king = value,
-            Color::Black => self.b_king = value,
-        }
+        self.bitboards = self.bitboards.king(color, value);
         self
     }
 
@@ -205,10 +180,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().queens(Color::Black, 0);
     /// ```
     pub const fn queens(mut self, color: Color, value: u64) -> Self {
-        match color {
-            Color::White => self.w_queens = value,
-            Color::Black => self.b_queens = value,
-        }
+        self.bitboards = self.bitboards.queens(color, value);
         self
     }
 
@@ -230,10 +202,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().rooks(Color::Black, 0);
     /// ```
     pub const fn rooks(mut self, color: Color, value: u64) -> Self {
-        match color {
-            Color::White => self.w_rooks = value,
-            Color::Black => self.b_rooks = value,
-        }
+        self.bitboards = self.bitboards.rooks(color, value);
         self
     }
 
@@ -255,10 +224,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().bishops(Color::Black, 0);
     /// ```
     pub const fn bishops(mut self, color: Color, value: u64) -> Self {
-        match color {
-            Color::White => self.w_bishops = value,
-            Color::Black => self.b_bishops = value,
-        }
+        self.bitboards = self.bitboards.bishops(color, value);
         self
     }
 
@@ -280,10 +246,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().knights(Color::Black, 0);
     /// ```
     pub const fn knights(mut self, color: Color, value: u64) -> Self {
-        match color {
-            Color::White => self.w_knights = value,
-            Color::Black => self.b_knights = value,
-        }
+        self.bitboards = self.bitboards.knights(color, value);
         self
     }
 
@@ -394,26 +357,15 @@ impl BoardBuilder {
             halfmove_clock: self.halfmove_clock,
             fullmove_counter: self.fullmove_counter,
 
-            w_kingside_castling: self.w_kingside_castling,
-            w_queenside_castling: self.w_queenside_castling,
-            b_kingside_castling: self.b_kingside_castling,
-            b_queenside_castling: self.b_queenside_castling,
+            white_kingside_castling: self.white_kingside_castling,
+            white_queenside_castling: self.white_queenside_castling,
+            black_kingside_castling: self.black_kingside_castling,
+            black_queenside_castling: self.black_queenside_castling,
 
             en_passant_file: self.en_passant_file,
 
             history: self.history.clone(),
-            w_pawns: self.w_pawns,
-            w_king: self.w_king,
-            w_queens: self.w_queens,
-            w_rooks: self.w_rooks,
-            w_bishops: self.w_bishops,
-            w_knights: self.w_knights,
-            b_pawns: self.b_pawns,
-            b_king: self.b_king,
-            b_queens: self.b_queens,
-            b_rooks: self.b_rooks,
-            b_bishops: self.b_bishops,
-            b_knights: self.b_knights,
+            bitboards: self.bitboards.build(),
         }
     }
 }
@@ -461,7 +413,7 @@ mod tests {
             .kingside_castling(Color::White, Castling::Unavailiable)
             .build();
         let correct = Board {
-            w_kingside_castling: Castling::Unavailiable,
+            white_kingside_castling: Castling::Unavailiable,
             ..Board::construct_empty_board()
         };
 
@@ -474,7 +426,7 @@ mod tests {
             .kingside_castling(Color::Black, Castling::Unavailiable)
             .build();
         let correct = Board {
-            b_kingside_castling: Castling::Unavailiable,
+            black_kingside_castling: Castling::Unavailiable,
             ..Board::construct_empty_board()
         };
 
@@ -487,7 +439,7 @@ mod tests {
             .queenside_castling(Color::White, Castling::Unavailiable)
             .build();
         let correct = Board {
-            w_queenside_castling: Castling::Unavailiable,
+            white_queenside_castling: Castling::Unavailiable,
             ..Board::construct_empty_board()
         };
 
@@ -500,7 +452,7 @@ mod tests {
             .queenside_castling(Color::Black, Castling::Unavailiable)
             .build();
         let correct = Board {
-            b_queenside_castling: Castling::Unavailiable,
+            black_queenside_castling: Castling::Unavailiable,
             ..Board::construct_empty_board()
         };
 
@@ -514,8 +466,14 @@ mod tests {
             .pawns(Color::Black, 2)
             .build();
         let correct = Board {
-            w_pawns: 1,
-            b_pawns: 2,
+            bitboards: BitBoards {
+                white_pawns: 1,
+                black_pawns: 2,
+                white_pieces: 1,
+                black_pieces: 2,
+                all_pieces: 1 | 2,
+                ..Default::default()
+            },
             ..Board::construct_empty_board()
         };
 
@@ -529,11 +487,16 @@ mod tests {
             .king(Color::Black, 2)
             .build();
         let correct = Board {
-            w_king: 1,
-            b_king: 2,
+            bitboards: BitBoards {
+                white_king: 1,
+                black_king: 2,
+                white_pieces: 1,
+                black_pieces: 2,
+                all_pieces: 1 | 2,
+                ..Default::default()
+            },
             ..Board::construct_empty_board()
         };
-
         assert_eq!(board, correct);
     }
 
@@ -544,8 +507,14 @@ mod tests {
             .queens(Color::Black, 2)
             .build();
         let correct = Board {
-            w_queens: 1,
-            b_queens: 2,
+            bitboards: BitBoards {
+                white_queens: 1,
+                black_queens: 2,
+                white_pieces: 1,
+                black_pieces: 2,
+                all_pieces: 1 | 2,
+                ..Default::default()
+            },
             ..Board::construct_empty_board()
         };
 
@@ -559,8 +528,14 @@ mod tests {
             .rooks(Color::Black, 2)
             .build();
         let correct = Board {
-            w_rooks: 1,
-            b_rooks: 2,
+            bitboards: BitBoards {
+                white_rooks: 1,
+                black_rooks: 2,
+                white_pieces: 1,
+                black_pieces: 2,
+                all_pieces: 1 | 2,
+                ..Default::default()
+            },
             ..Board::construct_empty_board()
         };
 
@@ -574,8 +549,14 @@ mod tests {
             .bishops(Color::Black, 2)
             .build();
         let correct = Board {
-            w_bishops: 1,
-            b_bishops: 2,
+            bitboards: BitBoards {
+                white_bishops: 1,
+                black_bishops: 2,
+                white_pieces: 1,
+                black_pieces: 2,
+                all_pieces: 1 | 2,
+                ..Default::default()
+            },
             ..Board::construct_empty_board()
         };
 
@@ -589,8 +570,14 @@ mod tests {
             .knights(Color::Black, 2)
             .build();
         let correct = Board {
-            w_knights: 1,
-            b_knights: 2,
+            bitboards: BitBoards {
+                white_knights: 1,
+                black_knights: 2,
+                white_pieces: 1,
+                black_pieces: 2,
+                all_pieces: 1 | 2,
+                ..Default::default()
+            },
             ..Board::construct_empty_board()
         };
 

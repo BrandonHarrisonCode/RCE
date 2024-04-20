@@ -1,12 +1,13 @@
-use std::collections::HashMap;
 use std::fmt;
 
+mod bitboards;
 mod boardbuilder;
 pub mod piece;
 pub mod ply;
 pub mod serialize;
 pub mod square;
 
+use bitboards::BitBoards;
 use boardbuilder::BoardBuilder;
 use piece::{Color, Kind};
 pub use ply::Ply;
@@ -26,25 +27,14 @@ pub struct Board {
     pub halfmove_clock: u8,
     pub fullmove_counter: u16,
 
-    w_kingside_castling: Castling,
-    w_queenside_castling: Castling,
-    b_kingside_castling: Castling,
-    b_queenside_castling: Castling,
+    white_kingside_castling: Castling,
+    white_queenside_castling: Castling,
+    black_kingside_castling: Castling,
+    black_queenside_castling: Castling,
 
     en_passant_file: Option<u8>,
 
-    w_pawns: u64,
-    w_king: u64,
-    w_queens: u64,
-    w_rooks: u64,
-    w_bishops: u64,
-    w_knights: u64,
-    b_pawns: u64,
-    b_king: u64,
-    b_queens: u64,
-    b_rooks: u64,
-    b_bishops: u64,
-    b_knights: u64,
+    bitboards: BitBoards,
 
     history: Vec<Ply>,
 }
@@ -62,25 +52,14 @@ impl Default for Board {
             halfmove_clock: 0,
             fullmove_counter: 1,
 
-            w_kingside_castling: Castling::Availiable,
-            w_queenside_castling: Castling::Availiable,
-            b_kingside_castling: Castling::Availiable,
-            b_queenside_castling: Castling::Availiable,
+            white_kingside_castling: Castling::Availiable,
+            white_queenside_castling: Castling::Availiable,
+            black_kingside_castling: Castling::Availiable,
+            black_queenside_castling: Castling::Availiable,
+
+            bitboards: BitBoards::default(),
 
             en_passant_file: None,
-
-            w_pawns: 0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000,
-            w_king: 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000,
-            w_queens: 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000,
-            w_rooks: 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000001,
-            w_bishops: 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100100,
-            w_knights: 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000010,
-            b_pawns: 0b_00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000,
-            b_king: 0b_00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            b_queens: 0b_00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            b_rooks: 0b_10000001_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            b_bishops: 0b_00100100_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
-            b_knights: 0b_01000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
 
             history: Vec::new(),
         }
@@ -118,18 +97,7 @@ impl Board {
     /// ```
     pub fn construct_empty_board() -> Self {
         Self {
-            w_pawns: 0,
-            w_king: 0,
-            w_queens: 0,
-            w_rooks: 0,
-            w_bishops: 0,
-            w_knights: 0,
-            b_pawns: 0,
-            b_king: 0,
-            b_queens: 0,
-            b_rooks: 0,
-            b_bishops: 0,
-            b_knights: 0,
+            bitboards: BitBoards::new(),
             ..Self::default()
         }
     }
@@ -144,8 +112,8 @@ impl Board {
     #[allow(dead_code)]
     pub const fn kingside_castle_status(&self) -> Castling {
         match self.current_turn {
-            Color::White => self.w_kingside_castling,
-            Color::Black => self.b_kingside_castling,
+            Color::White => self.white_kingside_castling,
+            Color::Black => self.black_kingside_castling,
         }
     }
 
@@ -159,8 +127,8 @@ impl Board {
     #[allow(dead_code)]
     pub const fn queenside_castle_status(&self) -> Castling {
         match self.current_turn {
-            Color::White => self.w_queenside_castling,
-            Color::Black => self.b_queenside_castling,
+            Color::White => self.white_queenside_castling,
+            Color::Black => self.black_queenside_castling,
         }
     }
 
@@ -180,13 +148,7 @@ impl Board {
     /// assert_eq!(None, board.get_piece(Square::new("b3")));
     /// ```
     pub fn get_piece(&self, square: Square) -> Option<Kind> {
-        let mask = square.get_mask();
-        for (kind, bb) in self.bitboard_map() {
-            if (*bb & mask) >= 1 {
-                return Some(kind);
-            }
-        }
-        None
+        self.bitboards.get_piece_kind(square)
     }
 
     /// Returns a list of all potential moves for the current side
@@ -624,62 +586,6 @@ impl Board {
         result
     }
 
-    /// Returns a `HashMap` of `PieceKinds` to a reference of their corresponding bitboard
-    ///
-    /// # Examples
-    /// ```
-    /// let board = Board::construct_starting_board();
-    /// let all_bb = board.bitboard_map();
-    /// let pawn_bb: u64 = all_bb.get(PieceKind::Pawn(Color::White));
-    /// ```
-    fn bitboard_map(&self) -> HashMap<Kind, &u64> {
-        let mut output: HashMap<Kind, &u64> = HashMap::new();
-
-        output.insert(Kind::Pawn(Color::White), &self.w_pawns);
-        output.insert(Kind::King(Color::White), &self.w_king);
-        output.insert(Kind::Queen(Color::White), &self.w_queens);
-        output.insert(Kind::Rook(Color::White), &self.w_rooks);
-        output.insert(Kind::Bishop(Color::White), &self.w_bishops);
-        output.insert(Kind::Knight(Color::White), &self.w_knights);
-
-        output.insert(Kind::Pawn(Color::Black), &self.b_pawns);
-        output.insert(Kind::King(Color::Black), &self.b_king);
-        output.insert(Kind::Queen(Color::Black), &self.b_queens);
-        output.insert(Kind::Rook(Color::Black), &self.b_rooks);
-        output.insert(Kind::Bishop(Color::Black), &self.b_bishops);
-        output.insert(Kind::Knight(Color::Black), &self.b_knights);
-
-        output
-    }
-
-    /// Returns a `HashMap` of `PieceKinds` to a reference of their corresponding, mutable bitboard
-    ///
-    /// # Examples
-    /// ```
-    /// let board = Board::construct_starting_board();
-    /// let all_bb = board.bitboard_map_mut();
-    /// all_bb[PieceKind::Pawn(Color::White)] |= 0x1;
-    /// ```
-    fn bitboard_map_mut(&mut self) -> HashMap<Kind, &mut u64> {
-        let mut output: HashMap<Kind, &mut u64> = HashMap::new();
-
-        output.insert(Kind::Pawn(Color::White), &mut self.w_pawns);
-        output.insert(Kind::King(Color::White), &mut self.w_king);
-        output.insert(Kind::Queen(Color::White), &mut self.w_queens);
-        output.insert(Kind::Rook(Color::White), &mut self.w_rooks);
-        output.insert(Kind::Bishop(Color::White), &mut self.w_bishops);
-        output.insert(Kind::Knight(Color::White), &mut self.w_knights);
-
-        output.insert(Kind::Pawn(Color::Black), &mut self.b_pawns);
-        output.insert(Kind::King(Color::Black), &mut self.b_king);
-        output.insert(Kind::Queen(Color::Black), &mut self.b_queens);
-        output.insert(Kind::Rook(Color::Black), &mut self.b_rooks);
-        output.insert(Kind::Bishop(Color::Black), &mut self.b_bishops);
-        output.insert(Kind::Knight(Color::Black), &mut self.b_knights);
-
-        output
-    }
-
     /// Adds a new piece of the specified kind to a square on the board
     ///
     /// # Arguments
@@ -694,10 +600,7 @@ impl Board {
     /// board.add_piece(&Square::new("a3"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn add_piece(&mut self, square: Square, piece: Kind) {
-        let mask = square.get_mask();
-        self.bitboard_map_mut()
-            .entry(piece)
-            .and_modify(|bb| **bb |= mask);
+        self.bitboards.add_piece(square, piece);
     }
 
     /// Removes any piece from the specified square
@@ -712,12 +615,8 @@ impl Board {
     /// // Playing with rook odds
     /// board.clear_piece(&Square::new("a1"));
     /// ```
-    #[allow(dead_code)]
     pub fn clear_piece(&mut self, square: Square) {
-        let mask = !square.get_mask();
-        self.bitboard_map_mut()
-            .iter_mut()
-            .for_each(|(_, bb)| **bb &= mask);
+        self.bitboards.clear_piece(square);
     }
 
     /// Remove a specific kind of piece from the board at the specified square
@@ -738,10 +637,7 @@ impl Board {
     /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn remove_piece(&mut self, square: Square, piece: Kind) {
-        let mask = !square.get_mask();
-        self.bitboard_map_mut()
-            .entry(piece)
-            .and_modify(|bb| **bb &= mask);
+        self.bitboards.remove_piece(square, piece)
     }
 
     /// Makes a half-move on this board
@@ -796,10 +692,18 @@ impl Board {
             self.replace_square(rook_start, rook_dest);
 
             match new_move.dest {
-                Square { rank: 0, file: 6 } => self.w_kingside_castling = Castling::Unavailiable,
-                Square { rank: 0, file: 2 } => self.w_queenside_castling = Castling::Unavailiable,
-                Square { rank: 7, file: 6 } => self.b_kingside_castling = Castling::Unavailiable,
-                Square { rank: 7, file: 2 } => self.b_queenside_castling = Castling::Unavailiable,
+                Square { rank: 0, file: 6 } => {
+                    self.white_kingside_castling = Castling::Unavailiable
+                }
+                Square { rank: 0, file: 2 } => {
+                    self.white_queenside_castling = Castling::Unavailiable
+                }
+                Square { rank: 7, file: 6 } => {
+                    self.black_kingside_castling = Castling::Unavailiable
+                }
+                Square { rank: 7, file: 2 } => {
+                    self.black_queenside_castling = Castling::Unavailiable
+                }
                 _ => panic!("Invalid castling king destination {}", new_move.dest),
             };
         }
@@ -890,10 +794,10 @@ impl Board {
             self.replace_square(rook_dest, rook_start);
 
             match old_move.dest {
-                Square { rank: 0, file: 6 } => self.w_kingside_castling = Castling::Availiable,
-                Square { rank: 0, file: 2 } => self.w_queenside_castling = Castling::Availiable,
-                Square { rank: 7, file: 6 } => self.b_kingside_castling = Castling::Availiable,
-                Square { rank: 7, file: 2 } => self.b_queenside_castling = Castling::Availiable,
+                Square { rank: 0, file: 6 } => self.white_kingside_castling = Castling::Availiable,
+                Square { rank: 0, file: 2 } => self.white_queenside_castling = Castling::Availiable,
+                Square { rank: 7, file: 6 } => self.black_kingside_castling = Castling::Availiable,
+                Square { rank: 7, file: 2 } => self.black_queenside_castling = Castling::Availiable,
                 _ => panic!("Invalid castling king destination {}", old_move.dest),
             };
         }
@@ -970,14 +874,14 @@ mod tests {
 
     #[test]
     #[should_panic = "attempt to shift left with overflow"]
-    fn test_get_piece_oob_rank() {
+    fn test_get_piece_ooblack_rank() {
         let board = Board::construct_starting_board();
         board.get_piece(Square { rank: 8, file: 7 }).unwrap();
     }
 
     #[test]
     #[should_panic = "attempt to subtract with overflow"]
-    fn test_get_piece_oob_file() {
+    fn test_get_piece_ooblack_file() {
         let board = Board::construct_starting_board();
         board.get_piece(Square { rank: 0, file: 8 }).unwrap();
     }

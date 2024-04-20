@@ -15,3 +15,8 @@ cargo-test-*
 # Added by cargo
 
 /target
+
+# Performance testing
+perf.data
+perf.data.old
+flamegraph.svg

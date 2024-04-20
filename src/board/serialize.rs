@@ -1,3 +1,4 @@
+use super::bitboards::BitBoards;
 use super::{Board, BoardBuilder, Castling, Color, Ply, Square};
 
 pub enum FENInstruction<'a> {
@@ -7,34 +8,34 @@ pub enum FENInstruction<'a> {
 }
 
 fn piece_placement(builder: BoardBuilder, str: &str) -> BoardBuilder {
-    let mut w_pawns: u64 = 0;
-    let mut w_king: u64 = 0;
-    let mut w_queens: u64 = 0;
-    let mut w_rooks: u64 = 0;
-    let mut w_bishops: u64 = 0;
-    let mut w_knights: u64 = 0;
-    let mut b_pawns: u64 = 0;
-    let mut b_king: u64 = 0;
-    let mut b_queens: u64 = 0;
-    let mut b_rooks: u64 = 0;
-    let mut b_bishops: u64 = 0;
-    let mut b_knights: u64 = 0;
+    let mut white_pawns: u64 = 0;
+    let mut white_king: u64 = 0;
+    let mut white_queens: u64 = 0;
+    let mut white_rooks: u64 = 0;
+    let mut white_bishops: u64 = 0;
+    let mut white_knights: u64 = 0;
+    let mut black_pawns: u64 = 0;
+    let mut black_king: u64 = 0;
+    let mut black_queens: u64 = 0;
+    let mut black_rooks: u64 = 0;
+    let mut black_bishops: u64 = 0;
+    let mut black_knights: u64 = 0;
 
     let mut idx: u64 = 0;
     for chr in str.chars() {
         let instruction = match chr {
-            'P' => FENInstruction::Bitboard(&mut w_pawns),
-            'K' => FENInstruction::Bitboard(&mut w_king),
-            'Q' => FENInstruction::Bitboard(&mut w_queens),
-            'R' => FENInstruction::Bitboard(&mut w_rooks),
-            'B' => FENInstruction::Bitboard(&mut w_bishops),
-            'N' => FENInstruction::Bitboard(&mut w_knights),
-            'p' => FENInstruction::Bitboard(&mut b_pawns),
-            'k' => FENInstruction::Bitboard(&mut b_king),
-            'q' => FENInstruction::Bitboard(&mut b_queens),
-            'r' => FENInstruction::Bitboard(&mut b_rooks),
-            'b' => FENInstruction::Bitboard(&mut b_bishops),
-            'n' => FENInstruction::Bitboard(&mut b_knights),
+            'P' => FENInstruction::Bitboard(&mut white_pawns),
+            'K' => FENInstruction::Bitboard(&mut white_king),
+            'Q' => FENInstruction::Bitboard(&mut white_queens),
+            'R' => FENInstruction::Bitboard(&mut white_rooks),
+            'B' => FENInstruction::Bitboard(&mut white_bishops),
+            'N' => FENInstruction::Bitboard(&mut white_knights),
+            'p' => FENInstruction::Bitboard(&mut black_pawns),
+            'k' => FENInstruction::Bitboard(&mut black_king),
+            'q' => FENInstruction::Bitboard(&mut black_queens),
+            'r' => FENInstruction::Bitboard(&mut black_rooks),
+            'b' => FENInstruction::Bitboard(&mut black_bishops),
+            'n' => FENInstruction::Bitboard(&mut black_knights),
             '1'..='8' => FENInstruction::Skip(chr.to_string().parse().ok().unwrap()),
             '/' => FENInstruction::NewRow(),
             _ => panic!("Unknown FEN instruction: {chr}"),
@@ -50,18 +51,18 @@ fn piece_placement(builder: BoardBuilder, str: &str) -> BoardBuilder {
     }
 
     builder
-        .pawns(Color::White, w_pawns)
-        .king(Color::White, w_king)
-        .queens(Color::White, w_queens)
-        .rooks(Color::White, w_rooks)
-        .bishops(Color::White, w_bishops)
-        .knights(Color::White, w_knights)
-        .pawns(Color::Black, b_pawns)
-        .king(Color::Black, b_king)
-        .queens(Color::Black, b_queens)
-        .rooks(Color::Black, b_rooks)
-        .bishops(Color::Black, b_bishops)
-        .knights(Color::Black, b_knights)
+        .pawns(Color::White, white_pawns)
+        .king(Color::White, white_king)
+        .queens(Color::White, white_queens)
+        .rooks(Color::White, white_rooks)
+        .bishops(Color::White, white_bishops)
+        .knights(Color::White, white_knights)
+        .pawns(Color::Black, black_pawns)
+        .king(Color::Black, black_king)
+        .queens(Color::Black, black_queens)
+        .rooks(Color::Black, black_rooks)
+        .bishops(Color::Black, black_bishops)
+        .knights(Color::Black, black_knights)
 }
 
 fn current_turn(builder: BoardBuilder, str: &str) -> BoardBuilder {
@@ -170,25 +171,27 @@ mod tests {
             halfmove_clock: 0,
             fullmove_counter: 21,
 
-            w_kingside_castling: Castling::Unavailiable,
-            w_queenside_castling: Castling::Unavailiable,
-            b_kingside_castling: Castling::Unavailiable,
-            b_queenside_castling: Castling::Unavailiable,
+            white_kingside_castling: Castling::Unavailiable,
+            white_queenside_castling: Castling::Unavailiable,
+            black_kingside_castling: Castling::Unavailiable,
+            black_queenside_castling: Castling::Unavailiable,
 
             en_passant_file: None,
 
-            w_pawns: 271_368_960,
-            w_king: 2,
-            w_queens: 1_073_741_824,
-            w_rooks: 128,
-            w_bishops: 0,
-            w_knights: 137_438_953_472,
-            b_pawns: 36_429_096_560_885_760,
-            b_king: 4_611_686_018_427_387_904,
-            b_queens: 17_179_869_184,
-            b_rooks: 1_224_979_098_644_774_912,
-            b_bishops: 0,
-            b_knights: 4,
+            bitboards: BitBoards::builder()
+                .pawns(Color::White, 271_368_960)
+                .pawns(Color::Black, 36_429_096_560_885_760)
+                .king(Color::White, 2)
+                .king(Color::Black, 4_611_686_018_427_387_904)
+                .queens(Color::White, 1_073_741_824)
+                .queens(Color::Black, 17_179_869_184)
+                .rooks(Color::White, 128)
+                .rooks(Color::Black, 1_224_979_098_644_774_912)
+                .bishops(Color::White, 0)
+                .bishops(Color::Black, 0)
+                .knights(Color::White, 137_438_953_472)
+                .knights(Color::Black, 4)
+                .build(),
             history: Vec::new(),
         };
 
@@ -203,25 +206,28 @@ mod tests {
             halfmove_clock: 12,
             fullmove_counter: 31,
 
-            w_kingside_castling: Castling::Unavailiable,
-            w_queenside_castling: Castling::Unavailiable,
-            b_kingside_castling: Castling::Unavailiable,
-            b_queenside_castling: Castling::Unavailiable,
+            white_kingside_castling: Castling::Unavailiable,
+            white_queenside_castling: Castling::Unavailiable,
+            black_kingside_castling: Castling::Unavailiable,
+            black_queenside_castling: Castling::Unavailiable,
 
             en_passant_file: None,
 
-            w_pawns: 337_691_392,
-            w_king: 1024,
-            w_queens: 4_294_967_296,
-            w_rooks: 65664,
-            w_bishops: 1_048_608,
-            w_knights: 4_503_599_627_370_496,
-            b_pawns: 54_642_446_545_453_056,
-            b_king: 281_474_976_710_656,
-            b_queens: 4_398_046_511_104,
-            b_rooks: 8,
-            b_bishops: 288_230_376_151_711_744,
-            b_knights: 17_660_905_521_152,
+            bitboards: BitBoards::builder()
+                .pawns(Color::White, 337_691_392)
+                .pawns(Color::Black, 54_642_446_545_453_056)
+                .king(Color::White, 1024)
+                .king(Color::Black, 281_474_976_710_656)
+                .queens(Color::White, 4_294_967_296)
+                .queens(Color::Black, 4_398_046_511_104)
+                .rooks(Color::White, 65664)
+                .rooks(Color::Black, 8)
+                .bishops(Color::White, 1_048_608)
+                .bishops(Color::Black, 288_230_376_151_711_744)
+                .knights(Color::White, 4_503_599_627_370_496)
+                .knights(Color::Black, 17_660_905_521_152)
+                .build(),
+
             history: Vec::new(),
         };
 
