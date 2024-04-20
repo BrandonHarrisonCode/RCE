@@ -3,7 +3,7 @@ use super::ply::Ply;
 use super::Board;
 use super::Castling;
 
-use super::bitboards::builder::BitBoardsBuilder;
+use super::bitboards::builder::Builder;
 use super::bitboards::BitBoards;
 
 #[derive(Default)]
@@ -19,7 +19,7 @@ pub struct BoardBuilder {
 
     pub en_passant_file: Option<u8>,
 
-    pub bitboards: BitBoardsBuilder,
+    pub bitboards: Builder,
 
     pub history: Vec<Ply>,
 }

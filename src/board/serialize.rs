@@ -1,4 +1,3 @@
-use super::bitboards::BitBoards;
 use super::{Board, BoardBuilder, Castling, Color, Ply, Square};
 
 pub enum FENInstruction<'a> {
@@ -155,6 +154,7 @@ impl Board {
 
 #[cfg(test)]
 mod tests {
+    use super::super::bitboards::BitBoards;
     use super::*;
 
     #[test]

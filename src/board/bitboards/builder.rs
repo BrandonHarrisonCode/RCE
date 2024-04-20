@@ -1,8 +1,8 @@
 use super::BitBoards;
-use crate::board::piece::{Color, Kind};
+use crate::board::piece::Color;
 
 #[derive(Default)]
-pub struct BitBoardsBuilder {
+pub struct Builder {
     pub white_pawns: u64,
     pub white_knights: u64,
     pub white_bishops: u64,
@@ -21,7 +21,7 @@ pub struct BitBoardsBuilder {
     pub all_pieces: u64,
 }
 
-impl BitBoardsBuilder {
+impl Builder {
     #[allow(dead_code)]
     pub const fn default() -> Self {
         Self {
@@ -44,11 +44,11 @@ impl BitBoardsBuilder {
         }
     }
 
-    /// Consume the `BitBoardsBuilder` to create a `BitBoard`
+    /// Consume the `Builder` to create a `BitBoard`
     ///
     /// # Returns
     ///
-    /// * `BitBoards` - The BitBoards represented by the builder
+    /// * `BitBoards` - The `BitBoards` represented by the builder
     ///
     /// # Example
     ///

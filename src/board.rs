@@ -603,22 +603,6 @@ impl Board {
         self.bitboards.add_piece(square, piece);
     }
 
-    /// Removes any piece from the specified square
-    ///
-    /// # Arguments
-    ///
-    /// * `square` - A square on the board to clear
-    ///
-    /// # Examples
-    /// ```
-    /// let board = Board::construct_starting_board();
-    /// // Playing with rook odds
-    /// board.clear_piece(&Square::new("a1"));
-    /// ```
-    pub fn clear_piece(&mut self, square: Square) {
-        self.bitboards.clear_piece(square);
-    }
-
     /// Remove a specific kind of piece from the board at the specified square
     ///
     /// # Arguments
@@ -637,7 +621,7 @@ impl Board {
     /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn remove_piece(&mut self, square: Square, piece: Kind) {
-        self.bitboards.remove_piece(square, piece)
+        self.bitboards.remove_piece(square, piece);
     }
 
     /// Makes a half-move on this board
@@ -693,16 +677,16 @@ impl Board {
 
             match new_move.dest {
                 Square { rank: 0, file: 6 } => {
-                    self.white_kingside_castling = Castling::Unavailiable
+                    self.white_kingside_castling = Castling::Unavailiable;
                 }
                 Square { rank: 0, file: 2 } => {
-                    self.white_queenside_castling = Castling::Unavailiable
+                    self.white_queenside_castling = Castling::Unavailiable;
                 }
                 Square { rank: 7, file: 6 } => {
-                    self.black_kingside_castling = Castling::Unavailiable
+                    self.black_kingside_castling = Castling::Unavailiable;
                 }
                 Square { rank: 7, file: 2 } => {
-                    self.black_queenside_castling = Castling::Unavailiable
+                    self.black_queenside_castling = Castling::Unavailiable;
                 }
                 _ => panic!("Invalid castling king destination {}", new_move.dest),
             };
@@ -900,14 +884,6 @@ mod tests {
         let square = Square::new("a3");
         board.add_piece(square, Kind::Queen(Color::White));
         assert_eq!(board.get_piece(square).unwrap(), Kind::Queen(Color::White));
-    }
-
-    #[test]
-    fn test_clear_piece() {
-        let mut board = Board::construct_starting_board();
-        let square = Square::new("a2");
-        board.clear_piece(square);
-        assert!(board.get_piece(square).is_none());
     }
 
     #[test]

@@ -1,25 +1,24 @@
 use super::piece::{Color, Kind};
 use super::square::Square;
 
-use std::ops;
 pub mod builder;
 
-use builder::BitBoardsBuilder;
+use builder::Builder;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BitBoards {
     pub white_pawns: u64,
+    pub white_king: u64,
+    pub white_queens: u64,
+    pub white_rooks: u64,
     pub white_knights: u64,
     pub white_bishops: u64,
-    pub white_rooks: u64,
-    pub white_queens: u64,
-    pub white_king: u64,
     pub black_pawns: u64,
+    pub black_king: u64,
+    pub black_queens: u64,
+    pub black_rooks: u64,
     pub black_knights: u64,
     pub black_bishops: u64,
-    pub black_rooks: u64,
-    pub black_queens: u64,
-    pub black_king: u64,
 
     pub white_pieces: u64,
     pub black_pieces: u64,
@@ -36,17 +35,17 @@ impl BitBoards {
     pub const fn new() -> Self {
         Self {
             white_pawns: 0,
+            white_king: 0,
+            white_queens: 0,
+            white_rooks: 0,
             white_knights: 0,
             white_bishops: 0,
-            white_rooks: 0,
-            white_queens: 0,
-            white_king: 0,
             black_pawns: 0,
+            black_king: 0,
+            black_queens: 0,
+            black_rooks: 0,
             black_knights: 0,
             black_bishops: 0,
-            black_rooks: 0,
-            black_queens: 0,
-            black_king: 0,
 
             white_pieces: 0,
             black_pieces: 0,
@@ -89,14 +88,14 @@ impl BitBoards {
             white_king,
             white_queens,
             white_rooks,
-            white_bishops,
             white_knights,
+            white_bishops,
             black_pawns,
             black_king,
             black_queens,
             black_rooks,
-            black_bishops,
             black_knights,
+            black_bishops,
 
             white_pieces,
             black_pieces,
@@ -104,8 +103,8 @@ impl BitBoards {
         }
     }
 
-    pub const fn builder() -> BitBoardsBuilder {
-        BitBoardsBuilder::default()
+    pub const fn builder() -> Builder {
+        Builder::default()
     }
 
     fn recompute_combinations(&mut self, kind: Option<Kind>) {
@@ -146,28 +145,40 @@ impl BitBoards {
     /// ``singleton`
     pub fn get_piece_kind(&self, square: Square) -> Option<Kind> {
         let mask = square.get_mask();
-        let bitboard_map = [
-            (Kind::Pawn(Color::White), &self.white_pawns),
-            (Kind::King(Color::White), &self.white_king),
-            (Kind::Queen(Color::White), &self.white_queens),
-            (Kind::Rook(Color::White), &self.white_rooks),
-            (Kind::Bishop(Color::White), &self.white_bishops),
-            (Kind::Knight(Color::White), &self.white_knights),
-            (Kind::Pawn(Color::Black), &self.black_pawns),
-            (Kind::King(Color::Black), &self.black_king),
-            (Kind::Queen(Color::Black), &self.black_queens),
-            (Kind::Rook(Color::Black), &self.black_rooks),
-            (Kind::Bishop(Color::Black), &self.black_bishops),
-            (Kind::Knight(Color::Black), &self.black_knights),
-        ];
 
-        for (kind, bb) in bitboard_map {
-            if mask & *bb != 0 {
-                return Some(kind);
+        if mask & self.white_pieces != 0 {
+            if mask & self.white_pawns != 0 {
+                return Some(Kind::Pawn(Color::White));
+            } else if mask & self.white_king != 0 {
+                return Some(Kind::King(Color::White));
+            } else if mask & self.white_queens != 0 {
+                return Some(Kind::Queen(Color::White));
+            } else if mask & self.white_rooks != 0 {
+                return Some(Kind::Rook(Color::White));
+            } else if mask & self.white_knights != 0 {
+                return Some(Kind::Knight(Color::White));
+            } else if mask & self.white_bishops != 0 {
+                return Some(Kind::Bishop(Color::White));
             }
+            unreachable!("White pieces collection is malformed! Detected a white piece at square {square}, but no piece was found!")
+        } else if mask & self.black_pieces != 0 {
+            if mask & self.black_pawns != 0 {
+                return Some(Kind::Pawn(Color::Black));
+            } else if mask & self.black_king != 0 {
+                return Some(Kind::King(Color::Black));
+            } else if mask & self.black_queens != 0 {
+                return Some(Kind::Queen(Color::Black));
+            } else if mask & self.black_rooks != 0 {
+                return Some(Kind::Rook(Color::Black));
+            } else if mask & self.black_knights != 0 {
+                return Some(Kind::Knight(Color::Black));
+            } else if mask & self.black_bishops != 0 {
+                return Some(Kind::Bishop(Color::Black));
+            }
+            unreachable!("black pieces collection is malformed! Detected a black piece at square {square}, but no piece was found!")
+        } else {
+            None
         }
-
-        None
     }
 
     pub fn add_piece(&mut self, square: Square, kind: Kind) {
@@ -188,30 +199,7 @@ impl BitBoards {
             Kind::King(Color::Black) => self.black_king |= mask,
         }
 
-        self.recompute_combinations(Some(kind))
-    }
-
-    pub fn clear_piece(&mut self, square: Square) {
-        let mask = !square.get_mask();
-        let mut bitboard_map = [
-            (Kind::Pawn(Color::White), &mut self.white_pawns),
-            (Kind::King(Color::White), &mut self.white_king),
-            (Kind::Queen(Color::White), &mut self.white_queens),
-            (Kind::Rook(Color::White), &mut self.white_rooks),
-            (Kind::Bishop(Color::White), &mut self.white_bishops),
-            (Kind::Knight(Color::White), &mut self.white_knights),
-            (Kind::Pawn(Color::Black), &mut self.black_pawns),
-            (Kind::King(Color::Black), &mut self.black_king),
-            (Kind::Queen(Color::Black), &mut self.black_queens),
-            (Kind::Rook(Color::Black), &mut self.black_rooks),
-            (Kind::Bishop(Color::Black), &mut self.black_bishops),
-            (Kind::Knight(Color::Black), &mut self.black_knights),
-        ];
-
-        for (_, bb) in bitboard_map {
-            *bb &= mask;
-        }
-        self.recompute_combinations(None)
+        self.recompute_combinations(Some(kind));
     }
 
     pub fn remove_piece(&mut self, square: Square, kind: Kind) {
@@ -232,6 +220,6 @@ impl BitBoards {
             Kind::King(Color::Black) => self.black_king &= mask,
         }
 
-        self.recompute_combinations(Some(kind))
+        self.recompute_combinations(Some(kind));
     }
 }

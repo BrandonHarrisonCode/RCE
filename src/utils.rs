@@ -1,5 +1,3 @@
-use crate::board::Board;
-
 #[allow(dead_code)]
 pub fn debug_bitboard(bitboard: u64) -> String {
     debug_bitboard_helper(bitboard)
@@ -17,32 +15,33 @@ pub fn debug_bitboard_helper(bitboard: u64) -> String {
     builder
 }
 
-pub fn perft(board: &mut Board, depth: u32) -> u64 {
-    if depth == 0 {
-        return 1;
-    }
-
-    let moves = board.get_legal_moves();
-    if depth == 1 {
-        return moves.len() as u64;
-    }
-
-    let mut nodes = 0;
-    for mv in moves {
-        board.make_move(mv);
-        nodes += perft(board, depth - 1);
-        board.unmake_move();
-    }
-
-    nodes
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::board::Board;
     use indoc::indoc;
+
+    pub fn perft(board: &mut Board, depth: u32) -> u64 {
+        if depth == 0 {
+            return 1;
+        }
+
+        let moves = board.get_legal_moves();
+        if depth == 1 {
+            return moves.len() as u64;
+        }
+
+        let mut nodes = 0;
+        for mv in moves {
+            board.make_move(mv);
+            nodes += perft(board, depth - 1);
+            board.unmake_move();
+        }
+
+        nodes
+    }
 
     #[test]
     fn test_debug_bitboard_no_panic() {
