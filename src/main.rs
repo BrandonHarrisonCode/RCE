@@ -1,3 +1,4 @@
+#![feature(test)]
 #![warn(clippy::all, clippy::pedantic, clippy::nursery)]
 
 #[macro_use]

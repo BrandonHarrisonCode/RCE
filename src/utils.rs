@@ -19,9 +19,12 @@ pub fn debug_bitboard_helper(bitboard: u64) -> String {
 
 #[cfg(test)]
 mod tests {
+    extern crate test;
+
     use super::*;
     use crate::board::Board;
     use indoc::indoc;
+    use test::Bencher;
 
     pub fn perft(board: &mut Board, depth: u32) -> u64 {
         if depth == 0 {
@@ -116,5 +119,11 @@ mod tests {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 4);
         assert_eq!(nodes, 197281);
+    }
+
+    #[bench]
+    fn bench_perft_depth_3(bencher: &mut Bencher) {
+        let mut board = Board::construct_starting_board();
+        bencher.iter(|| perft(&mut board, 3));
     }
 }
