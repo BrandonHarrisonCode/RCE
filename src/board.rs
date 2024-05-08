@@ -441,7 +441,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::WhiteKingside)
-                    .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                    .and(self.no_checks_between(Square::from("e1"), Square::from("g1")))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle kingside."),
@@ -450,7 +450,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::WhiteQueenside)
-                    .and(self.no_checks_between(Square::new("e1"), Square::new("c1")))
+                    .and(self.no_checks_between(Square::from("e1"), Square::from("c1")))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle queenside."),
@@ -459,7 +459,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::BlackKingside)
-                    .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                    .and(self.no_checks_between(Square::from("e1"), Square::from("g1")))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle kingside."),
@@ -468,7 +468,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::BlackQueenside)
-                    .and(self.no_checks_between(Square::new("e1"), Square::new("g1")))
+                    .and(self.no_checks_between(Square::from("e1"), Square::from("g1")))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle queenside."),
@@ -702,10 +702,10 @@ impl Board {
 
         if new_move.is_castles {
             let (rook_start, rook_dest) = match new_move.dest {
-                Square { rank: 0, file: 6 } => (Square::new("h1"), Square::new("f1")),
-                Square { rank: 0, file: 2 } => (Square::new("a1"), Square::new("d1")),
-                Square { rank: 7, file: 6 } => (Square::new("h8"), Square::new("f8")),
-                Square { rank: 7, file: 2 } => (Square::new("a8"), Square::new("d8")),
+                Square { rank: 0, file: 6 } => (Square::from("h1"), Square::from("f1")),
+                Square { rank: 0, file: 2 } => (Square::from("a1"), Square::from("d1")),
+                Square { rank: 7, file: 6 } => (Square::from("h8"), Square::from("f8")),
+                Square { rank: 7, file: 2 } => (Square::from("a8"), Square::from("d8")),
                 _ => panic!("Invalid castling king destination {}", new_move.dest),
             };
 
@@ -804,10 +804,10 @@ impl Board {
 
         if old_move.is_castles {
             let (rook_start, rook_dest) = match old_move.dest {
-                Square { rank: 0, file: 6 } => (Square::new("h1"), Square::new("f1")),
-                Square { rank: 0, file: 2 } => (Square::new("a1"), Square::new("d1")),
-                Square { rank: 7, file: 6 } => (Square::new("h8"), Square::new("f8")),
-                Square { rank: 7, file: 2 } => (Square::new("a8"), Square::new("d8")),
+                Square { rank: 0, file: 6 } => (Square::from("h1"), Square::from("f1")),
+                Square { rank: 0, file: 2 } => (Square::from("a1"), Square::from("d1")),
+                Square { rank: 7, file: 6 } => (Square::from("h8"), Square::from("f8")),
+                Square { rank: 7, file: 2 } => (Square::from("a8"), Square::from("d8")),
                 _ => panic!("Invalid castling king destination {}", old_move.dest),
             };
 
@@ -871,7 +871,7 @@ mod tests {
     fn test_get_piece1() {
         let board = Board::construct_starting_board();
         assert_eq!(
-            board.get_piece(Square::new("a1")).unwrap(),
+            board.get_piece(Square::from("a1")).unwrap(),
             Kind::Rook(Color::White)
         );
     }
@@ -880,7 +880,7 @@ mod tests {
     fn test_get_piece2() {
         let board = Board::construct_starting_board();
         assert_eq!(
-            board.get_piece(Square::new("h8")).unwrap(),
+            board.get_piece(Square::from("h8")).unwrap(),
             Kind::Rook(Color::Black)
         );
     }
@@ -889,7 +889,7 @@ mod tests {
     fn test_get_piece3() {
         let board = Board::construct_starting_board();
         assert_eq!(
-            board.get_piece(Square::new("h7")).unwrap(),
+            board.get_piece(Square::from("h7")).unwrap(),
             Kind::Pawn(Color::Black)
         );
     }
@@ -897,7 +897,7 @@ mod tests {
     #[test]
     fn test_get_piece_none() {
         let board = Board::construct_starting_board();
-        assert!(board.get_piece(Square::new("e5")).is_none());
+        assert!(board.get_piece(Square::from("e5")).is_none());
     }
 
     #[test]
@@ -925,7 +925,7 @@ mod tests {
     #[test]
     fn test_add_piece() {
         let mut board = Board::construct_starting_board();
-        let square = Square::new("a3");
+        let square = Square::from("a3");
         board.add_piece(square, Kind::Queen(Color::White));
         assert_eq!(board.get_piece(square).unwrap(), Kind::Queen(Color::White));
     }
@@ -933,7 +933,7 @@ mod tests {
     #[test]
     fn test_remove_piece() {
         let mut board = Board::construct_starting_board();
-        let square = Square::new("a2");
+        let square = Square::from("a2");
 
         // Should do nothing, since there is a white pawn here, not a black pawn
         board.remove_piece(square, Kind::Pawn(Color::Black));
@@ -1042,8 +1042,8 @@ mod tests {
     #[test]
     fn test_make_unmake_move_single() {
         let mut board = Board::construct_starting_board();
-        let start = Square::new("a2");
-        let dest = Square::new("a3");
+        let start = Square::from("a2");
+        let dest = Square::from("a3");
         let ply = Ply::new(start, dest);
 
         assert_eq!(board.current_turn, Color::White);
@@ -1066,8 +1066,8 @@ mod tests {
     fn test_make_unmake_move_double() {
         // Make and unmake two moves in a row
         let mut board = Board::construct_starting_board();
-        let ply1 = Ply::new(Square::new("e2"), Square::new("e4"));
-        let ply2 = Ply::new(Square::new("e7"), Square::new("e5"));
+        let ply1 = Ply::new(Square::from("e2"), Square::from("e4"));
+        let ply2 = Ply::new(Square::from("e7"), Square::from("e5"));
 
         assert_eq!(board.current_turn, Color::White);
 
@@ -1113,8 +1113,8 @@ mod tests {
     #[test]
     fn test_make_unmake_move_capture() {
         let mut board = Board::construct_starting_board();
-        let start = Square::new("a2"); // White Pawn
-        let dest = Square::new("a7"); // Black Pawn
+        let start = Square::from("a2"); // White Pawn
+        let dest = Square::from("a7"); // Black Pawn
         let ply = Ply::builder(start, dest)
             .captured(Kind::Pawn(Color::Black))
             .build();
@@ -1136,8 +1136,8 @@ mod tests {
     #[test]
     fn test_make_unmake_move_promotion() {
         let mut board = Board::from_fen("8/5P2/2k5/8/4K3/8/8/8 w - - 0 1");
-        let start = Square::new("f7"); // White Pawn
-        let dest = Square::new("f8");
+        let start = Square::from("f7"); // White Pawn
+        let dest = Square::from("f8");
         let ply = Ply::builder(start, dest)
             .promoted_to(Kind::Queen(Color::White))
             .build();
@@ -1160,8 +1160,8 @@ mod tests {
     #[test]
     fn test_make_unmake_move_promotion_capture() {
         let mut board = Board::from_fen("6n1/5P2/2k5/8/4K3/8/8/8 w - - 0 1");
-        let start = Square::new("f7"); // White Pawn
-        let dest = Square::new("g8"); // Black Knight
+        let start = Square::from("f7"); // White Pawn
+        let dest = Square::from("g8"); // Black Knight
         let ply = Ply::builder(start, dest)
             .captured(Kind::Knight(Color::Black))
             .promoted_to(Kind::Queen(Color::White))

@@ -586,7 +586,7 @@ mod tests {
 
     #[test]
     fn board_builder_history() {
-        let history = vec![Ply::new(Square::new("a1"), Square::new("a2"))];
+        let history = vec![Ply::new(Square::from("a1"), Square::from("a2"))];
         let board = BoardBuilder::default().history(&history).build();
         let correct = Board {
             history,

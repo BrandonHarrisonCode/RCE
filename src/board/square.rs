@@ -1,3 +1,4 @@
+use std::convert::From;
 use std::fmt;
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Default)]
@@ -5,7 +6,8 @@ pub struct Square {
     pub rank: u8,
     pub file: u8,
 }
-impl Square {
+
+impl From<&str> for Square {
     /// Creates a new square from a given algebraic notation
     ///
     /// This function is case sensitive and expects the file to be a lowercase letter and the rank to be a number.
@@ -16,11 +18,11 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// let squareA1 = Square::new("a1");
-    /// let squareD4 = Square::new("d4");
+    /// let squareA1 = Square::from("a1");
+    /// let squareD4 = Square::from("d4");
     /// ```
     #[allow(clippy::cast_possible_truncation)]
-    pub fn new(algebraic_notation: &str) -> Self {
+    fn from(algebraic_notation: &str) -> Self {
         let mut iter = algebraic_notation.chars();
         let filechar: char = iter.next().unwrap();
 
@@ -36,7 +38,48 @@ impl Square {
 
         Self { rank, file }
     }
+}
 
+impl From<String> for Square {
+    /// Creates a new square from a given algebraic notation
+    ///
+    /// This function is case sensitive and expects the file to be a lowercase letter and the rank to be a number.
+    ///
+    /// # Arguments
+    ///
+    /// * `algebraic_notation` - A string that represents the square in algebraic notation
+    ///
+    /// # Examples
+    /// ```
+    /// let squareA1 = Square::from("a1");
+    /// let squareD4 = Square::from("d4");
+    /// ```
+    #[allow(clippy::cast_possible_truncation)]
+    fn from(algebraic_notation: String) -> Self {
+        Self::from(algebraic_notation.as_str())
+    }
+}
+
+impl From<u8> for Square {
+    /// Creates a new square from an integer
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - A number that represents the given square, with h1 being 0 and a8 being 63
+    ///
+    /// # Examples
+    /// ```
+    /// let squareA1 = Square::from(55);
+    /// let squareA8 = Square::from(0);
+    /// ```
+    fn from(value: u8) -> Self {
+        let file: u8 = 7 - (value % 8);
+        let rank: u8 = value >> 3;
+        Self { rank, file }
+    }
+}
+
+impl Square {
     /// Returns a vec of squares that are between the start and destination squares
     ///
     /// # Arguments
@@ -127,7 +170,7 @@ impl Square {
     /// let diagonals_mask = Square::new("a1").get_diagonals_mask();
     /// ```
     pub fn get_diagonals_mask(self) -> u64 {
-        let start = self.u64();
+        let start = self.u8();
         let mut mask = 0u64;
 
         let mut step: i128 = i128::from(start);
@@ -169,7 +212,7 @@ impl Square {
         mask
     }
 
-    /// Converts a square to it's u64 representation, where 0 is in the bottom right corner and 63 is in the top left
+    /// Converts a square to it's u8 representation, where 0 is in the bottom right corner and 63 is in the top left
     ///
     /// # Arguments
     ///
@@ -177,9 +220,9 @@ impl Square {
     ///
     /// # Examples
     /// ```
-    /// let num = Square::new("a1").u64();
+    /// let num = Square::new("a1").u8();
     /// ```
-    fn u64(self) -> u64 {
+    fn u8(self) -> u8 {
         (self.rank * 8 + (7 - self.file)).into()
     }
 
@@ -432,7 +475,7 @@ mod tests {
 
     #[test]
     fn test_new_square1() {
-        let result = Square::new("d5");
+        let result = Square::from("d5");
         let correct = Square { rank: 4, file: 3 };
 
         assert_eq!(result, correct);
@@ -440,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_new_square2() {
-        let result = Square::new("a1");
+        let result = Square::from("a1");
         let correct = Square { rank: 0, file: 0 };
 
         assert_eq!(result, correct);
@@ -448,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_new_square3() {
-        let result = Square::new("a8");
+        let result = Square::from("a8");
         let correct = Square { rank: 7, file: 0 };
 
         assert_eq!(result, correct);
@@ -456,7 +499,7 @@ mod tests {
 
     #[test]
     fn test_new_square4() {
-        let result = Square::new("h1");
+        let result = Square::from("h1");
         let correct = Square { rank: 0, file: 7 };
 
         assert_eq!(result, correct);
@@ -464,7 +507,7 @@ mod tests {
 
     #[test]
     fn test_new_square5() {
-        let result = Square::new("h8");
+        let result = Square::from("h8");
         let correct = Square { rank: 7, file: 7 };
 
         assert_eq!(result, correct);
@@ -472,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_new_square6() {
-        let result = Square::new("e3");
+        let result = Square::from("e3");
         let correct = Square { rank: 2, file: 4 };
 
         assert_eq!(result, correct);
@@ -480,7 +523,7 @@ mod tests {
 
     #[test]
     fn test_get_rank_mask_h6() {
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
         let result = start_square.get_rank_mask();
         let correct = 0b_00000000_00000000_11111111_00000000_00000000_00000000_00000000_00000000;
 
@@ -495,7 +538,7 @@ mod tests {
 
     #[test]
     fn test_get_rank_mask_a1() {
-        let start_square = Square::new("a1");
+        let start_square = Square::from("a1");
         let result = start_square.get_rank_mask();
         let correct = 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111;
 
@@ -510,7 +553,7 @@ mod tests {
 
     #[test]
     fn test_get_rank_mask_b8() {
-        let start_square = Square::new("b8");
+        let start_square = Square::from("b8");
         let result = start_square.get_rank_mask();
         let correct = 0b_11111111_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
 
@@ -525,7 +568,7 @@ mod tests {
 
     #[test]
     fn test_get_file_mask_h6() {
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
         let result = start_square.get_file_mask();
         let correct = 0b_00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
 
@@ -540,7 +583,7 @@ mod tests {
 
     #[test]
     fn test_get_file_mask_a1() {
-        let start_square = Square::new("a1");
+        let start_square = Square::from("a1");
         let result = start_square.get_file_mask();
         let correct = 0b_10000000_10000000_10000000_10000000_10000000_10000000_10000000_10000000;
 
@@ -555,7 +598,7 @@ mod tests {
 
     #[test]
     fn test_get_file_mask_b8() {
-        let start_square = Square::new("b8");
+        let start_square = Square::from("b8");
         let result = start_square.get_file_mask();
         let correct = 0b_01000000_01000000_01000000_01000000_01000000_01000000_01000000_01000000;
 
@@ -570,17 +613,17 @@ mod tests {
 
     #[test]
     fn test_get_squares_from_mask_file_h6() {
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
         let result = Square::get_squares_from_mask(start_square.get_file_mask());
         let correct = vec![
-            Square::new("h1"),
-            Square::new("h2"),
-            Square::new("h3"),
-            Square::new("h4"),
-            Square::new("h5"),
-            Square::new("h6"),
-            Square::new("h7"),
-            Square::new("h8"),
+            Square::from("h1"),
+            Square::from("h2"),
+            Square::from("h3"),
+            Square::from("h4"),
+            Square::from("h5"),
+            Square::from("h6"),
+            Square::from("h7"),
+            Square::from("h8"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -590,17 +633,17 @@ mod tests {
 
     #[test]
     fn test_get_squares_from_mask_rank_h6() {
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
         let result = Square::get_squares_from_mask(start_square.get_rank_mask());
         let correct = vec![
-            Square::new("a6"),
-            Square::new("b6"),
-            Square::new("c6"),
-            Square::new("d6"),
-            Square::new("e6"),
-            Square::new("f6"),
-            Square::new("g6"),
-            Square::new("h6"),
+            Square::from("a6"),
+            Square::from("b6"),
+            Square::from("c6"),
+            Square::from("d6"),
+            Square::from("e6"),
+            Square::from("f6"),
+            Square::from("g6"),
+            Square::from("h6"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -610,26 +653,26 @@ mod tests {
 
     #[test]
     fn test_get_squares_from_mask_rank_and_file_h6() {
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
         let result = Square::get_squares_from_mask(
             start_square.get_rank_mask() | start_square.get_file_mask(),
         );
         let correct = vec![
-            Square::new("a6"),
-            Square::new("b6"),
-            Square::new("c6"),
-            Square::new("d6"),
-            Square::new("e6"),
-            Square::new("f6"),
-            Square::new("g6"),
-            Square::new("h1"),
-            Square::new("h2"),
-            Square::new("h3"),
-            Square::new("h4"),
-            Square::new("h5"),
-            Square::new("h6"),
-            Square::new("h7"),
-            Square::new("h8"),
+            Square::from("a6"),
+            Square::from("b6"),
+            Square::from("c6"),
+            Square::from("d6"),
+            Square::from("e6"),
+            Square::from("f6"),
+            Square::from("g6"),
+            Square::from("h1"),
+            Square::from("h2"),
+            Square::from("h3"),
+            Square::from("h4"),
+            Square::from("h5"),
+            Square::from("h6"),
+            Square::from("h7"),
+            Square::from("h8"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -639,17 +682,17 @@ mod tests {
 
     #[test]
     fn test_get_squares_from_mask_file_a1() {
-        let start_square = Square::new("a1");
+        let start_square = Square::from("a1");
         let result = Square::get_squares_from_mask(start_square.get_file_mask());
         let correct = vec![
-            Square::new("a1"),
-            Square::new("a2"),
-            Square::new("a3"),
-            Square::new("a4"),
-            Square::new("a5"),
-            Square::new("a6"),
-            Square::new("a7"),
-            Square::new("a8"),
+            Square::from("a1"),
+            Square::from("a2"),
+            Square::from("a3"),
+            Square::from("a4"),
+            Square::from("a5"),
+            Square::from("a6"),
+            Square::from("a7"),
+            Square::from("a8"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -659,17 +702,17 @@ mod tests {
 
     #[test]
     fn test_get_squares_from_mask_rank_a1() {
-        let start_square = Square::new("a1");
+        let start_square = Square::from("a1");
         let result = Square::get_squares_from_mask(start_square.get_rank_mask());
         let correct = vec![
-            Square::new("a1"),
-            Square::new("b1"),
-            Square::new("c1"),
-            Square::new("d1"),
-            Square::new("e1"),
-            Square::new("f1"),
-            Square::new("g1"),
-            Square::new("h1"),
+            Square::from("a1"),
+            Square::from("b1"),
+            Square::from("c1"),
+            Square::from("d1"),
+            Square::from("e1"),
+            Square::from("f1"),
+            Square::from("g1"),
+            Square::from("h1"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -679,26 +722,26 @@ mod tests {
 
     #[test]
     fn test_get_squares_from_mask_rank_and_file_a1() {
-        let start_square = Square::new("a1");
+        let start_square = Square::from("a1");
         let result = Square::get_squares_from_mask(
             start_square.get_rank_mask() | start_square.get_file_mask(),
         );
         let correct = vec![
-            Square::new("a1"),
-            Square::new("b1"),
-            Square::new("c1"),
-            Square::new("d1"),
-            Square::new("e1"),
-            Square::new("f1"),
-            Square::new("g1"),
-            Square::new("h1"),
-            Square::new("a2"),
-            Square::new("a3"),
-            Square::new("a4"),
-            Square::new("a5"),
-            Square::new("a6"),
-            Square::new("a7"),
-            Square::new("a8"),
+            Square::from("a1"),
+            Square::from("b1"),
+            Square::from("c1"),
+            Square::from("d1"),
+            Square::from("e1"),
+            Square::from("f1"),
+            Square::from("g1"),
+            Square::from("h1"),
+            Square::from("a2"),
+            Square::from("a3"),
+            Square::from("a4"),
+            Square::from("a5"),
+            Square::from("a6"),
+            Square::from("a7"),
+            Square::from("a8"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -708,18 +751,18 @@ mod tests {
 
     #[test]
     fn test_get_diagonals_mask_a1() {
-        let start_square = Square::new("a1");
+        let start_square = Square::from("a1");
 
         let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
         let correct = vec![
-            Square::new("a1"),
-            Square::new("b2"),
-            Square::new("c3"),
-            Square::new("d4"),
-            Square::new("e5"),
-            Square::new("f6"),
-            Square::new("g7"),
-            Square::new("h8"),
+            Square::from("a1"),
+            Square::from("b2"),
+            Square::from("c3"),
+            Square::from("d4"),
+            Square::from("e5"),
+            Square::from("f6"),
+            Square::from("g7"),
+            Square::from("h8"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -729,18 +772,18 @@ mod tests {
 
     #[test]
     fn test_get_diagonals_mask_b1() {
-        let start_square = Square::new("b1");
+        let start_square = Square::from("b1");
 
         let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
         let correct = vec![
-            Square::new("b1"),
-            Square::new("c2"),
-            Square::new("d3"),
-            Square::new("e4"),
-            Square::new("f5"),
-            Square::new("g6"),
-            Square::new("h7"),
-            Square::new("a2"),
+            Square::from("b1"),
+            Square::from("c2"),
+            Square::from("d3"),
+            Square::from("e4"),
+            Square::from("f5"),
+            Square::from("g6"),
+            Square::from("h7"),
+            Square::from("a2"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -750,24 +793,24 @@ mod tests {
 
     #[test]
     fn test_get_diagonals_mask_e4() {
-        let start_square = Square::new("e4");
+        let start_square = Square::from("e4");
 
         let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
         let correct = vec![
-            Square::new("e4"),
-            Square::new("d5"),
-            Square::new("c6"),
-            Square::new("b7"),
-            Square::new("a8"),
-            Square::new("f5"),
-            Square::new("g6"),
-            Square::new("h7"),
-            Square::new("d3"),
-            Square::new("c2"),
-            Square::new("b1"),
-            Square::new("f3"),
-            Square::new("g2"),
-            Square::new("h1"),
+            Square::from("e4"),
+            Square::from("d5"),
+            Square::from("c6"),
+            Square::from("b7"),
+            Square::from("a8"),
+            Square::from("f5"),
+            Square::from("g6"),
+            Square::from("h7"),
+            Square::from("d3"),
+            Square::from("c2"),
+            Square::from("b1"),
+            Square::from("f3"),
+            Square::from("g2"),
+            Square::from("h1"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -777,24 +820,24 @@ mod tests {
 
     #[test]
     fn test_get_diagonals_mask_d4() {
-        let start_square = Square::new("d4");
+        let start_square = Square::from("d4");
 
         let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
         let correct = vec![
-            Square::new("d4"),
-            Square::new("a1"),
-            Square::new("b2"),
-            Square::new("c3"),
-            Square::new("c5"),
-            Square::new("b6"),
-            Square::new("a7"),
-            Square::new("e5"),
-            Square::new("f6"),
-            Square::new("g7"),
-            Square::new("h8"),
-            Square::new("e3"),
-            Square::new("f2"),
-            Square::new("g1"),
+            Square::from("d4"),
+            Square::from("a1"),
+            Square::from("b2"),
+            Square::from("c3"),
+            Square::from("c5"),
+            Square::from("b6"),
+            Square::from("a7"),
+            Square::from("e5"),
+            Square::from("f6"),
+            Square::from("g7"),
+            Square::from("h8"),
+            Square::from("e3"),
+            Square::from("f2"),
+            Square::from("g1"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -804,20 +847,20 @@ mod tests {
 
     #[test]
     fn test_get_diagonals_mask_g6() {
-        let start_square = Square::new("g6");
+        let start_square = Square::from("g6");
 
         let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
         let correct = vec![
-            Square::new("g6"),
-            Square::new("h7"),
-            Square::new("h5"),
-            Square::new("f7"),
-            Square::new("e8"),
-            Square::new("f5"),
-            Square::new("e4"),
-            Square::new("d3"),
-            Square::new("c2"),
-            Square::new("b1"),
+            Square::from("g6"),
+            Square::from("h7"),
+            Square::from("h5"),
+            Square::from("f7"),
+            Square::from("e8"),
+            Square::from("f5"),
+            Square::from("e4"),
+            Square::from("d3"),
+            Square::from("c2"),
+            Square::from("b1"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -827,18 +870,18 @@ mod tests {
 
     #[test]
     fn test_get_diagonals_mask_h6() {
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
 
         let result = Square::get_squares_from_mask(start_square.get_diagonals_mask());
         let correct = vec![
-            Square::new("h6"),
-            Square::new("g7"),
-            Square::new("f8"),
-            Square::new("g5"),
-            Square::new("f4"),
-            Square::new("e3"),
-            Square::new("d2"),
-            Square::new("c1"),
+            Square::from("h6"),
+            Square::from("g7"),
+            Square::from("f8"),
+            Square::from("g5"),
+            Square::from("f4"),
+            Square::from("e3"),
+            Square::from("d2"),
+            Square::from("c1"),
         ];
 
         let result_set: HashSet<Square> = result.into_iter().collect();
@@ -847,54 +890,54 @@ mod tests {
     }
 
     #[test]
-    fn test_u64_a1() {
-        let start_square = Square::new("a1");
-        let result = start_square.u64();
+    fn test_u8_a1() {
+        let start_square = Square::from("a1");
+        let result = start_square.u8();
         let correct = 7;
 
         assert_eq!(result, correct);
     }
 
     #[test]
-    fn test_u64_h1() {
-        let start_square = Square::new("h1");
-        let result = start_square.u64();
+    fn test_u8_h1() {
+        let start_square = Square::from("h1");
+        let result = start_square.u8();
         let correct = 0;
 
         assert_eq!(result, correct);
     }
 
     #[test]
-    fn test_u64_a8() {
-        let start_square = Square::new("a8");
-        let result = start_square.u64();
+    fn test_u8_a8() {
+        let start_square = Square::from("a8");
+        let result = start_square.u8();
         let correct = 63;
 
         assert_eq!(result, correct);
     }
 
     #[test]
-    fn test_u64_h8() {
-        let start_square = Square::new("h8");
-        let result = start_square.u64();
+    fn test_u8_h8() {
+        let start_square = Square::from("h8");
+        let result = start_square.u8();
         let correct = 56;
 
         assert_eq!(result, correct);
     }
 
     #[test]
-    fn test_u64_c5() {
-        let start_square = Square::new("c5");
-        let result = start_square.u64();
+    fn test_u8_c5() {
+        let start_square = Square::from("c5");
+        let result = start_square.u8();
         let correct = 37;
 
         assert_eq!(result, correct);
     }
 
     #[test]
-    fn test_u64_f3() {
-        let start_square = Square::new("f3");
-        let result = start_square.u64();
+    fn test_u8_f3() {
+        let start_square = Square::from("f3");
+        let result = start_square.u8();
         let correct = 18;
 
         assert_eq!(result, correct);
@@ -902,16 +945,16 @@ mod tests {
 
     #[test]
     fn test_transit_squares_a1_to_h8() {
-        let start_square = Square::new("a1");
-        let dest_square = Square::new("h8");
+        let start_square = Square::from("a1");
+        let dest_square = Square::from("h8");
         let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
-            Square::new("b2"),
-            Square::new("c3"),
-            Square::new("d4"),
-            Square::new("e5"),
-            Square::new("f6"),
-            Square::new("g7"),
+            Square::from("b2"),
+            Square::from("c3"),
+            Square::from("d4"),
+            Square::from("e5"),
+            Square::from("f6"),
+            Square::from("g7"),
         ];
 
         assert_eq!(result, correct);
@@ -919,16 +962,16 @@ mod tests {
 
     #[test]
     fn test_transit_squares_h8_to_a1() {
-        let start_square = Square::new("h8");
-        let dest_square = Square::new("a1");
+        let start_square = Square::from("h8");
+        let dest_square = Square::from("a1");
         let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
-            Square::new("g7"),
-            Square::new("f6"),
-            Square::new("e5"),
-            Square::new("d4"),
-            Square::new("c3"),
-            Square::new("b2"),
+            Square::from("g7"),
+            Square::from("f6"),
+            Square::from("e5"),
+            Square::from("d4"),
+            Square::from("c3"),
+            Square::from("b2"),
         ];
 
         assert_eq!(result, correct);
@@ -936,16 +979,16 @@ mod tests {
 
     #[test]
     fn test_transit_squares_a8_to_h1() {
-        let start_square = Square::new("a8");
-        let dest_square = Square::new("h1");
+        let start_square = Square::from("a8");
+        let dest_square = Square::from("h1");
         let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
-            Square::new("b7"),
-            Square::new("c6"),
-            Square::new("d5"),
-            Square::new("e4"),
-            Square::new("f3"),
-            Square::new("g2"),
+            Square::from("b7"),
+            Square::from("c6"),
+            Square::from("d5"),
+            Square::from("e4"),
+            Square::from("f3"),
+            Square::from("g2"),
         ];
 
         assert_eq!(result, correct);
@@ -953,16 +996,16 @@ mod tests {
 
     #[test]
     fn test_transit_squares_h1_to_a8() {
-        let start_square = Square::new("h1");
-        let dest_square = Square::new("a8");
+        let start_square = Square::from("h1");
+        let dest_square = Square::from("a8");
         let result = start_square.get_transit_squares(dest_square);
         let correct = vec![
-            Square::new("g2"),
-            Square::new("f3"),
-            Square::new("e4"),
-            Square::new("d5"),
-            Square::new("c6"),
-            Square::new("b7"),
+            Square::from("g2"),
+            Square::from("f3"),
+            Square::from("e4"),
+            Square::from("d5"),
+            Square::from("c6"),
+            Square::from("b7"),
         ];
 
         assert_eq!(result, correct);
@@ -970,41 +1013,61 @@ mod tests {
 
     #[test]
     fn test_transit_squares_e4_to_e7() {
-        let start_square = Square::new("e4");
-        let dest_square = Square::new("e7");
+        let start_square = Square::from("e4");
+        let dest_square = Square::from("e7");
         let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::new("e5"), Square::new("e6")];
+        let correct = vec![Square::from("e5"), Square::from("e6")];
 
         assert_eq!(result, correct);
     }
 
     #[test]
     fn test_transit_squares_e7_to_e4() {
-        let start_square = Square::new("e7");
-        let dest_square = Square::new("e4");
+        let start_square = Square::from("e7");
+        let dest_square = Square::from("e4");
         let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::new("e6"), Square::new("e5")];
+        let correct = vec![Square::from("e6"), Square::from("e5")];
 
         assert_eq!(result, correct);
     }
 
     #[test]
     fn test_transit_squares_d3_to_f3() {
-        let start_square = Square::new("d3");
-        let dest_square = Square::new("f3");
+        let start_square = Square::from("d3");
+        let dest_square = Square::from("f3");
         let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::new("e3")];
+        let correct = vec![Square::from("e3")];
 
         assert_eq!(result, correct);
     }
 
     #[test]
     fn test_transit_squares_f3_to_d3() {
-        let start_square = Square::new("f3");
-        let dest_square = Square::new("d3");
+        let start_square = Square::from("f3");
+        let dest_square = Square::from("d3");
         let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::new("e3")];
+        let correct = vec![Square::from("e3")];
 
         assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_u8_identity() {
+        for i in 0..64 {
+            let square = Square::from(i);
+            let result = square.u8();
+            assert_eq!(result, i);
+        }
+    }
+
+    #[test]
+    fn test_from() {
+        for file in (b'a'..=b'h').map(char::from).rev() {
+            for rank in 1..=8 {
+                let square = Square::from(format!("{}{}", file, rank));
+                let num = square.u8();
+                assert_eq!(square, Square::from(num));
+            }
+        }
     }
 }

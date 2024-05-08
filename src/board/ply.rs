@@ -27,8 +27,8 @@ impl Ply {
     }
 
     pub fn parse_move(move_str: &str) -> Self {
-        let start = Square::new(&move_str[0..2]);
-        let dest = Square::new(&move_str[2..4]);
+        let start = Square::from(&move_str[0..2]);
+        let dest = Square::from(&move_str[2..4]);
 
         Self::new(start, dest)
     }
@@ -142,8 +142,8 @@ mod tests {
 
     #[test]
     fn test_derived_traits() {
-        let start = Square::new("f4");
-        let dest = Square::new("d6");
+        let start = Square::from("f4");
+        let dest = Square::from("d6");
         let ply = Ply::new(start, dest);
         dbg!(&ply);
 
@@ -152,8 +152,8 @@ mod tests {
 
     #[test]
     fn test_display() {
-        let start = Square::new("f4");
-        let dest = Square::new("d6");
+        let start = Square::from("f4");
+        let dest = Square::from("d6");
         let ply = Ply::new(start, dest);
 
         let result = ply.to_string();
@@ -164,8 +164,8 @@ mod tests {
 
     #[test]
     fn test_display_with_capture() {
-        let start = Square::new("f4");
-        let dest = Square::new("d6");
+        let start = Square::from("f4");
+        let dest = Square::from("d6");
         let captured_piece = Kind::Pawn(Color::White);
         let ply = Ply::builder(start, dest).captured(captured_piece).build();
 
@@ -177,8 +177,8 @@ mod tests {
 
     #[test]
     fn test_display_with_promotion() {
-        let start = Square::new("d7");
-        let dest = Square::new("d8");
+        let start = Square::from("d7");
+        let dest = Square::from("d8");
         let promoted_to = Kind::Queen(Color::White);
         let ply = Ply::builder(start, dest).promoted_to(promoted_to).build();
 
@@ -190,8 +190,8 @@ mod tests {
 
     #[test]
     fn test_display_with_capture_and_promotion() {
-        let start = Square::new("d7");
-        let dest = Square::new("e8");
+        let start = Square::from("d7");
+        let dest = Square::from("e8");
         let captured_piece = Kind::Rook(Color::Black);
         let promoted_to = Kind::Queen(Color::White);
         let ply = Ply::builder(start, dest)
@@ -207,8 +207,8 @@ mod tests {
 
     #[test]
     fn test_builder() {
-        let start = Square::new("f4");
-        let dest = Square::new("d6");
+        let start = Square::from("f4");
+        let dest = Square::from("d6");
         let ply = Ply::builder(start, dest).build();
 
         assert_eq!(ply.start, start);
@@ -219,8 +219,8 @@ mod tests {
 
     #[test]
     fn test_builder_captured() {
-        let start = Square::new("f4");
-        let dest = Square::new("d6");
+        let start = Square::from("f4");
+        let dest = Square::from("d6");
         let captured_piece = Kind::Rook(Color::Black);
         let ply = Ply::builder(start, dest).captured(captured_piece).build();
 
@@ -232,8 +232,8 @@ mod tests {
 
     #[test]
     fn test_builder_promoted() {
-        let start = Square::new("f7");
-        let dest = Square::new("f8");
+        let start = Square::from("f7");
+        let dest = Square::from("f8");
         let promoted_to = Kind::Rook(Color::Black);
         let ply = Ply::builder(start, dest).promoted_to(promoted_to).build();
 
@@ -245,8 +245,8 @@ mod tests {
 
     #[test]
     fn test_builder_captured_and_promoted() {
-        let start = Square::new("f7");
-        let dest = Square::new("f8");
+        let start = Square::from("f7");
+        let dest = Square::from("f8");
         let captured_piece = Kind::Queen(Color::White);
         let promoted_to = Kind::Rook(Color::Black);
         let ply = Ply::builder(start, dest)
@@ -262,8 +262,8 @@ mod tests {
 
     #[test]
     fn test_builder_castles() {
-        let start = Square::new("e1");
-        let dest = Square::new("g1");
+        let start = Square::from("e1");
+        let dest = Square::from("g1");
         let ply = Ply::builder(start, dest).castles(true).build();
 
         assert_eq!(ply.start, start);
@@ -273,8 +273,8 @@ mod tests {
 
     #[test]
     fn test_builder_en_passant() {
-        let start = Square::new("e6");
-        let dest = Square::new("d7");
+        let start = Square::from("e6");
+        let dest = Square::from("d7");
         let ply = Ply::builder(start, dest).en_passant(true).build();
 
         assert_eq!(ply.start, start);

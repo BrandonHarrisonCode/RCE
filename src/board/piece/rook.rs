@@ -1,7 +1,9 @@
 use super::{Color, Piece, Ply, Square};
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Rook;
+pub struct Rook {
+    rook_mask: [u64; 64],
+}
 
 impl Eq for Rook {}
 
@@ -17,6 +19,29 @@ impl Piece for Rook {
     }
 }
 
+impl Rook {
+    pub fn new() -> Self {
+        Self {
+            rook_mask: Self::init_rook_masks(),
+        }
+    }
+
+    fn init_rook_masks() -> [u64; 64] {
+        let mut masks = [0; 64];
+        for i in 0..64 {
+            let mut mask = 0;
+            let square = Square::from(i);
+
+            let rank_mask = square.get_rank_mask();
+            let file_mask = square.get_file_mask();
+
+            mask |= rank_mask | file_mask;
+        }
+
+        masks
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
@@ -27,7 +52,7 @@ mod tests {
 
     #[test]
     fn test_rook_derived_traits() {
-        let piece = Rook {};
+        let piece = Rook::new();
         dbg!(&piece);
 
         assert_eq!(piece, piece.clone());
@@ -93,24 +118,24 @@ mod tests {
     #[test]
     fn test_rook_get_moveset_white_b1() {
         let piece = Kind::Rook(Color::White);
-        let start_square = Square::new("b1");
+        let start_square = Square::from("b1");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a1")),
-            Ply::new(start_square, Square::new("c1")),
-            Ply::new(start_square, Square::new("d1")),
-            Ply::new(start_square, Square::new("e1")),
-            Ply::new(start_square, Square::new("f1")),
-            Ply::new(start_square, Square::new("g1")),
-            Ply::new(start_square, Square::new("h1")),
-            Ply::new(start_square, Square::new("b2")),
-            Ply::new(start_square, Square::new("b3")),
-            Ply::new(start_square, Square::new("b4")),
-            Ply::new(start_square, Square::new("b5")),
-            Ply::new(start_square, Square::new("b6")),
-            Ply::new(start_square, Square::new("b7")),
-            Ply::new(start_square, Square::new("b8")),
+            Ply::new(start_square, Square::from("a1")),
+            Ply::new(start_square, Square::from("c1")),
+            Ply::new(start_square, Square::from("d1")),
+            Ply::new(start_square, Square::from("e1")),
+            Ply::new(start_square, Square::from("f1")),
+            Ply::new(start_square, Square::from("g1")),
+            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("b2")),
+            Ply::new(start_square, Square::from("b3")),
+            Ply::new(start_square, Square::from("b4")),
+            Ply::new(start_square, Square::from("b5")),
+            Ply::new(start_square, Square::from("b6")),
+            Ply::new(start_square, Square::from("b7")),
+            Ply::new(start_square, Square::from("b8")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -121,24 +146,24 @@ mod tests {
     #[test]
     fn test_rook_get_moveset_white_d4() {
         let piece = Kind::Rook(Color::White);
-        let start_square = Square::new("d4");
+        let start_square = Square::from("d4");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a4")),
-            Ply::new(start_square, Square::new("b4")),
-            Ply::new(start_square, Square::new("c4")),
-            Ply::new(start_square, Square::new("e4")),
-            Ply::new(start_square, Square::new("f4")),
-            Ply::new(start_square, Square::new("g4")),
-            Ply::new(start_square, Square::new("h4")),
-            Ply::new(start_square, Square::new("d1")),
-            Ply::new(start_square, Square::new("d2")),
-            Ply::new(start_square, Square::new("d3")),
-            Ply::new(start_square, Square::new("d5")),
-            Ply::new(start_square, Square::new("d6")),
-            Ply::new(start_square, Square::new("d7")),
-            Ply::new(start_square, Square::new("d8")),
+            Ply::new(start_square, Square::from("a4")),
+            Ply::new(start_square, Square::from("b4")),
+            Ply::new(start_square, Square::from("c4")),
+            Ply::new(start_square, Square::from("e4")),
+            Ply::new(start_square, Square::from("f4")),
+            Ply::new(start_square, Square::from("g4")),
+            Ply::new(start_square, Square::from("h4")),
+            Ply::new(start_square, Square::from("d1")),
+            Ply::new(start_square, Square::from("d2")),
+            Ply::new(start_square, Square::from("d3")),
+            Ply::new(start_square, Square::from("d5")),
+            Ply::new(start_square, Square::from("d6")),
+            Ply::new(start_square, Square::from("d7")),
+            Ply::new(start_square, Square::from("d8")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -149,24 +174,24 @@ mod tests {
     #[test]
     fn test_rook_get_moveset_white_h6() {
         let piece = Kind::Rook(Color::White);
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a6")),
-            Ply::new(start_square, Square::new("b6")),
-            Ply::new(start_square, Square::new("c6")),
-            Ply::new(start_square, Square::new("d6")),
-            Ply::new(start_square, Square::new("e6")),
-            Ply::new(start_square, Square::new("f6")),
-            Ply::new(start_square, Square::new("g6")),
-            Ply::new(start_square, Square::new("h1")),
-            Ply::new(start_square, Square::new("h2")),
-            Ply::new(start_square, Square::new("h3")),
-            Ply::new(start_square, Square::new("h4")),
-            Ply::new(start_square, Square::new("h5")),
-            Ply::new(start_square, Square::new("h7")),
-            Ply::new(start_square, Square::new("h8")),
+            Ply::new(start_square, Square::from("a6")),
+            Ply::new(start_square, Square::from("b6")),
+            Ply::new(start_square, Square::from("c6")),
+            Ply::new(start_square, Square::from("d6")),
+            Ply::new(start_square, Square::from("e6")),
+            Ply::new(start_square, Square::from("f6")),
+            Ply::new(start_square, Square::from("g6")),
+            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("h2")),
+            Ply::new(start_square, Square::from("h3")),
+            Ply::new(start_square, Square::from("h4")),
+            Ply::new(start_square, Square::from("h5")),
+            Ply::new(start_square, Square::from("h7")),
+            Ply::new(start_square, Square::from("h8")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -177,24 +202,24 @@ mod tests {
     #[test]
     fn test_rook_get_moveset_black_b1() {
         let piece = Kind::Rook(Color::Black);
-        let start_square = Square::new("b1");
+        let start_square = Square::from("b1");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a1")),
-            Ply::new(start_square, Square::new("c1")),
-            Ply::new(start_square, Square::new("d1")),
-            Ply::new(start_square, Square::new("e1")),
-            Ply::new(start_square, Square::new("f1")),
-            Ply::new(start_square, Square::new("g1")),
-            Ply::new(start_square, Square::new("h1")),
-            Ply::new(start_square, Square::new("b2")),
-            Ply::new(start_square, Square::new("b3")),
-            Ply::new(start_square, Square::new("b4")),
-            Ply::new(start_square, Square::new("b5")),
-            Ply::new(start_square, Square::new("b6")),
-            Ply::new(start_square, Square::new("b7")),
-            Ply::new(start_square, Square::new("b8")),
+            Ply::new(start_square, Square::from("a1")),
+            Ply::new(start_square, Square::from("c1")),
+            Ply::new(start_square, Square::from("d1")),
+            Ply::new(start_square, Square::from("e1")),
+            Ply::new(start_square, Square::from("f1")),
+            Ply::new(start_square, Square::from("g1")),
+            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("b2")),
+            Ply::new(start_square, Square::from("b3")),
+            Ply::new(start_square, Square::from("b4")),
+            Ply::new(start_square, Square::from("b5")),
+            Ply::new(start_square, Square::from("b6")),
+            Ply::new(start_square, Square::from("b7")),
+            Ply::new(start_square, Square::from("b8")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -205,24 +230,24 @@ mod tests {
     #[test]
     fn test_rook_get_moveset_black_d4() {
         let piece = Kind::Rook(Color::Black);
-        let start_square = Square::new("d4");
+        let start_square = Square::from("d4");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a4")),
-            Ply::new(start_square, Square::new("b4")),
-            Ply::new(start_square, Square::new("c4")),
-            Ply::new(start_square, Square::new("e4")),
-            Ply::new(start_square, Square::new("f4")),
-            Ply::new(start_square, Square::new("g4")),
-            Ply::new(start_square, Square::new("h4")),
-            Ply::new(start_square, Square::new("d1")),
-            Ply::new(start_square, Square::new("d2")),
-            Ply::new(start_square, Square::new("d3")),
-            Ply::new(start_square, Square::new("d5")),
-            Ply::new(start_square, Square::new("d6")),
-            Ply::new(start_square, Square::new("d7")),
-            Ply::new(start_square, Square::new("d8")),
+            Ply::new(start_square, Square::from("a4")),
+            Ply::new(start_square, Square::from("b4")),
+            Ply::new(start_square, Square::from("c4")),
+            Ply::new(start_square, Square::from("e4")),
+            Ply::new(start_square, Square::from("f4")),
+            Ply::new(start_square, Square::from("g4")),
+            Ply::new(start_square, Square::from("h4")),
+            Ply::new(start_square, Square::from("d1")),
+            Ply::new(start_square, Square::from("d2")),
+            Ply::new(start_square, Square::from("d3")),
+            Ply::new(start_square, Square::from("d5")),
+            Ply::new(start_square, Square::from("d6")),
+            Ply::new(start_square, Square::from("d7")),
+            Ply::new(start_square, Square::from("d8")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -233,24 +258,24 @@ mod tests {
     #[test]
     fn test_rook_get_moveset_black_h6() {
         let piece = Kind::Rook(Color::Black);
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a6")),
-            Ply::new(start_square, Square::new("b6")),
-            Ply::new(start_square, Square::new("c6")),
-            Ply::new(start_square, Square::new("d6")),
-            Ply::new(start_square, Square::new("e6")),
-            Ply::new(start_square, Square::new("f6")),
-            Ply::new(start_square, Square::new("g6")),
-            Ply::new(start_square, Square::new("h1")),
-            Ply::new(start_square, Square::new("h2")),
-            Ply::new(start_square, Square::new("h3")),
-            Ply::new(start_square, Square::new("h4")),
-            Ply::new(start_square, Square::new("h5")),
-            Ply::new(start_square, Square::new("h7")),
-            Ply::new(start_square, Square::new("h8")),
+            Ply::new(start_square, Square::from("a6")),
+            Ply::new(start_square, Square::from("b6")),
+            Ply::new(start_square, Square::from("c6")),
+            Ply::new(start_square, Square::from("d6")),
+            Ply::new(start_square, Square::from("e6")),
+            Ply::new(start_square, Square::from("f6")),
+            Ply::new(start_square, Square::from("g6")),
+            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("h2")),
+            Ply::new(start_square, Square::from("h3")),
+            Ply::new(start_square, Square::from("h4")),
+            Ply::new(start_square, Square::from("h5")),
+            Ply::new(start_square, Square::from("h7")),
+            Ply::new(start_square, Square::from("h8")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();

@@ -159,13 +159,13 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_a2() {
         let piece = Kind::Pawn(Color::White);
-        let start_square = Square::new("a2");
+        let start_square = Square::from("a2");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a3")),
-            Ply::new(start_square, Square::new("b3")),
-            Ply::builder(start_square, Square::new("a4"))
+            Ply::new(start_square, Square::from("a3")),
+            Ply::new(start_square, Square::from("b3")),
+            Ply::builder(start_square, Square::from("a4"))
                 .double_pawn_push(true)
                 .build(),
         ];
@@ -178,14 +178,14 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_d2() {
         let piece = Kind::Pawn(Color::White);
-        let start_square = Square::new("d2");
+        let start_square = Square::from("d2");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("d3")),
-            Ply::new(start_square, Square::new("c3")),
-            Ply::new(start_square, Square::new("e3")),
-            Ply::builder(start_square, Square::new("d4"))
+            Ply::new(start_square, Square::from("d3")),
+            Ply::new(start_square, Square::from("c3")),
+            Ply::new(start_square, Square::from("e3")),
+            Ply::builder(start_square, Square::from("d4"))
                 .double_pawn_push(true)
                 .build(),
         ];
@@ -198,12 +198,12 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_h6() {
         let piece = Kind::Pawn(Color::White);
-        let start_square = Square::new("h6");
+        let start_square = Square::from("h6");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("h7")),
-            Ply::new(start_square, Square::new("g7")),
+            Ply::new(start_square, Square::from("h7")),
+            Ply::new(start_square, Square::from("g7")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -214,12 +214,12 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_black_a3() {
         let piece = Kind::Pawn(Color::Black);
-        let start_square = Square::new("a3");
+        let start_square = Square::from("a3");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("a2")),
-            Ply::new(start_square, Square::new("b2")),
+            Ply::new(start_square, Square::from("a2")),
+            Ply::new(start_square, Square::from("b2")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -230,13 +230,13 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_black_d5() {
         let piece = Kind::Pawn(Color::Black);
-        let start_square = Square::new("d5");
+        let start_square = Square::from("d5");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("d4")),
-            Ply::new(start_square, Square::new("c4")),
-            Ply::new(start_square, Square::new("e4")),
+            Ply::new(start_square, Square::from("d4")),
+            Ply::new(start_square, Square::from("c4")),
+            Ply::new(start_square, Square::from("e4")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -247,15 +247,15 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_black_h7() {
         let piece = Kind::Pawn(Color::Black);
-        let start_square = Square::new("h7");
+        let start_square = Square::from("h7");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::new(start_square, Square::new("h6")),
-            Ply::builder(start_square, Square::new("h5"))
+            Ply::new(start_square, Square::from("h6")),
+            Ply::builder(start_square, Square::from("h5"))
                 .double_pawn_push(true)
                 .build(),
-            Ply::new(start_square, Square::new("g6")),
+            Ply::new(start_square, Square::from("g6")),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -266,32 +266,32 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_h7() {
         let piece = Kind::Pawn(Color::White);
-        let start_square = Square::new("h7");
+        let start_square = Square::from("h7");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::builder(start_square, Square::new("h8"))
+            Ply::builder(start_square, Square::from("h8"))
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("h8"))
+            Ply::builder(start_square, Square::from("h8"))
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("h8"))
+            Ply::builder(start_square, Square::from("h8"))
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("h8"))
+            Ply::builder(start_square, Square::from("h8"))
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("g8"))
+            Ply::builder(start_square, Square::from("g8"))
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("g8"))
+            Ply::builder(start_square, Square::from("g8"))
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("g8"))
+            Ply::builder(start_square, Square::from("g8"))
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("g8"))
+            Ply::builder(start_square, Square::from("g8"))
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
         ];
@@ -304,32 +304,32 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_black_h2() {
         let piece = Kind::Pawn(Color::Black);
-        let start_square = Square::new("h2");
+        let start_square = Square::from("h2");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::builder(start_square, Square::new("h1"))
+            Ply::builder(start_square, Square::from("h1"))
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("h1"))
+            Ply::builder(start_square, Square::from("h1"))
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("h1"))
+            Ply::builder(start_square, Square::from("h1"))
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("h1"))
+            Ply::builder(start_square, Square::from("h1"))
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("g1"))
+            Ply::builder(start_square, Square::from("g1"))
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("g1"))
+            Ply::builder(start_square, Square::from("g1"))
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("g1"))
+            Ply::builder(start_square, Square::from("g1"))
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("g1"))
+            Ply::builder(start_square, Square::from("g1"))
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
         ];
@@ -342,44 +342,44 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_white_d7() {
         let piece = Kind::Pawn(Color::White);
-        let start_square = Square::new("d7");
+        let start_square = Square::from("d7");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::builder(start_square, Square::new("d8"))
+            Ply::builder(start_square, Square::from("d8"))
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("d8"))
+            Ply::builder(start_square, Square::from("d8"))
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("d8"))
+            Ply::builder(start_square, Square::from("d8"))
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("d8"))
+            Ply::builder(start_square, Square::from("d8"))
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("e8"))
+            Ply::builder(start_square, Square::from("e8"))
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("e8"))
+            Ply::builder(start_square, Square::from("e8"))
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("e8"))
+            Ply::builder(start_square, Square::from("e8"))
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("e8"))
+            Ply::builder(start_square, Square::from("e8"))
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("c8"))
+            Ply::builder(start_square, Square::from("c8"))
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("c8"))
+            Ply::builder(start_square, Square::from("c8"))
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("c8"))
+            Ply::builder(start_square, Square::from("c8"))
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::new("c8"))
+            Ply::builder(start_square, Square::from("c8"))
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
         ];
@@ -392,44 +392,44 @@ mod tests {
     #[test]
     fn test_pawn_get_moveset_black_d2() {
         let piece = Kind::Pawn(Color::Black);
-        let start_square = Square::new("d2");
+        let start_square = Square::from("d2");
 
         let result = piece.get_moveset(start_square);
         let correct = vec![
-            Ply::builder(start_square, Square::new("d1"))
+            Ply::builder(start_square, Square::from("d1"))
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("d1"))
+            Ply::builder(start_square, Square::from("d1"))
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("d1"))
+            Ply::builder(start_square, Square::from("d1"))
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("d1"))
+            Ply::builder(start_square, Square::from("d1"))
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("e1"))
+            Ply::builder(start_square, Square::from("e1"))
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("e1"))
+            Ply::builder(start_square, Square::from("e1"))
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("e1"))
+            Ply::builder(start_square, Square::from("e1"))
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("e1"))
+            Ply::builder(start_square, Square::from("e1"))
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("c1"))
+            Ply::builder(start_square, Square::from("c1"))
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("c1"))
+            Ply::builder(start_square, Square::from("c1"))
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("c1"))
+            Ply::builder(start_square, Square::from("c1"))
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::new("c1"))
+            Ply::builder(start_square, Square::from("c1"))
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
         ];
