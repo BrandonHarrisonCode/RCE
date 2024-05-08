@@ -199,7 +199,7 @@ impl Square {
         for i in 0..64 {
             if mask & (1 << i) != 0 {
                 squares.push(Self {
-                    rank: i / 8,
+                    rank: i >> 3, // Divide by 8
                     file: 7 - (i % 8),
                 });
             }
