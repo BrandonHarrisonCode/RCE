@@ -24,6 +24,7 @@ mod tests {
     use super::*;
     use crate::board::Board;
     use indoc::indoc;
+    use pretty_assertions::assert_eq;
     use test::Bencher;
 
     pub fn perft(board: &mut Board, depth: u32) -> u64 {

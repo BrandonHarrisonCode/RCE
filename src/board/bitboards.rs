@@ -6,7 +6,7 @@ pub mod builder;
 use builder::Builder;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BitBoards {
+pub struct Bitboards {
     pub white_pawns: u64,
     pub white_king: u64,
     pub white_queens: u64,
@@ -25,13 +25,13 @@ pub struct BitBoards {
     pub all_pieces: u64,
 }
 
-impl Default for BitBoards {
+impl Default for Bitboards {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl BitBoards {
+impl Bitboards {
     pub const fn new() -> Self {
         Self {
             white_pawns: 0,
@@ -62,9 +62,9 @@ impl BitBoards {
     pub const fn default() -> Self {
         let white_pawns =
             0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000;
-        let white_king = 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000;
+        let white_king = 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000;
         let white_queens =
-            0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000;
+            0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000;
         let white_rooks =
             0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000001;
         let white_bishops =
@@ -73,9 +73,9 @@ impl BitBoards {
             0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000010;
         let black_pawns =
             0b_00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000;
-        let black_king = 0b_00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
+        let black_king = 0b_00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
         let black_queens =
-            0b_00010000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
+            0b_00001000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
         let black_rooks =
             0b_10000001_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
         let black_bishops =

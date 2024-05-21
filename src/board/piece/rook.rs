@@ -1,8 +1,9 @@
+use super::super::bitboard::Bitboard;
 use super::{Color, Piece, Ply, Square};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Rook {
-    rook_mask: [u64; 64],
+    rook_mask: [Bitboard; 64],
 }
 
 impl Eq for Rook {}
@@ -12,6 +13,7 @@ impl Piece for Rook {
     const BLACK_SYMBOL: &'static str = "♖";
 
     fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
+        Self::init_rook_masks();
         let move_mask = square.get_rank_mask() | square.get_file_mask();
         let squares = Square::get_squares_from_mask(move_mask);
 
@@ -20,22 +22,34 @@ impl Piece for Rook {
 }
 
 impl Rook {
+    #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
             rook_mask: Self::init_rook_masks(),
         }
     }
 
-    fn init_rook_masks() -> [u64; 64] {
-        let mut masks = [0; 64];
+    fn init_rook_masks() -> [Bitboard; 64] {
+        let mut masks: [Bitboard; 64] = [Bitboard::new(0); 64];
         for i in 0..64 {
-            let mut mask = 0;
             let square = Square::from(i);
 
-            let rank_mask = square.get_rank_mask();
-            let file_mask = square.get_file_mask();
+            let file_mask = Bitboard::new(square.get_file_mask());
+            let rank_mask = Bitboard::new(square.get_rank_mask());
+            let mask = (file_mask | rank_mask) & !(file_mask & rank_mask);
+            let trimmed = mask.trim_edges();
 
-            mask |= rank_mask | file_mask;
+            // println!("Square: {}", Square::from(i));
+            // dbg!(trimmed);
+
+            // dbg!(i);
+            /* dbg!(
+                crate::board::square::rays::RAYS
+                    .get_or_init(|| crate::board::square::rays::Rays::new())
+                    .rays[crate::board::square::Direction::NorthEast as usize][i as usize]
+            );
+            */
+            masks[i as usize] = trimmed;
         }
 
         masks
@@ -48,6 +62,7 @@ impl Rook {
 mod tests {
     use super::{Color, Piece, Ply, Rook, Square};
     use crate::board::Kind;
+    use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 
     #[test]

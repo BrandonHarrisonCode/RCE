@@ -1,5 +1,6 @@
 use std::fmt;
 
+pub mod bitboard;
 mod bitboards;
 mod boardbuilder;
 pub mod piece;
@@ -7,7 +8,7 @@ pub mod ply;
 pub mod serialize;
 pub mod square;
 
-use bitboards::BitBoards;
+use bitboards::Bitboards;
 use boardbuilder::BoardBuilder;
 use piece::{Color, Kind};
 pub use ply::Ply;
@@ -42,7 +43,7 @@ pub struct Board {
 
     en_passant_file: Option<u8>,
 
-    bitboards: BitBoards,
+    bitboards: Bitboards,
 
     history: Vec<Ply>,
 }
@@ -65,7 +66,7 @@ impl Default for Board {
             black_kingside_castling: CastlingStatus::Availiable,
             black_queenside_castling: CastlingStatus::Availiable,
 
-            bitboards: BitBoards::default(),
+            bitboards: Bitboards::default(),
 
             en_passant_file: None,
 
@@ -105,7 +106,7 @@ impl Board {
     /// ```
     pub fn construct_empty_board() -> Self {
         Self {
-            bitboards: BitBoards::new(),
+            bitboards: Bitboards::new(),
             ..Self::default()
         }
     }
@@ -543,10 +544,10 @@ impl Board {
 
     const fn no_pieces_between_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
         let pieces_blocking = match kind {
-            CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0x_00000000_00000006,
-            CastlingKind::WhiteQueenside => self.bitboards.all_pieces & 0x_00000000_00000070,
-            CastlingKind::BlackKingside => self.bitboards.all_pieces & 0x_06000000_00000000,
-            CastlingKind::BlackQueenside => self.bitboards.all_pieces & 0x_70000000_00000000,
+            CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0xE,
+            CastlingKind::WhiteQueenside => self.bitboards.all_pieces & 0x60,
+            CastlingKind::BlackKingside => self.bitboards.all_pieces & 0x_60000000_00000000,
+            CastlingKind::BlackQueenside => self.bitboards.all_pieces & 0x_E000000_00000000,
         };
 
         if pieces_blocking == 0 {
@@ -866,6 +867,7 @@ impl fmt::Display for Board {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_get_piece1() {
@@ -908,7 +910,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "attempt to subtract with overflow"]
+    #[should_panic = "called `Option::unwrap()` on a `None` value"]
     fn test_get_piece_ooblack_file() {
         let board = Board::construct_starting_board();
         board.get_piece(Square { rank: 0, file: 8 }).unwrap();
@@ -1284,6 +1286,7 @@ mod tests {
     #[test]
     fn test_get_legal_moves_count_from_position_9() {
         let board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        dbg!(board.get_legal_moves());
         let result = board.get_legal_moves().len();
         let correct = 26;
 
@@ -1293,6 +1296,7 @@ mod tests {
     #[test]
     fn test_get_legal_moves_count_from_position_10() {
         let board = Board::from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+        println!("{:}", board);
         let result = board.get_legal_moves().len();
         let correct = 25;
 

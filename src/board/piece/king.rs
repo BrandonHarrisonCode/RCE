@@ -57,6 +57,7 @@ impl Piece for King {
 mod tests {
     use super::{Color, King, Piece, Ply, Square};
     use crate::board::Kind;
+    use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 
     #[test]

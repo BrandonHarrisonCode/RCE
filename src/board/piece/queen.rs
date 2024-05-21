@@ -1,5 +1,7 @@
 use super::{Color, Piece, Ply, Square};
 
+use crate::board::bitboard::Bitboard;
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct Queen;
 
@@ -25,6 +27,8 @@ mod tests {
     use super::{Color, Piece, Ply, Queen, Square};
     use crate::board::Kind;
     use std::collections::HashSet;
+
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     fn test_queen_derived_traits() {

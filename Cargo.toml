@@ -18,3 +18,6 @@ indoc = "2.0.3"
 rand = "0.8.5"
 strum = "0.26.1"
 strum_macros = "0.26.1"
+
+[dev-dependencies]
+pretty_assertions = "1.4.0"

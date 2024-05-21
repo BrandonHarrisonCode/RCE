@@ -40,7 +40,7 @@ fn piece_placement(builder: BoardBuilder, str: &str) -> BoardBuilder {
             _ => panic!("Unknown FEN instruction: {chr}"),
         };
 
-        let mask: u64 = 1 << (63 - idx);
+        let mask: u64 = 1 << (8 * (7 - idx / 8) + idx % 8);
         match instruction {
             FENInstruction::Bitboard(bb) => *bb |= mask,
             FENInstruction::Skip(num) => idx += num - 1,
@@ -154,8 +154,9 @@ impl Board {
 
 #[cfg(test)]
 mod tests {
-    use super::super::bitboards::BitBoards;
+    use super::super::bitboards::Bitboards;
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn from_fen_starting_position() {
@@ -178,23 +179,24 @@ mod tests {
 
             en_passant_file: None,
 
-            bitboards: BitBoards::builder()
-                .pawns(Color::White, 271_368_960)
-                .pawns(Color::Black, 36_429_096_560_885_760)
-                .king(Color::White, 2)
-                .king(Color::Black, 4_611_686_018_427_387_904)
-                .queens(Color::White, 1_073_741_824)
-                .queens(Color::Black, 17_179_869_184)
-                .rooks(Color::White, 128)
-                .rooks(Color::Black, 1_224_979_098_644_774_912)
+            bitboards: Bitboards::builder()
+                .pawns(Color::White, 137675520)
+                .pawns(Color::Black, 36369954861219840)
+                .king(Color::White, 64)
+                .king(Color::Black, 144115188075855872)
+                .queens(Color::White, 33554432)
+                .queens(Color::Black, 137438953472)
+                .rooks(Color::White, 1)
+                .rooks(Color::Black, 9799832789158199296)
                 .bishops(Color::White, 0)
                 .bishops(Color::Black, 0)
-                .knights(Color::White, 137_438_953_472)
-                .knights(Color::Black, 4)
+                .knights(Color::White, 17179869184)
+                .knights(Color::Black, 32)
                 .build(),
             history: Vec::new(),
         };
 
+        dbg!(Board::from_fen(fen));
         assert_eq!(Board::from_fen(fen), correct);
     }
 
@@ -213,24 +215,25 @@ mod tests {
 
             en_passant_file: None,
 
-            bitboards: BitBoards::builder()
-                .pawns(Color::White, 337_691_392)
-                .pawns(Color::Black, 54_642_446_545_453_056)
-                .king(Color::White, 1024)
-                .king(Color::Black, 281_474_976_710_656)
-                .queens(Color::White, 4_294_967_296)
-                .queens(Color::Black, 4_398_046_511_104)
-                .rooks(Color::White, 65664)
-                .rooks(Color::Black, 8)
-                .bishops(Color::White, 1_048_608)
-                .bishops(Color::Black, 288_230_376_151_711_744)
-                .knights(Color::White, 4_503_599_627_370_496)
-                .knights(Color::Black, 17_660_905_521_152)
+            bitboards: Bitboards::builder()
+                .pawns(Color::White, 671400704)
+                .pawns(Color::Black, 19004096413433856)
+                .king(Color::White, 8192)
+                .king(Color::Black, 36028797018963968)
+                .queens(Color::White, 549755813888)
+                .queens(Color::Black, 35184372088832)
+                .rooks(Color::White, 8388609)
+                .rooks(Color::Black, 16)
+                .bishops(Color::White, 524292)
+                .bishops(Color::Black, 2305843009213693952)
+                .knights(Color::White, 2251799813685248)
+                .knights(Color::Black, 8830452760576)
                 .build(),
 
             history: Vec::new(),
         };
 
+        dbg!(Board::from_fen(fen));
         assert_eq!(Board::from_fen(fen), correct);
     }
 }

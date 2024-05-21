@@ -4,7 +4,7 @@ use super::Board;
 use super::CastlingStatus;
 
 use super::bitboards::builder::Builder;
-use super::bitboards::BitBoards;
+use super::bitboards::Bitboards;
 
 #[derive(Default)]
 pub struct BoardBuilder {
@@ -39,7 +39,7 @@ impl BoardBuilder {
 
             en_passant_file: None,
 
-            bitboards: BitBoards::builder(),
+            bitboards: Bitboards::builder(),
 
             history: Vec::new(),
         }
@@ -376,6 +376,7 @@ impl BoardBuilder {
 mod tests {
     use super::super::square::Square;
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn board_builder_default() {
@@ -466,7 +467,7 @@ mod tests {
             .pawns(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: BitBoards {
+            bitboards: Bitboards {
                 white_pawns: 1,
                 black_pawns: 2,
                 white_pieces: 1,
@@ -487,7 +488,7 @@ mod tests {
             .king(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: BitBoards {
+            bitboards: Bitboards {
                 white_king: 1,
                 black_king: 2,
                 white_pieces: 1,
@@ -507,7 +508,7 @@ mod tests {
             .queens(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: BitBoards {
+            bitboards: Bitboards {
                 white_queens: 1,
                 black_queens: 2,
                 white_pieces: 1,
@@ -528,7 +529,7 @@ mod tests {
             .rooks(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: BitBoards {
+            bitboards: Bitboards {
                 white_rooks: 1,
                 black_rooks: 2,
                 white_pieces: 1,
@@ -549,7 +550,7 @@ mod tests {
             .bishops(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: BitBoards {
+            bitboards: Bitboards {
                 white_bishops: 1,
                 black_bishops: 2,
                 white_pieces: 1,
@@ -570,7 +571,7 @@ mod tests {
             .knights(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: BitBoards {
+            bitboards: Bitboards {
                 white_knights: 1,
                 black_knights: 2,
                 white_pieces: 1,

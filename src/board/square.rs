@@ -1,10 +1,29 @@
 use std::convert::From;
 use std::fmt;
 
+pub mod rays;
+
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Square {
     pub rank: u8,
     pub file: u8,
+}
+
+pub struct Delta {
+    rank_delta: i8,
+    file_delta: i8,
+}
+
+#[derive(Clone, Copy)]
+pub enum Direction {
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
 }
 
 impl From<&str> for Square {
@@ -73,7 +92,7 @@ impl From<u8> for Square {
     /// let squareA8 = Square::from(0);
     /// ```
     fn from(value: u8) -> Self {
-        let file: u8 = 7 - (value % 8);
+        let file: u8 = value % 8;
         let rank: u8 = value >> 3;
         Self { rank, file }
     }
@@ -156,7 +175,7 @@ impl Square {
     /// let file_mask = Square::new("a1").get_file_mask();
     /// ```
     pub const fn get_file_mask(self) -> u64 {
-        0x_01010101_01010101 << (8 - (self.file + 1))
+        0x_01010101_01010101 << self.file
     }
 
     /// Creates a mask that marks both diagonals of a given square
@@ -173,6 +192,7 @@ impl Square {
         let start = self.u8();
         let mut mask = 0u64;
 
+        // Northwest
         let mut step: i128 = i128::from(start);
         while step < 64 {
             mask |= 1 << step;
@@ -182,6 +202,7 @@ impl Square {
             step += 7;
         }
 
+        // Northeast
         step = i128::from(start);
         while step < 64 {
             mask |= 1 << step;
@@ -191,6 +212,7 @@ impl Square {
             step += 9;
         }
 
+        // Southeast
         step = i128::from(start);
         while step >= 0 {
             mask |= 1 << step;
@@ -200,6 +222,7 @@ impl Square {
             step -= 7;
         }
 
+        // Southwest
         step = i128::from(start);
         while step >= 0 {
             mask |= 1 << step;
@@ -223,7 +246,7 @@ impl Square {
     /// let num = Square::new("a1").u8();
     /// ```
     fn u8(self) -> u8 {
-        (self.rank * 8 + (7 - self.file)).into()
+        (self.rank * 8 + self.file).into()
     }
 
     /// Returns a vector of squares that match a given mask
@@ -241,10 +264,7 @@ impl Square {
 
         for i in 0..64 {
             if mask & (1 << i) != 0 {
-                squares.push(Self {
-                    rank: i >> 3, // Divide by 8
-                    file: 7 - (i % 8),
-                });
+                squares.push(Self::from(i));
             }
         }
 
@@ -318,29 +338,13 @@ impl fmt::Display for Square {
     }
 }
 
-pub struct Delta {
-    rank_delta: i8,
-    file_delta: i8,
-}
-
-#[derive(Clone, Copy)]
-pub enum Direction {
-    North,
-    NorthEast,
-    East,
-    SouthEast,
-    South,
-    SouthWest,
-    West,
-    NorthWest,
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {
     use super::super::super::utils::*;
     use super::*;
+    use pretty_assertions::assert_eq;
     use std::collections::HashSet;
 
     #[test]
@@ -570,7 +574,7 @@ mod tests {
     fn test_get_file_mask_h6() {
         let start_square = Square::from("h6");
         let result = start_square.get_file_mask();
-        let correct = 0b_00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
+        let correct = 0b_10000000_10000000_10000000_10000000_10000000_10000000_10000000_10000000;
 
         assert_eq!(
             result,
@@ -585,7 +589,7 @@ mod tests {
     fn test_get_file_mask_a1() {
         let start_square = Square::from("a1");
         let result = start_square.get_file_mask();
-        let correct = 0b_10000000_10000000_10000000_10000000_10000000_10000000_10000000_10000000;
+        let correct = 0b_00000001_00000001_00000001_00000001_00000001_00000001_00000001_00000001;
 
         assert_eq!(
             result,
@@ -600,7 +604,7 @@ mod tests {
     fn test_get_file_mask_b8() {
         let start_square = Square::from("b8");
         let result = start_square.get_file_mask();
-        let correct = 0b_01000000_01000000_01000000_01000000_01000000_01000000_01000000_01000000;
+        let correct = 0b_00000010_00000010_00000010_00000010_00000010_00000010_00000010_00000010;
 
         assert_eq!(
             result,
@@ -893,7 +897,7 @@ mod tests {
     fn test_u8_a1() {
         let start_square = Square::from("a1");
         let result = start_square.u8();
-        let correct = 7;
+        let correct = 0;
 
         assert_eq!(result, correct);
     }
@@ -902,7 +906,7 @@ mod tests {
     fn test_u8_h1() {
         let start_square = Square::from("h1");
         let result = start_square.u8();
-        let correct = 0;
+        let correct = 7;
 
         assert_eq!(result, correct);
     }
@@ -911,7 +915,7 @@ mod tests {
     fn test_u8_a8() {
         let start_square = Square::from("a8");
         let result = start_square.u8();
-        let correct = 63;
+        let correct = 56;
 
         assert_eq!(result, correct);
     }
@@ -920,7 +924,7 @@ mod tests {
     fn test_u8_h8() {
         let start_square = Square::from("h8");
         let result = start_square.u8();
-        let correct = 56;
+        let correct = 63;
 
         assert_eq!(result, correct);
     }
@@ -929,7 +933,7 @@ mod tests {
     fn test_u8_c5() {
         let start_square = Square::from("c5");
         let result = start_square.u8();
-        let correct = 37;
+        let correct = 34;
 
         assert_eq!(result, correct);
     }
@@ -938,7 +942,7 @@ mod tests {
     fn test_u8_f3() {
         let start_square = Square::from("f3");
         let result = start_square.u8();
-        let correct = 18;
+        let correct = 21;
 
         assert_eq!(result, correct);
     }
@@ -1062,7 +1066,7 @@ mod tests {
 
     #[test]
     fn test_from() {
-        for file in (b'a'..=b'h').map(char::from).rev() {
+        for file in (b'a'..=b'h').map(char::from) {
             for rank in 1..=8 {
                 let square = Square::from(format!("{}{}", file, rank));
                 let num = square.u8();

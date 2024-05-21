@@ -1,4 +1,4 @@
-use super::BitBoards;
+use super::Bitboards;
 use crate::board::piece::Color;
 
 #[derive(Default)]
@@ -15,10 +15,6 @@ pub struct Builder {
     pub black_rooks: u64,
     pub black_queens: u64,
     pub black_king: u64,
-
-    pub white_pieces: u64,
-    pub black_pieces: u64,
-    pub all_pieces: u64,
 }
 
 impl Builder {
@@ -37,10 +33,6 @@ impl Builder {
             black_rooks: 0,
             black_bishops: 0,
             black_knights: 0,
-
-            white_pieces: 0,
-            black_pieces: 0,
-            all_pieces: 0,
         }
     }
 
@@ -58,7 +50,7 @@ impl Builder {
     ///
     /// let bitboards: BitBoards = BitBoardsBuilder::default().pawns(Color::White, 5).build();
     /// ```
-    pub fn build(&mut self) -> BitBoards {
+    pub fn build(&mut self) -> Bitboards {
         let white_pieces = self.white_pawns
             | self.white_king
             | self.white_queens
@@ -72,7 +64,7 @@ impl Builder {
             | self.black_bishops
             | self.black_knights;
         let all_pieces = white_pieces | black_pieces;
-        BitBoards {
+        Bitboards {
             white_pawns: self.white_pawns,
             white_king: self.white_king,
             white_queens: self.white_queens,

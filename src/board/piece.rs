@@ -120,6 +120,7 @@ pub trait Piece: Clone + PartialEq + Eq {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
     fn test_derived_traits_piece() {

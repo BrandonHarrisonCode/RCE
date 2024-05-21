@@ -139,6 +139,7 @@ impl Builder {
 mod tests {
     use super::super::piece::{Color, Kind};
     use super::*;
+    use pretty_assertions::assert_eq;
 
     #[test]
     fn test_derived_traits() {
