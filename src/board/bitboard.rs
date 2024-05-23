@@ -20,14 +20,14 @@ pub enum Rank {
 #[repr(u64)]
 #[allow(dead_code)]
 pub enum File {
-    A = 0x80808080_80808080,
-    B = 0x40404040_40404040,
-    C = 0x20202020_20202020,
-    D = 0x10101010_10101010,
-    E = 0x08080808_08080808,
-    F = 0x04040404_04040404,
-    G = 0x02020202_02020202,
-    H = 0x01010101_01010101,
+    A = 0x01010101_01010101,
+    B = 0x02020202_02020202,
+    C = 0x04040404_04040404,
+    D = 0x08080808_08080808,
+    E = 0x10101010_10101010,
+    F = 0x20202020_20202020,
+    G = 0x40404040_40404040,
+    H = 0x80808080_80808080,
 }
 
 impl Deref for Bitboard {
@@ -150,5 +150,23 @@ impl Bitboard {
             & !(Rank::Eighth as u64)
             & !(File::A as u64)
             & !(File::H as u64)
+    }
+
+    pub fn shift_east(self, n: u8) -> Bitboard {
+        let mut output = self;
+        for _ in 0..n {
+            output = (output << 1) & !(File::A as u64);
+        }
+
+        output
+    }
+
+    pub fn shift_west(self, n: u8) -> Bitboard {
+        let mut output = self;
+        for _ in 0..n {
+            output = (output >> 1) & !(File::H as u64);
+        }
+
+        output
     }
 }

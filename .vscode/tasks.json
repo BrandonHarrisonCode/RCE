@@ -67,5 +67,16 @@
 			"group": "build",
 			"label": "rust: cargo doc"
 		},
+		{
+			"type": "cargo",
+			"command": "bench",
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": {
+				"kind": "test",
+			},
+			"label": "rust: cargo bench"
+		},
 	]
 }

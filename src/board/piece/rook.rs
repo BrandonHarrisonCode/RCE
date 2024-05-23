@@ -42,13 +42,12 @@ impl Rook {
             // println!("Square: {}", Square::from(i));
             // dbg!(trimmed);
 
-            // dbg!(i);
-            /* dbg!(
+            dbg!(i);
+            dbg!(
                 crate::board::square::rays::RAYS
                     .get_or_init(|| crate::board::square::rays::Rays::new())
-                    .rays[crate::board::square::Direction::NorthEast as usize][i as usize]
+                    .rays[crate::board::square::Direction::NorthWest as usize][i as usize]
             );
-            */
             masks[i as usize] = trimmed;
         }
 
