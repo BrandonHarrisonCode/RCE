@@ -46,7 +46,7 @@ impl Rook {
             dbg!(
                 crate::board::square::rays::RAYS
                     .get_or_init(|| crate::board::square::rays::Rays::new())
-                    .rays[crate::board::square::Direction::NorthWest as usize][i as usize]
+                    .rays[i as usize][crate::board::square::Direction::NorthWest as usize]
             );
             masks[i as usize] = trimmed;
         }
