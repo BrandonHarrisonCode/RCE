@@ -1,7 +1,12 @@
+use super::super::bitboard::Bitboard;
 use super::{Color, Piece, Ply, Square};
+use crate::board::square::rays::RAYS;
+use crate::board::square::Direction;
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Bishop;
+pub struct Bishop {
+    masks: [Bitboard; 64],
+}
 
 impl Eq for Bishop {}
 
@@ -10,10 +15,41 @@ impl Piece for Bishop {
     const BLACK_SYMBOL: &'static str = "♗";
 
     fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
+        Self::init_bishop_masks();
         let move_mask = square.get_diagonals_mask();
         let squares = Square::get_squares_from_mask(move_mask);
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
+    }
+}
+
+impl Bishop {
+    #[allow(dead_code)]
+    pub fn new() -> Self {
+        Self {
+            masks: Self::init_bishop_masks(),
+        }
+    }
+
+    fn init_bishop_masks() -> [Bitboard; 64] {
+        let mut masks: [Bitboard; 64] = [Bitboard::new(0); 64];
+        let rays = RAYS
+            .get_or_init(|| crate::board::square::rays::Rays::new())
+            .rays;
+
+        for i in 0..64u8 {
+            let mask: Bitboard = rays[i as usize][Direction::NorthEast as usize]
+                | rays[i as usize][Direction::SouthEast as usize]
+                | rays[i as usize][Direction::SouthWest as usize]
+                | rays[i as usize][Direction::NorthWest as usize];
+            let trimmed = mask.trim_edges();
+
+            masks[i as usize] = trimmed;
+        }
+
+        dbg!(masks);
+
+        masks
     }
 }
 
@@ -28,7 +64,7 @@ mod tests {
 
     #[test]
     fn test_bishop_derived_traits() {
-        let piece = Bishop {};
+        let piece = Bishop::new();
         dbg!(&piece);
 
         assert_eq!(piece, piece.clone());

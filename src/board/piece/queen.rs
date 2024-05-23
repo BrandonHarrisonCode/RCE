@@ -1,7 +1,5 @@
 use super::{Color, Piece, Ply, Square};
 
-use crate::board::bitboard::Bitboard;
-
 #[derive(Clone, PartialEq, Debug)]
 pub struct Queen;
 

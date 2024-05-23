@@ -1,9 +1,11 @@
 use super::super::bitboard::Bitboard;
 use super::{Color, Piece, Ply, Square};
+use crate::board::square::rays::RAYS;
+use crate::board::square::Direction;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Rook {
-    rook_mask: [Bitboard; 64],
+    masks: [Bitboard; 64],
 }
 
 impl Eq for Rook {}
@@ -25,29 +27,23 @@ impl Rook {
     #[allow(dead_code)]
     pub fn new() -> Self {
         Self {
-            rook_mask: Self::init_rook_masks(),
+            masks: Self::init_rook_masks(),
         }
     }
 
     fn init_rook_masks() -> [Bitboard; 64] {
         let mut masks: [Bitboard; 64] = [Bitboard::new(0); 64];
-        for i in 0..64 {
-            let square = Square::from(i);
+        let rays = RAYS
+            .get_or_init(|| crate::board::square::rays::Rays::new())
+            .rays;
 
-            let file_mask = Bitboard::new(square.get_file_mask());
-            let rank_mask = Bitboard::new(square.get_rank_mask());
-            let mask = (file_mask | rank_mask) & !(file_mask & rank_mask);
+        for i in 0..64u8 {
+            let mask: Bitboard = rays[i as usize][Direction::North as usize]
+                | rays[i as usize][Direction::East as usize]
+                | rays[i as usize][Direction::South as usize]
+                | rays[i as usize][Direction::West as usize];
             let trimmed = mask.trim_edges();
 
-            // println!("Square: {}", Square::from(i));
-            // dbg!(trimmed);
-
-            dbg!(i);
-            dbg!(
-                crate::board::square::rays::RAYS
-                    .get_or_init(|| crate::board::square::rays::Rays::new())
-                    .rays[i as usize][crate::board::square::Direction::NorthWest as usize]
-            );
             masks[i as usize] = trimmed;
         }
 
