@@ -2,11 +2,14 @@ use super::super::bitboard::Bitboard;
 use super::{Color, Piece, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
+use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Bishop {
     masks: [Bitboard; 64],
 }
+
+pub static BISHOPS: OnceLock<Bishop> = OnceLock::new();
 
 impl Eq for Bishop {}
 
@@ -15,9 +18,9 @@ impl Piece for Bishop {
     const BLACK_SYMBOL: &'static str = "♗";
 
     fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
-        Self::init_bishop_masks();
-        let move_mask = square.get_diagonals_mask();
-        let squares = Square::get_squares_from_mask(move_mask);
+        let bishops = BISHOPS.get_or_init(|| Bishop::new());
+        let move_mask = bishops.masks[square.u8() as usize];
+        let squares = Square::get_squares_from_mask(move_mask.into());
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
     }
@@ -42,7 +45,8 @@ impl Bishop {
                 | rays[i as usize][Direction::SouthEast as usize]
                 | rays[i as usize][Direction::SouthWest as usize]
                 | rays[i as usize][Direction::NorthWest as usize];
-            let trimmed = mask.trim_edges();
+            // let trimmed = mask.trim_edges();
+            let trimmed = mask;
 
             masks[i as usize] = trimmed;
         }

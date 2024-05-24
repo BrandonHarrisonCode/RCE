@@ -245,7 +245,7 @@ impl Square {
     /// ```
     /// let num = Square::new("a1").u8();
     /// ```
-    fn u8(self) -> u8 {
+    pub fn u8(self) -> u8 {
         (self.rank * 8 + self.file).into()
     }
 

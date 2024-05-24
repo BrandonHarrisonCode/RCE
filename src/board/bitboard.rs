@@ -127,6 +127,18 @@ impl fmt::Debug for Bitboard {
     }
 }
 
+impl From<u64> for Bitboard {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<Bitboard> for u64 {
+    fn from(bitboard: Bitboard) -> Self {
+        bitboard.0
+    }
+}
+
 impl Bitboard {
     pub fn new(value: u64) -> Self {
         Self(value)

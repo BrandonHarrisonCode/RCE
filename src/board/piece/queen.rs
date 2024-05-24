@@ -1,4 +1,5 @@
 use super::{Color, Piece, Ply, Square};
+use crate::board::bitboard::Bitboard;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Queen;
@@ -12,7 +13,7 @@ impl Piece for Queen {
     fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
         let move_mask =
             square.get_rank_mask() | square.get_file_mask() | square.get_diagonals_mask();
-        let squares = Square::get_squares_from_mask(move_mask);
+        let squares = Square::get_squares_from_mask(move_mask.into());
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
     }

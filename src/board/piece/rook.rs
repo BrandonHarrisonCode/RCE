@@ -2,11 +2,14 @@ use super::super::bitboard::Bitboard;
 use super::{Color, Piece, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
+use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Rook {
     masks: [Bitboard; 64],
 }
+
+pub static ROOKS: OnceLock<Rook> = OnceLock::new();
 
 impl Eq for Rook {}
 
@@ -15,9 +18,9 @@ impl Piece for Rook {
     const BLACK_SYMBOL: &'static str = "♖";
 
     fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
-        Self::init_rook_masks();
-        let move_mask = square.get_rank_mask() | square.get_file_mask();
-        let squares = Square::get_squares_from_mask(move_mask);
+        let rooks = ROOKS.get_or_init(|| Rook::new());
+        let move_mask = rooks.masks[square.u8() as usize];
+        let squares = Square::get_squares_from_mask(move_mask.into());
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
     }
@@ -42,7 +45,8 @@ impl Rook {
                 | rays[i as usize][Direction::East as usize]
                 | rays[i as usize][Direction::South as usize]
                 | rays[i as usize][Direction::West as usize];
-            let trimmed = mask.trim_edges();
+            // let trimmed = mask.trim_edges();
+            let trimmed = mask;
 
             masks[i as usize] = trimmed;
         }
