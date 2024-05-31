@@ -8,6 +8,9 @@ use std::sync::OnceLock;
 #[derive(Clone, PartialEq, Debug)]
 pub struct Rook;
 
+static MASKS: OnceLock<[Bitboard; 64]> = OnceLock::new();
+static ATTACKS: OnceLock<[Vec<Bitboard>; 64]> = OnceLock::new();
+
 impl Eq for Rook {}
 
 impl Piece for Rook {
@@ -43,12 +46,12 @@ impl Magic for Rook {
 
     fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard {
         let masked_blockers =
-            blockers & Self::MASKS.get_or_init(|| Self::init_masks())[square.u8() as usize];
+            blockers & MASKS.get_or_init(|| Self::init_masks())[square.u8() as usize];
         let key: u64 = ((masked_blockers * Self::MAGICS[square.u8() as usize])
             >> (64 - Self::INDEX_BITS[square.u8() as usize]).into())
         .into();
 
-        Self::ATTACKS.get_or_init(|| Self::init_attacks())[square.u8() as usize][key as usize]
+        ATTACKS.get_or_init(|| Self::init_attacks())[square.u8() as usize][key as usize]
     }
 
     fn get_attacks_slow(square: Square, blockers: Bitboard) -> Bitboard {
@@ -162,8 +165,6 @@ impl Rook {
         10, 11, 11, 10, 10, 10, 10, 10, 10, 11, 12, 11, 11, 11, 11, 11, 11, 12,
     ];
 
-    const MASKS: OnceLock<[Bitboard; 64]> = OnceLock::new();
-    const ATTACKS: OnceLock<[Vec<Bitboard>; 64]> = OnceLock::new();
 
     fn init_attacks() -> [Vec<Bitboard>; 64] {
         let mut attacks: [Vec<Bitboard>; 64] = core::array::from_fn(|_| Vec::<Bitboard>::with_capacity(4096));
@@ -172,7 +173,7 @@ impl Rook {
             for idx in 0u16..(1 << Self::INDEX_BITS[square as usize]) {
                 let blockers: Bitboard = Self::get_blockers_from_index(
                     idx,
-                    Self::MASKS.get_or_init(|| Self::init_masks())[square as usize],
+                    MASKS.get_or_init(|| Self::init_masks())[square as usize],
                 );
                 let second_index = (blockers.wrapping_mul(Self::MAGICS[square as usize])) >> (64 - Self::INDEX_BITS[square as usize]);
                 let value = Self::get_attacks_slow(Square::from(square), blockers);

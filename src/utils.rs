@@ -73,6 +73,18 @@ pub mod tests {
     }
 
     #[bench]
+    fn bench_perft_depth_1(bencher: &mut Bencher) {
+        let mut board = Board::construct_starting_board();
+        bencher.iter(|| perft(&mut board, 1));
+    }
+
+    #[bench]
+    fn bench_perft_depth_2(bencher: &mut Bencher) {
+        let mut board = Board::construct_starting_board();
+        bencher.iter(|| perft(&mut board, 2));
+    }
+
+    #[bench]
     fn bench_perft_depth_3(bencher: &mut Bencher) {
         let mut board = Board::construct_starting_board();
         bencher.iter(|| perft(&mut board, 3));
