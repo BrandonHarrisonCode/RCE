@@ -187,6 +187,10 @@ impl Rook {
 
         attacks
     }
+
+    pub fn get_attacks_wrapper(square: Square, blockers: Bitboard) -> Bitboard {
+        Self::get_attacks(square, blockers)
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
