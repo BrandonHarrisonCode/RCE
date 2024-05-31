@@ -1,5 +1,5 @@
 use super::{Color, Piece, Ply, Square};
-use crate::board::bitboard::Bitboard;
+use crate::board::Board;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Queen;
@@ -10,7 +10,7 @@ impl Piece for Queen {
     const WHITE_SYMBOL: &'static str = "♛";
     const BLACK_SYMBOL: &'static str = "♕";
 
-    fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
         let move_mask =
             square.get_rank_mask() | square.get_file_mask() | square.get_diagonals_mask();
         let squares = Square::get_squares_from_mask(move_mask.into());
@@ -24,7 +24,7 @@ impl Piece for Queen {
 #[cfg(test)]
 mod tests {
     use super::{Color, Piece, Ply, Queen, Square};
-    use crate::board::Kind;
+    use crate::board::{Kind, Board};
     use std::collections::HashSet;
 
     use pretty_assertions::{assert_eq, assert_ne};
@@ -96,10 +96,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_a1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::White);
         let start_square = Square::from("a1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("b2")),
             Ply::new(start_square, Square::from("c3")),
@@ -131,10 +132,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_b1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::White);
         let start_square = Square::from("b1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("c2")),
             Ply::new(start_square, Square::from("d3")),
@@ -166,10 +168,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_e4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::White);
         let start_square = Square::from("e4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("f5")),
             Ply::new(start_square, Square::from("g6")),
@@ -207,10 +210,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_d4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::White);
         let start_square = Square::from("d4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("e5")),
             Ply::new(start_square, Square::from("f6")),
@@ -248,10 +252,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_g6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::White);
         let start_square = Square::from("g6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("h7")),
             Ply::new(start_square, Square::from("h5")),
@@ -285,10 +290,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_white_h6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::White);
         let start_square = Square::from("h6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("g7")),
             Ply::new(start_square, Square::from("f8")),
@@ -320,10 +326,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_a1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::Black);
         let start_square = Square::from("a1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("b2")),
             Ply::new(start_square, Square::from("c3")),
@@ -355,10 +362,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_b1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::Black);
         let start_square = Square::from("b1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("c2")),
             Ply::new(start_square, Square::from("d3")),
@@ -390,10 +398,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_e4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::Black);
         let start_square = Square::from("e4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("f5")),
             Ply::new(start_square, Square::from("g6")),
@@ -431,10 +440,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_d4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::Black);
         let start_square = Square::from("d4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("e5")),
             Ply::new(start_square, Square::from("f6")),
@@ -472,10 +482,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_g6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::Black);
         let start_square = Square::from("g6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("h7")),
             Ply::new(start_square, Square::from("h5")),
@@ -509,10 +520,11 @@ mod tests {
 
     #[test]
     fn test_queen_get_moveset_black_h6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Queen(Color::Black);
         let start_square = Square::from("h6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("g7")),
             Ply::new(start_square, Square::from("f8")),

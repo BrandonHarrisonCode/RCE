@@ -2,6 +2,7 @@ use super::super::bitboard::Bitboard;
 use super::{Color, Piece, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
+use crate::board::Board;
 use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -17,7 +18,7 @@ impl Piece for Bishop {
     const WHITE_SYMBOL: &'static str = "♝";
     const BLACK_SYMBOL: &'static str = "♗";
 
-    fn get_moveset(square: Square, _: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
         let bishops = BISHOPS.get_or_init(|| Bishop::new());
         let move_mask = bishops.masks[square.u8() as usize];
         let squares = Square::get_squares_from_mask(move_mask.into());
@@ -51,8 +52,6 @@ impl Bishop {
             masks[i as usize] = trimmed;
         }
 
-        dbg!(masks);
-
         masks
     }
 }
@@ -62,7 +61,7 @@ impl Bishop {
 #[cfg(test)]
 mod tests {
     use super::{Bishop, Color, Piece, Ply, Square};
-    use crate::board::Kind;
+    use crate::board::{Board, Kind};
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 
@@ -133,10 +132,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_white_a1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("a1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("b2")),
             Ply::new(start_square, Square::from("c3")),
@@ -154,10 +154,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_white_b1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("b1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("c2")),
             Ply::new(start_square, Square::from("d3")),
@@ -175,10 +176,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_white_e4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("e4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("f5")),
             Ply::new(start_square, Square::from("g6")),
@@ -202,10 +204,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_white_d4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("d4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("e5")),
             Ply::new(start_square, Square::from("f6")),
@@ -229,10 +232,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_white_g6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("g6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("h7")),
             Ply::new(start_square, Square::from("h5")),
@@ -252,10 +256,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_white_h6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("h6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("g7")),
             Ply::new(start_square, Square::from("f8")),
@@ -273,10 +278,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_black_a1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("a1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("b2")),
             Ply::new(start_square, Square::from("c3")),
@@ -294,10 +300,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_black_b1() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("b1");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("c2")),
             Ply::new(start_square, Square::from("d3")),
@@ -315,10 +322,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_black_e4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("e4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("f5")),
             Ply::new(start_square, Square::from("g6")),
@@ -342,10 +350,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_black_d4() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("d4");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("e5")),
             Ply::new(start_square, Square::from("f6")),
@@ -369,10 +378,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_black_g6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("g6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("h7")),
             Ply::new(start_square, Square::from("h5")),
@@ -392,10 +402,11 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_black_h6() {
+        let board = Board::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("h6");
 
-        let result = piece.get_moveset(start_square);
+        let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("g7")),
             Ply::new(start_square, Square::from("f8")),

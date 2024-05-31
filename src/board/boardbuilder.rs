@@ -376,6 +376,7 @@ impl BoardBuilder {
 mod tests {
     use super::super::square::Square;
     use super::*;
+    use super::super::bitboard::Bitboard;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -468,11 +469,11 @@ mod tests {
             .build();
         let correct = Board {
             bitboards: Bitboards {
-                white_pawns: 1,
-                black_pawns: 2,
-                white_pieces: 1,
-                black_pieces: 2,
-                all_pieces: 1 | 2,
+                white_pawns: Bitboard::new(1),
+                black_pawns: Bitboard::new(2),
+                white_pieces: Bitboard::new(1),
+                black_pieces: Bitboard::new(2),
+                all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
             ..Board::construct_empty_board()
@@ -489,11 +490,11 @@ mod tests {
             .build();
         let correct = Board {
             bitboards: Bitboards {
-                white_king: 1,
-                black_king: 2,
-                white_pieces: 1,
-                black_pieces: 2,
-                all_pieces: 1 | 2,
+                white_king: Bitboard::new(1),
+                black_king: Bitboard::new(2),
+                white_pieces: Bitboard::new(1),
+                black_pieces: Bitboard::new(2),
+                all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
             ..Board::construct_empty_board()
@@ -509,11 +510,11 @@ mod tests {
             .build();
         let correct = Board {
             bitboards: Bitboards {
-                white_queens: 1,
-                black_queens: 2,
-                white_pieces: 1,
-                black_pieces: 2,
-                all_pieces: 1 | 2,
+                white_queens: Bitboard::new(1),
+                black_queens: Bitboard::new(2),
+                white_pieces: Bitboard::new(1),
+                black_pieces: Bitboard::new(2),
+                all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
             ..Board::construct_empty_board()
@@ -530,11 +531,11 @@ mod tests {
             .build();
         let correct = Board {
             bitboards: Bitboards {
-                white_rooks: 1,
-                black_rooks: 2,
-                white_pieces: 1,
-                black_pieces: 2,
-                all_pieces: 1 | 2,
+                white_rooks: Bitboard::new(1),
+                black_rooks: Bitboard::new(2),
+                white_pieces: Bitboard::new(1),
+                black_pieces: Bitboard::new(2),
+                all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
             ..Board::construct_empty_board()
@@ -551,11 +552,11 @@ mod tests {
             .build();
         let correct = Board {
             bitboards: Bitboards {
-                white_bishops: 1,
-                black_bishops: 2,
-                white_pieces: 1,
-                black_pieces: 2,
-                all_pieces: 1 | 2,
+                white_bishops: Bitboard::new(1),
+                black_bishops: Bitboard::new(2),
+                white_pieces: Bitboard::new(1),
+                black_pieces: Bitboard::new(2),
+                all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
             ..Board::construct_empty_board()
@@ -572,11 +573,11 @@ mod tests {
             .build();
         let correct = Board {
             bitboards: Bitboards {
-                white_knights: 1,
-                black_knights: 2,
-                white_pieces: 1,
-                black_pieces: 2,
-                all_pieces: 1 | 2,
+                white_knights: Bitboard::new(1),
+                black_knights: Bitboard::new(2),
+                white_pieces: Bitboard::new(1),
+                black_pieces: Bitboard::new(2),
+                all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
             ..Board::construct_empty_board()

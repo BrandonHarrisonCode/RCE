@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::{BitAnd, BitOr, BitXor, Deref, Not, Shl, Shr};
+use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, Deref, Not, Shl, Shr, ShlAssign, ShrAssign, Mul};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Bitboard(u64);
@@ -46,11 +46,23 @@ impl BitAnd for Bitboard {
     }
 }
 
+impl BitAndAssign for Bitboard {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.0 &= rhs.0;
+    }
+}
+
 impl BitOr for Bitboard {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self::Output {
         Self(self.0 | rhs.0)
+    }
+}
+
+impl BitOrAssign for Bitboard {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.0 |= rhs.0
     }
 }
 
@@ -62,11 +74,25 @@ impl BitXor for Bitboard {
     }
 }
 
+impl Mul for Bitboard {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0.wrapping_mul(rhs.0))
+    }
+}
+
 impl BitAnd<u64> for Bitboard {
     type Output = Self;
 
     fn bitand(self, rhs: u64) -> Self::Output {
         Self(self.0 & rhs)
+    }
+}
+
+impl BitAndAssign<u64> for Bitboard {
+    fn bitand_assign(&mut self, rhs: u64) {
+        self.0 &= rhs;
     }
 }
 
@@ -78,11 +104,25 @@ impl BitOr<u64> for Bitboard {
     }
 }
 
+impl BitOrAssign<u64> for Bitboard {
+    fn bitor_assign(&mut self, rhs: u64) {
+        self.0 |= rhs;
+    }
+}
+
 impl BitXor<u64> for Bitboard {
     type Output = Self;
 
     fn bitxor(self, rhs: u64) -> Self::Output {
         Self(self.0 ^ rhs)
+    }
+}
+
+impl Mul<u64> for Bitboard {
+    type Output = Self;
+
+    fn mul(self, rhs: u64) -> Self::Output {
+        Self(self.0.wrapping_mul(rhs))
     }
 }
 
@@ -102,6 +142,17 @@ impl Shr<usize> for Bitboard {
     }
 }
 
+impl ShlAssign<u32> for Bitboard {
+    fn shl_assign(&mut self, rhs: u32) {
+        self.0 = self.0.checked_shl(rhs).unwrap_or(0);
+    }
+}
+
+impl ShrAssign<usize> for Bitboard {
+    fn shr_assign(&mut self, rhs: usize) {
+        self.0 = self.0 >> rhs;
+    }
+}
 impl Not for Bitboard {
     type Output = Self;
 
@@ -127,6 +178,18 @@ impl fmt::Debug for Bitboard {
     }
 }
 
+impl From<usize> for Bitboard {
+    fn from(value: usize) -> Self {
+        Self(value as u64)
+    }
+}
+
+impl From<Bitboard> for usize {
+    fn from(bitboard: Bitboard) -> Self {
+        bitboard.0 as usize
+    }
+}
+
 impl From<u64> for Bitboard {
     fn from(value: u64) -> Self {
         Self(value)
@@ -140,8 +203,12 @@ impl From<Bitboard> for u64 {
 }
 
 impl Bitboard {
-    pub fn new(value: u64) -> Self {
+    pub const fn new(value: u64) -> Self {
         Self(value)
+    }
+
+    pub const fn is_empty(self) -> bool {
+        self.0 == 0
     }
 
     /// Removes the edges of the bitboard, i.e. the first and eighth ranks and the a and h files
@@ -180,5 +247,24 @@ impl Bitboard {
         }
 
         output
+    }
+
+    pub fn count_ones(self) -> u32 {
+        self.0.count_ones()
+    }
+
+    pub fn drop_forward(&mut self) -> u32 {
+        let idx = self.bitscan_forward();
+        self.0 &= self.0 - 1;
+        idx
+    }
+
+    pub fn bitscan_forward(self) -> u32 {
+        assert_ne!(self.0, 0) ;
+        self.0.trailing_zeros()
+    }
+
+    pub fn bitscan_reverse(self) -> u32 {
+        63 - self.0.leading_zeros()
     }
 }

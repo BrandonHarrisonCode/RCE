@@ -3,7 +3,7 @@ use std::fmt;
 
 pub mod rays;
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Default, Ord, PartialOrd)]
 pub struct Square {
     pub rank: u8,
     pub file: u8,
@@ -342,7 +342,7 @@ impl fmt::Display for Square {
 
 #[cfg(test)]
 mod tests {
-    use super::super::super::utils::*;
+    use crate::board::bitboard::Bitboard;
     use super::*;
     use pretty_assertions::assert_eq;
     use std::collections::HashSet;
@@ -534,9 +534,9 @@ mod tests {
         assert_eq!(
             result,
             correct,
-            "Rank mask for h6 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(correct),
-            debug_bitboard(result),
+            "Rank mask for h6 is incorrect: \nExpected: {:?}\n Got: {:?}",
+            Bitboard::new(correct),
+            Bitboard::new(result),
         );
     }
 
@@ -549,9 +549,9 @@ mod tests {
         assert_eq!(
             result,
             correct,
-            "Rank mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(correct),
-            debug_bitboard(result),
+            "Rank mask for a2 is incorrect: \nExpected: {:?}\n Got: {:?}",
+            Bitboard::new(correct),
+            Bitboard::new(result),
         );
     }
 
@@ -564,9 +564,9 @@ mod tests {
         assert_eq!(
             result,
             correct,
-            "Rank mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(correct),
-            debug_bitboard(result),
+            "Rank mask for a2 is incorrect: \nExpected: {:?}\n Got: {:?}",
+            Bitboard::new(correct),
+            Bitboard::new(result),
         );
     }
 
@@ -579,9 +579,9 @@ mod tests {
         assert_eq!(
             result,
             correct,
-            "File mask for h6 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(correct),
-            debug_bitboard(result),
+            "File mask for h6 is incorrect: \nExpected: {:?}\n Got: {:?}",
+            Bitboard::new(correct),
+            Bitboard::new(result),
         );
     }
 
@@ -594,9 +594,9 @@ mod tests {
         assert_eq!(
             result,
             correct,
-            "File mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(correct),
-            debug_bitboard(result),
+            "File mask for a2 is incorrect: \nExpected: {:?}\n Got: {:?}",
+            Bitboard::new(correct),
+            Bitboard::new(result),
         );
     }
 
@@ -609,9 +609,9 @@ mod tests {
         assert_eq!(
             result,
             correct,
-            "File mask for a2 is incorrect: \nExpected: {}\n Got: {}",
-            debug_bitboard(correct),
-            debug_bitboard(result),
+            "File mask for a2 is incorrect: \nExpected: {:?}\n Got: {:?}",
+            Bitboard::new(correct),
+            Bitboard::new(result),
         );
     }
 

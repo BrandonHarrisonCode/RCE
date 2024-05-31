@@ -2,6 +2,9 @@ use std::fmt;
 
 use super::ply::Ply;
 use super::square::{Direction, Square};
+use super::bitboard::Bitboard;
+
+use crate::board::Board;
 
 pub mod bishop;
 pub mod king;
@@ -9,6 +12,7 @@ pub mod knight;
 pub mod pawn;
 pub mod queen;
 pub mod rook;
+mod sliding;
 
 use bishop::Bishop;
 use king::King;
@@ -78,14 +82,14 @@ impl Kind {
         }
     }
 
-    pub fn get_moveset(self, square: Square) -> Vec<Ply> {
+    pub fn get_moveset(self, square: Square, board: &Board) -> Vec<Ply> {
         let moveset = match self {
-            Self::Pawn(color) => Pawn::get_moveset(square, color),
-            Self::King(color) => King::get_moveset(square, color),
-            Self::Queen(color) => Queen::get_moveset(square, color),
-            Self::Rook(color) => Rook::get_moveset(square, color),
-            Self::Bishop(color) => Bishop::get_moveset(square, color),
-            Self::Knight(color) => Knight::get_moveset(square, color),
+            Self::Pawn(color) => Pawn::get_moveset(square, board, color),
+            Self::King(color) => King::get_moveset(square, board, color),
+            Self::Queen(color) => Queen::get_moveset(square, board, color),
+            Self::Rook(color) => Rook::get_moveset(square, board, color),
+            Self::Bishop(color) => Bishop::get_moveset(square, board, color),
+            Self::Knight(color) => Knight::get_moveset(square, board, color),
         };
 
         moveset
@@ -112,7 +116,26 @@ pub trait Piece: Clone + PartialEq + Eq {
         }
     }
 
-    fn get_moveset(square: Square, color: Color) -> Vec<Ply>;
+    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply>;
+}
+
+trait Magic: {
+    fn init_masks() -> [Bitboard; 64];
+    fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard;
+    fn get_attacks_slow(square: Square, blockers: Bitboard) -> Bitboard;
+
+    fn get_blockers_from_index(idx: u16, mut mask: Bitboard) -> Bitboard {
+        let mut blockers = Bitboard::new(0);
+        let bits = mask.count_ones();
+        for i in 0..bits {
+            let bitidx = mask.drop_forward();
+            if idx & (1 << i) != 0 {
+                blockers |= 1 << bitidx;
+            }
+        }
+
+        return blockers;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

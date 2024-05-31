@@ -13,6 +13,18 @@ pub struct Ply {
     pub is_double_pawn_push: bool,
 }
 
+impl Ord for Ply {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.start.cmp(&other.start).then(self.dest.cmp(&other.dest))
+    }
+}
+
+impl PartialOrd for Ply {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Ply {
     pub const fn new(start: Square, dest: Square) -> Self {
         Self {

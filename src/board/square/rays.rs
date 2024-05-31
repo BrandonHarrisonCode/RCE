@@ -2,7 +2,7 @@ use super::Direction;
 use super::Square;
 use std::sync::OnceLock;
 
-use crate::board::bitboard::{Bitboard, File, Rank};
+use crate::board::bitboard::Bitboard;
 
 pub struct Rays {
     pub rays: [[Bitboard; 8]; 64],

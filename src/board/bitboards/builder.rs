@@ -1,4 +1,5 @@
 use super::Bitboards;
+use super::super::bitboard::Bitboard;
 use crate::board::piece::Color;
 
 #[derive(Default)]
@@ -65,22 +66,22 @@ impl Builder {
             | self.black_knights;
         let all_pieces = white_pieces | black_pieces;
         Bitboards {
-            white_pawns: self.white_pawns,
-            white_king: self.white_king,
-            white_queens: self.white_queens,
-            white_rooks: self.white_rooks,
-            white_bishops: self.white_bishops,
-            white_knights: self.white_knights,
-            black_pawns: self.black_pawns,
-            black_king: self.black_king,
-            black_queens: self.black_queens,
-            black_rooks: self.black_rooks,
-            black_bishops: self.black_bishops,
-            black_knights: self.black_knights,
+            white_pawns: Bitboard::new(self.white_pawns),
+            white_king: Bitboard::new(self.white_king),
+            white_queens: Bitboard::new(self.white_queens),
+            white_rooks: Bitboard::new(self.white_rooks),
+            white_bishops: Bitboard::new(self.white_bishops),
+            white_knights: Bitboard::new(self.white_knights),
+            black_pawns: Bitboard::new(self.black_pawns),
+            black_king: Bitboard::new(self.black_king),
+            black_queens: Bitboard::new(self.black_queens),
+            black_rooks: Bitboard::new(self.black_rooks),
+            black_bishops: Bitboard::new(self.black_bishops),
+            black_knights: Bitboard::new(self.black_knights),
 
-            white_pieces,
-            black_pieces,
-            all_pieces,
+            white_pieces: Bitboard::new(white_pieces),
+            black_pieces: Bitboard::new(black_pieces),
+            all_pieces: Bitboard::new(all_pieces),
         }
     }
 

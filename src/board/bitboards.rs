@@ -1,3 +1,4 @@
+use super::bitboard::Bitboard;
 use super::piece::{Color, Kind};
 use super::square::Square;
 
@@ -7,22 +8,22 @@ use builder::Builder;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Bitboards {
-    pub white_pawns: u64,
-    pub white_king: u64,
-    pub white_queens: u64,
-    pub white_rooks: u64,
-    pub white_knights: u64,
-    pub white_bishops: u64,
-    pub black_pawns: u64,
-    pub black_king: u64,
-    pub black_queens: u64,
-    pub black_rooks: u64,
-    pub black_knights: u64,
-    pub black_bishops: u64,
+    pub white_pawns: Bitboard,
+    pub white_king: Bitboard,
+    pub white_queens: Bitboard,
+    pub white_rooks: Bitboard,
+    pub white_knights: Bitboard,
+    pub white_bishops: Bitboard,
+    pub black_pawns: Bitboard,
+    pub black_king: Bitboard,
+    pub black_queens: Bitboard,
+    pub black_rooks: Bitboard,
+    pub black_knights: Bitboard,
+    pub black_bishops: Bitboard,
 
-    pub white_pieces: u64,
-    pub black_pieces: u64,
-    pub all_pieces: u64,
+    pub white_pieces: Bitboard,
+    pub black_pieces: Bitboard,
+    pub all_pieces: Bitboard,
 }
 
 impl Default for Bitboards {
@@ -34,22 +35,22 @@ impl Default for Bitboards {
 impl Bitboards {
     pub const fn new() -> Self {
         Self {
-            white_pawns: 0,
-            white_king: 0,
-            white_queens: 0,
-            white_rooks: 0,
-            white_knights: 0,
-            white_bishops: 0,
-            black_pawns: 0,
-            black_king: 0,
-            black_queens: 0,
-            black_rooks: 0,
-            black_knights: 0,
-            black_bishops: 0,
+            white_pawns: Bitboard::new(0),
+            white_king: Bitboard::new(0),
+            white_queens: Bitboard::new(0),
+            white_rooks: Bitboard::new(0),
+            white_knights: Bitboard::new(0),
+            white_bishops: Bitboard::new(0),
+            black_pawns: Bitboard::new(0),
+            black_king: Bitboard::new(0),
+            black_queens: Bitboard::new(0),
+            black_rooks: Bitboard::new(0),
+            black_knights: Bitboard::new(0),
+            black_bishops: Bitboard::new(0),
 
-            white_pieces: 0,
-            black_pieces: 0,
-            all_pieces: 0,
+            white_pieces: Bitboard::new(0),
+            black_pieces: Bitboard::new(0),
+            all_pieces: Bitboard::new(0),
         }
     }
 
@@ -90,22 +91,22 @@ impl Bitboards {
         let all_pieces = white_pieces | black_pieces;
 
         Self {
-            white_pawns,
-            white_king,
-            white_queens,
-            white_rooks,
-            white_knights,
-            white_bishops,
-            black_pawns,
-            black_king,
-            black_queens,
-            black_rooks,
-            black_knights,
-            black_bishops,
+            white_pawns: Bitboard::new(white_pawns),
+            white_king: Bitboard::new(white_king),
+            white_queens: Bitboard::new(white_queens),
+            white_rooks: Bitboard::new(white_rooks),
+            white_knights: Bitboard::new(white_knights),
+            white_bishops: Bitboard::new(white_bishops),
+            black_pawns: Bitboard::new(black_pawns),
+            black_king: Bitboard::new(black_king),
+            black_queens: Bitboard::new(black_queens),
+            black_rooks: Bitboard::new(black_rooks),
+            black_knights: Bitboard::new(black_knights),
+            black_bishops: Bitboard::new(black_bishops),
 
-            white_pieces,
-            black_pieces,
-            all_pieces,
+            white_pieces: Bitboard::new(white_pieces),
+            black_pieces: Bitboard::new(black_pieces),
+            all_pieces: Bitboard::new(all_pieces),
         }
     }
 
@@ -173,35 +174,35 @@ impl Bitboards {
     /// assert_eq!(None, board.get_piece(Square::new("b3")));
     /// ``singleton`
     pub fn get_piece_kind(&self, square: Square) -> Option<Kind> {
-        let mask = square.get_mask();
+        let mask = Bitboard::new(square.get_mask());
 
-        if mask & self.white_pieces != 0 {
-            if mask & self.white_pawns != 0 {
+        if !(mask & self.white_pieces).is_empty() {
+            if !(mask & self.white_pawns).is_empty() {
                 return Some(Kind::Pawn(Color::White));
-            } else if mask & self.white_king != 0 {
+            } else if !(mask & self.white_king).is_empty() {
                 return Some(Kind::King(Color::White));
-            } else if mask & self.white_queens != 0 {
+            } else if !(mask & self.white_queens).is_empty() {
                 return Some(Kind::Queen(Color::White));
-            } else if mask & self.white_rooks != 0 {
+            } else if !(mask & self.white_rooks).is_empty() {
                 return Some(Kind::Rook(Color::White));
-            } else if mask & self.white_knights != 0 {
+            } else if !(mask & self.white_knights).is_empty() {
                 return Some(Kind::Knight(Color::White));
-            } else if mask & self.white_bishops != 0 {
+            } else if !(mask & self.white_bishops).is_empty() {
                 return Some(Kind::Bishop(Color::White));
             }
             unreachable!("White pieces collection is malformed! Detected a white piece at square {square}, but no piece was found!")
-        } else if mask & self.black_pieces != 0 {
-            if mask & self.black_pawns != 0 {
+        } else if !(mask & self.black_pieces).is_empty() {
+            if !(mask & self.black_pawns).is_empty() {
                 return Some(Kind::Pawn(Color::Black));
-            } else if mask & self.black_king != 0 {
+            } else if !(mask & self.black_king).is_empty() {
                 return Some(Kind::King(Color::Black));
-            } else if mask & self.black_queens != 0 {
+            } else if !(mask & self.black_queens).is_empty() {
                 return Some(Kind::Queen(Color::Black));
-            } else if mask & self.black_rooks != 0 {
+            } else if !(mask & self.black_rooks).is_empty() {
                 return Some(Kind::Rook(Color::Black));
-            } else if mask & self.black_knights != 0 {
+            } else if !(mask & self.black_knights).is_empty() {
                 return Some(Kind::Knight(Color::Black));
-            } else if mask & self.black_bishops != 0 {
+            } else if !(mask & self.black_bishops).is_empty() {
                 return Some(Kind::Bishop(Color::Black));
             }
             unreachable!("Black pieces collection is malformed! Detected a black piece at square {square}, but no piece was found!")

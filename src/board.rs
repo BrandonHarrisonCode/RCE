@@ -186,7 +186,7 @@ impl Board {
 
                     all_moves.append(
                         &mut piece
-                            .get_moveset(square)
+                            .get_moveset(square, self)
                             .into_iter()
                             .map(|mut mv| {
                                 if mv.en_passant {
@@ -542,7 +542,7 @@ impl Board {
         }
     }
 
-    const fn no_pieces_between_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
+    fn no_pieces_between_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
         let pieces_blocking = match kind {
             CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0xE,
             CastlingKind::WhiteQueenside => self.bitboards.all_pieces & 0x60,
@@ -550,7 +550,7 @@ impl Board {
             CastlingKind::BlackQueenside => self.bitboards.all_pieces & 0x_E000000_00000000,
         };
 
-        if pieces_blocking == 0 {
+        if pieces_blocking.is_empty() {
             Ok(())
         } else {
             Err("There are pieces between the start and destination squares.")
