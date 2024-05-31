@@ -1,8 +1,8 @@
-use super::super::bitboard::{Bitboard, Rank, File};
-use crate::board::Board;
+use super::super::bitboard::{Bitboard, File, Rank};
 use super::{Color, Magic, Piece, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
+use crate::board::Board;
 use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -10,6 +10,7 @@ pub struct Rook;
 
 static MASKS: OnceLock<[Bitboard; 64]> = OnceLock::new();
 static ATTACKS: OnceLock<[Vec<Bitboard>; 64]> = OnceLock::new();
+const ATTACKS_TABLE_SIZE: usize = 4096;
 
 impl Eq for Rook {}
 
@@ -33,7 +34,8 @@ impl Magic for Rook {
             .rays;
 
         for i in 0..64u8 {
-            let mask: Bitboard = rays[i as usize][Direction::North as usize] & !(Rank::Eighth as u64)
+            let mask: Bitboard = rays[i as usize][Direction::North as usize]
+                & !(Rank::Eighth as u64)
                 | rays[i as usize][Direction::East as usize] & !(File::H as u64)
                 | rays[i as usize][Direction::South as usize] & !(Rank::First as u64)
                 | rays[i as usize][Direction::West as usize] & !(File::A as u64);
@@ -55,7 +57,6 @@ impl Magic for Rook {
     }
 
     fn get_attacks_slow(square: Square, blockers: Bitboard) -> Bitboard {
-        let mut attacks = Bitboard::new(0);
         let rays = RAYS
             .get_or_init(|| crate::board::square::rays::Rays::new())
             .rays;
@@ -65,7 +66,7 @@ impl Magic for Rook {
         let south_ray = rays[square.u8() as usize][Direction::South as usize];
         let west_ray = rays[square.u8() as usize][Direction::West as usize];
 
-        attacks |= north_ray | east_ray | south_ray | west_ray;
+        let mut attacks = north_ray | east_ray | south_ray | west_ray;
 
         if !(north_ray & blockers).is_empty() {
             let blocked_idx = (north_ray & blockers).bitscan_forward();
@@ -165,17 +166,18 @@ impl Rook {
         10, 11, 11, 10, 10, 10, 10, 10, 10, 11, 12, 11, 11, 11, 11, 11, 11, 12,
     ];
 
-
     fn init_attacks() -> [Vec<Bitboard>; 64] {
-        let mut attacks: [Vec<Bitboard>; 64] = core::array::from_fn(|_| Vec::<Bitboard>::with_capacity(4096));
+        let mut attacks: [Vec<Bitboard>; 64] =
+            core::array::from_fn(|_| Vec::<Bitboard>::with_capacity(ATTACKS_TABLE_SIZE));
         for square in 0..64u8 {
-            let mut vector = vec![Bitboard::new(0); 4096];
+            let mut vector = vec![Bitboard::new(0); ATTACKS_TABLE_SIZE];
             for idx in 0u16..(1 << Self::INDEX_BITS[square as usize]) {
                 let blockers: Bitboard = Self::get_blockers_from_index(
                     idx,
                     MASKS.get_or_init(|| Self::init_masks())[square as usize],
                 );
-                let second_index = (blockers.wrapping_mul(Self::MAGICS[square as usize])) >> (64 - Self::INDEX_BITS[square as usize]);
+                let second_index = (blockers.wrapping_mul(Self::MAGICS[square as usize]))
+                    >> (64 - Self::INDEX_BITS[square as usize]);
                 let value = Self::get_attacks_slow(Square::from(square), blockers);
                 vector[second_index as usize] = value;
             }
@@ -192,10 +194,10 @@ impl Rook {
 #[cfg(test)]
 mod tests {
     use super::{Color, Piece, Ply, Rook, Square};
-    use crate::board::{Kind, Board};
+    use crate::board::{Board, Kind};
+    use crate::utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
-    use crate::utils::tests::check_unique_equality;
 
     #[test]
     fn test_rook_derived_traits() {
@@ -541,5 +543,4 @@ mod tests {
 
         check_unique_equality(result, correct);
     }
-
 }

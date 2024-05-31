@@ -1,16 +1,16 @@
 use super::super::bitboard::Bitboard;
-use super::{Color, Piece, Ply, Square};
+use super::{Color, Magic, Piece, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
 use crate::board::Board;
 use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Bishop {
-    masks: [Bitboard; 64],
-}
+pub struct Bishop;
 
-pub static BISHOPS: OnceLock<Bishop> = OnceLock::new();
+static MASKS: OnceLock<[Bitboard; 64]> = OnceLock::new();
+static ATTACKS: OnceLock<[Vec<Bitboard>; 64]> = OnceLock::new();
+const ATTACKS_TABLE_SIZE: usize = 1024; // TODO change to 512 when tests pass
 
 impl Eq for Bishop {}
 
@@ -18,41 +18,174 @@ impl Piece for Bishop {
     const WHITE_SYMBOL: &'static str = "♝";
     const BLACK_SYMBOL: &'static str = "♗";
 
-    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
-        let bishops = BISHOPS.get_or_init(|| Bishop::new());
-        let move_mask = bishops.masks[square.u8() as usize];
+    fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
+        let move_mask = Bishop::get_attacks(square, board.bitboards.all_pieces);
         let squares = Square::get_squares_from_mask(move_mask.into());
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
     }
 }
 
-impl Bishop {
-    #[allow(dead_code)]
-    pub fn new() -> Self {
-        Self {
-            masks: Self::init_bishop_masks(),
-        }
-    }
-
-    fn init_bishop_masks() -> [Bitboard; 64] {
+impl Magic for Bishop {
+    fn init_masks() -> [Bitboard; 64] {
         let mut masks: [Bitboard; 64] = [Bitboard::new(0); 64];
         let rays = RAYS
             .get_or_init(|| crate::board::square::rays::Rays::new())
             .rays;
 
         for i in 0..64u8 {
-            let mask: Bitboard = rays[i as usize][Direction::NorthEast as usize]
+            let mask: Bitboard = (rays[i as usize][Direction::NorthEast as usize]
                 | rays[i as usize][Direction::SouthEast as usize]
                 | rays[i as usize][Direction::SouthWest as usize]
-                | rays[i as usize][Direction::NorthWest as usize];
-            // let trimmed = mask.trim_edges();
-            let trimmed = mask;
+                | rays[i as usize][Direction::NorthWest as usize])
+                .trim_edges();
 
-            masks[i as usize] = trimmed;
+            masks[i as usize] = mask;
         }
 
         masks
+    }
+
+    fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard {
+        let masked_blockers =
+            blockers & MASKS.get_or_init(|| Self::init_masks())[square.u8() as usize];
+        let key: u64 = ((masked_blockers * Self::MAGICS[square.u8() as usize])
+            >> (64 - Self::INDEX_BITS[square.u8() as usize]).into())
+        .into();
+
+        ATTACKS.get_or_init(|| Self::init_attacks())[square.u8() as usize][key as usize]
+    }
+
+    fn get_attacks_slow(square: Square, blockers: Bitboard) -> Bitboard {
+        let rays = RAYS
+            .get_or_init(|| crate::board::square::rays::Rays::new())
+            .rays;
+
+        let northwest_ray = rays[square.u8() as usize][Direction::NorthWest as usize];
+        let northeast_ray = rays[square.u8() as usize][Direction::NorthEast as usize];
+        let southwest_ray = rays[square.u8() as usize][Direction::SouthWest as usize];
+        let southeast_ray = rays[square.u8() as usize][Direction::SouthEast as usize];
+
+        let mut attacks = northwest_ray | northeast_ray | southwest_ray | southeast_ray;
+
+        if !(northwest_ray & blockers).is_empty() {
+            let blocked_idx = (northwest_ray & blockers).bitscan_forward();
+            attacks &= !(rays[blocked_idx as usize][Direction::NorthWest as usize]);
+        }
+
+        if !(northeast_ray & blockers).is_empty() {
+            let blocked_idx = (northeast_ray & blockers).bitscan_forward();
+            attacks &= !(rays[blocked_idx as usize][Direction::NorthEast as usize]);
+        }
+
+        if !(southwest_ray & blockers).is_empty() {
+            let blocked_idx = (southwest_ray & blockers).bitscan_reverse();
+            attacks &= !(rays[blocked_idx as usize][Direction::SouthWest as usize]);
+        }
+
+        if !(southeast_ray & blockers).is_empty() {
+            let blocked_idx = (southeast_ray & blockers).bitscan_reverse();
+            attacks &= !(rays[blocked_idx as usize][Direction::SouthEast as usize]);
+        }
+
+        attacks
+    }
+}
+
+impl Bishop {
+    const MAGICS: [u64; 64] = [
+        0x89a1121896040240,
+        0x2004844802002010,
+        0x2068080051921000,
+        0x62880a0220200808,
+        0x4042004000000,
+        0x100822020200011,
+        0xc00444222012000a,
+        0x28808801216001,
+        0x400492088408100,
+        0x201c401040c0084,
+        0x840800910a0010,
+        0x82080240060,
+        0x2000840504006000,
+        0x30010c4108405004,
+        0x1008005410080802,
+        0x8144042209100900,
+        0x208081020014400,
+        0x4800201208ca00,
+        0xf18140408012008,
+        0x1004002802102001,
+        0x841000820080811,
+        0x40200200a42008,
+        0x800054042000,
+        0x88010400410c9000,
+        0x520040470104290,
+        0x1004040051500081,
+        0x2002081833080021,
+        0x400c00c010142,
+        0x941408200c002000,
+        0x658810000806011,
+        0x188071040440a00,
+        0x4800404002011c00,
+        0x104442040404200,
+        0x511080202091021,
+        0x4022401120400,
+        0x80c0040400080120,
+        0x8040010040820802,
+        0x480810700020090,
+        0x102008e00040242,
+        0x809005202050100,
+        0x8002024220104080,
+        0x431008804142000,
+        0x19001802081400,
+        0x200014208040080,
+        0x3308082008200100,
+        0x41010500040c020,
+        0x4012020c04210308,
+        0x208220a202004080,
+        0x111040120082000,
+        0x6803040141280a00,
+        0x2101004202410000,
+        0x8200000041108022,
+        0x21082088000,
+        0x2410204010040,
+        0x40100400809000,
+        0x822088220820214,
+        0x40808090012004,
+        0x910224040218c9,
+        0x402814422015008,
+        0x90014004842410,
+        0x1000042304105,
+        0x10008830412a00,
+        0x2520081090008908,
+        0x40102000a0a60140,
+    ];
+
+    const INDEX_BITS: [u8; 64] = [
+        6, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 7, 7, 5, 5, 5, 5, 7, 9, 9, 7,
+        5, 5, 5, 5, 7, 9, 9, 7, 5, 5, 5, 5, 7, 7, 7, 7, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 6, 5, 5, 5,
+        5, 5, 5, 6,
+    ];
+
+    fn init_attacks() -> [Vec<Bitboard>; 64] {
+        let mut attacks: [Vec<Bitboard>; 64] =
+            core::array::from_fn(|_| Vec::<Bitboard>::with_capacity(ATTACKS_TABLE_SIZE));
+        for square in 0..64u8 {
+            let mut vector = vec![Bitboard::new(0); ATTACKS_TABLE_SIZE];
+            for idx in 0u16..(1 << Self::INDEX_BITS[square as usize]) {
+                let blockers: Bitboard = Self::get_blockers_from_index(
+                    idx,
+                    MASKS.get_or_init(|| Self::init_masks())[square as usize],
+                );
+                let second_index = (blockers.wrapping_mul(Self::MAGICS[square as usize]))
+                    >> (64 - Self::INDEX_BITS[square as usize]);
+                let value = Self::get_attacks_slow(Square::from(square), blockers);
+                vector[second_index as usize] = value;
+            }
+
+            attacks[square as usize] = vector;
+        }
+
+        attacks
     }
 }
 
@@ -67,7 +200,7 @@ mod tests {
 
     #[test]
     fn test_bishop_derived_traits() {
-        let piece = Bishop::new();
+        let piece = Bishop {};
         dbg!(&piece);
 
         assert_eq!(piece, piece.clone());

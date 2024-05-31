@@ -1,8 +1,8 @@
 use std::fmt;
 
+use super::bitboard::Bitboard;
 use super::ply::Ply;
 use super::square::{Direction, Square};
-use super::bitboard::Bitboard;
 
 use crate::board::Board;
 
@@ -12,7 +12,6 @@ pub mod knight;
 pub mod pawn;
 pub mod queen;
 pub mod rook;
-mod sliding;
 
 use bishop::Bishop;
 use king::King;
@@ -119,7 +118,7 @@ pub trait Piece: Clone + PartialEq + Eq {
     fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply>;
 }
 
-trait Magic: {
+trait Magic {
     fn init_masks() -> [Bitboard; 64];
     fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard;
     fn get_attacks_slow(square: Square, blockers: Bitboard) -> Bitboard;
