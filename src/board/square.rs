@@ -26,6 +26,8 @@ pub enum Direction {
     NorthWest,
 }
 
+// TODO: Change this into a TryFrom
+#[allow(clippy::fallible_impl_from)]
 impl From<&str> for Square {
     /// Creates a new square from a given algebraic notation
     ///
@@ -188,8 +190,8 @@ impl Square {
     /// ```
     /// let num = Square::new("a1").u8();
     /// ```
-    pub fn u8(self) -> u8 {
-        (self.rank * 8 + self.file).into()
+    pub const fn u8(self) -> u8 {
+        self.rank * 8 + self.file
     }
 }
 
