@@ -1,8 +1,12 @@
-use super::{Color, Direction, Piece, Ply, Square};
+use super::super::bitboard::{Bitboard, File};
+use super::{Color, Piece, Ply, Precomputed, Square};
 use crate::board::Board;
+use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct King;
+
+static ATTACKS: OnceLock<[Bitboard; 64]> = OnceLock::new();
 
 impl Eq for King {}
 
@@ -10,18 +14,11 @@ impl Piece for King {
     const WHITE_SYMBOL: &'static str = "♚";
     const BLACK_SYMBOL: &'static str = "♔";
 
-    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
-        let mut moveset = vec![
-            Ply::new(square, square + Direction::North),
-            Ply::new(square, square + Direction::East),
-            Ply::new(square, square + Direction::South),
-            Ply::new(square, square + Direction::West),
-            Ply::new(square, square + Direction::NorthEast),
-            Ply::new(square, square + Direction::NorthWest),
-            Ply::new(square, square + Direction::SouthEast),
-            Ply::new(square, square + Direction::SouthWest),
-        ];
+    fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
+        let move_mask = Self::get_attacks(square, board.bitboards.all_pieces);
+        let squares: Vec<Square> = move_mask.into();
 
+        let mut moveset: Vec<Ply> = squares.into_iter().map(|s| Ply::new(square, s)).collect();
         if square == Square::from("e1") {
             moveset.push(
                 Ply::builder(square, Square::from("g1"))
@@ -52,6 +49,24 @@ impl Piece for King {
     }
 }
 
+impl Precomputed for King {
+    fn init_attacks() -> [Bitboard; 64] {
+        let mut attacks = [Bitboard::new(0); 64];
+        for (idx, attacks_at_square) in attacks.iter_mut().enumerate() {
+            let origin = Bitboard::new(1 << idx);
+            *attacks_at_square = ((origin << 7 | origin >> 1 | origin >> 9) & !(File::H as u64)) | // Left by 1 square
+            ((origin << 9 | origin << 1 | origin >> 7) & !(File::A as u64)) | // Right by 1 square
+            (origin << 8 | origin >> 8); // Up or down by 1
+        }
+
+        attacks
+    }
+
+    fn get_attacks(square: Square, _: Bitboard) -> Bitboard {
+        ATTACKS.get_or_init(Self::init_attacks)[square.u8() as usize]
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
@@ -59,8 +74,8 @@ mod tests {
     use super::{Color, King, Piece, Ply, Square};
     use crate::board::Board;
     use crate::board::Kind;
+    use crate::utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
-    use std::collections::HashSet;
 
     #[test]
     fn test_king_derived_traits() {
@@ -142,9 +157,7 @@ mod tests {
             Ply::new(start_square, Square::from("a1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
@@ -165,9 +178,7 @@ mod tests {
             Ply::new(start_square, Square::from("e5")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -185,9 +196,7 @@ mod tests {
             Ply::new(start_square, Square::from("h7")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -205,9 +214,7 @@ mod tests {
             Ply::new(start_square, Square::from("c2")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -228,9 +235,7 @@ mod tests {
             Ply::new(start_square, Square::from("e5")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -248,9 +253,7 @@ mod tests {
             Ply::new(start_square, Square::from("h7")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -274,9 +277,7 @@ mod tests {
                 .build(),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -300,9 +301,7 @@ mod tests {
                 .build(),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -326,9 +325,7 @@ mod tests {
                 .build(),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -352,8 +349,6 @@ mod tests {
                 .build(),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct);
     }
 }
