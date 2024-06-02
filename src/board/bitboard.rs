@@ -1,8 +1,8 @@
 use super::square::Square;
 use std::fmt;
 use std::ops::{
-    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, Deref, Mul, Not, Shl, ShlAssign, Shr,
-    ShrAssign,
+    Add, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, Deref, Mul, Not, Shl, ShlAssign, Shr,
+    ShrAssign, Sub,
 };
 
 #[derive(Clone, Copy, Eq, PartialEq)]
@@ -39,6 +39,22 @@ impl Deref for Bitboard {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl Add for Bitboard {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0.checked_add(rhs.0).unwrap_or(0))
+    }
+}
+
+impl Sub for Bitboard {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0.saturating_sub(rhs.0))
     }
 }
 
@@ -86,6 +102,21 @@ impl Mul for Bitboard {
     }
 }
 
+impl Add<u64> for Bitboard {
+    type Output = Self;
+
+    fn add(self, rhs: u64) -> Self::Output {
+        Self(self.0.checked_add(rhs).unwrap_or(0))
+    }
+}
+
+impl Sub<u64> for Bitboard {
+    type Output = Self;
+
+    fn sub(self, rhs: u64) -> Self::Output {
+        Self(self.0.saturating_sub(rhs))
+    }
+}
 impl BitAnd<u64> for Bitboard {
     type Output = Self;
 

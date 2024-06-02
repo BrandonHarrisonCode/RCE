@@ -118,6 +118,11 @@ pub trait Piece: Clone + PartialEq + Eq {
     fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply>;
 }
 
+trait Precomputed {
+    fn init_attacks() -> [Bitboard; 64];
+    fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard;
+}
+
 trait Magic {
     fn init_masks() -> [Bitboard; 64];
     fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard;

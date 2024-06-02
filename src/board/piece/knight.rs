@@ -1,8 +1,12 @@
-use super::{Color, Direction, Piece, Ply, Square};
+use super::super::bitboard::{Bitboard, File};
+use super::{Color, Piece, Ply, Precomputed, Square};
 use crate::board::Board;
+use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Knight;
+
+static ATTACKS: OnceLock<[Bitboard; 64]> = OnceLock::new();
 
 impl Eq for Knight {}
 
@@ -10,41 +14,31 @@ impl Piece for Knight {
     const WHITE_SYMBOL: &'static str = "♞";
     const BLACK_SYMBOL: &'static str = "♘";
 
-    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
-        vec![
-            Ply::new(
-                square,
-                square + Direction::North + Direction::North + Direction::West,
-            ),
-            Ply::new(
-                square,
-                square + Direction::North + Direction::North + Direction::East,
-            ),
-            Ply::new(
-                square,
-                square + Direction::South + Direction::South + Direction::West,
-            ),
-            Ply::new(
-                square,
-                square + Direction::South + Direction::South + Direction::East,
-            ),
-            Ply::new(
-                square,
-                square + Direction::East + Direction::East + Direction::North,
-            ),
-            Ply::new(
-                square,
-                square + Direction::East + Direction::East + Direction::South,
-            ),
-            Ply::new(
-                square,
-                square + Direction::West + Direction::West + Direction::North,
-            ),
-            Ply::new(
-                square,
-                square + Direction::West + Direction::West + Direction::South,
-            ),
-        ]
+    fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
+        let move_mask = Self::get_attacks(square, board.bitboards.all_pieces);
+        let squares: Vec<Square> = move_mask.into();
+
+        squares.into_iter().map(|s| Ply::new(square, s)).collect()
+    }
+}
+
+impl Precomputed for Knight {
+    fn init_attacks() -> [Bitboard; 64] {
+        let mut attacks = [Bitboard::new(0); 64];
+        for (idx, attacks_at_square) in attacks.iter_mut().enumerate() {
+            let origin = Bitboard::new(1 << idx);
+            *attacks_at_square = ((origin << 15 | origin >> 17) & !(File::H as u64)) // Left by 1 square, up or down by 2
+                | ((origin << 17 | origin >> 15) & !(File::A as u64)) // Right by 1 square, up or down by 2
+                | ((origin << 10 | origin >> 6) & !(File::A as u64 | File::B as u64 )) // Right by 2 squares, up or down by 1
+                | ((origin << 6 | origin >> 10) & !(File::G as u64 | File::H as u64));
+            // Left by 2 squares, up or down by 1
+        }
+
+        attacks
+    }
+
+    fn get_attacks(square: Square, _: Bitboard) -> Bitboard {
+        ATTACKS.get_or_init(Self::init_attacks)[square.u8() as usize]
     }
 }
 
@@ -55,6 +49,7 @@ mod tests {
     use super::{Color, Knight, Piece, Ply, Square};
     use crate::board::Board;
     use crate::board::Kind;
+    use crate::utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 
@@ -136,7 +131,7 @@ mod tests {
             Ply::new(start_square, Square::from("d2")),
         ];
 
-        assert_eq!(result, correct);
+        check_unique_equality(result, correct);
     }
 
     #[test]
@@ -194,7 +189,7 @@ mod tests {
             Ply::new(start_square, Square::from("d2")),
         ];
 
-        assert_eq!(result, correct);
+        check_unique_equality(result, correct);
     }
 
     #[test]
