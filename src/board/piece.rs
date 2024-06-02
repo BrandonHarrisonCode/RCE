@@ -120,7 +120,12 @@ pub trait Piece: Clone + PartialEq + Eq {
 
 trait Precomputed {
     fn init_attacks() -> [Bitboard; 64];
-    fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard;
+    fn get_attacks(square: Square) -> Bitboard;
+}
+
+trait PrecomputedColor {
+    fn init_attacks() -> [[Bitboard; 64]; 2];
+    fn get_attacks(square: Square, color: Color) -> Bitboard;
 }
 
 trait Magic {

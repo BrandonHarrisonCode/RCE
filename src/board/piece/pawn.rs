@@ -1,8 +1,12 @@
-use super::{Color, Direction, Kind, Piece, Ply, Square};
+use super::super::bitboard::{Bitboard, File};
+use super::{Color, Direction, Kind, Piece, Ply, PrecomputedColor, Square};
 use crate::board::Board;
+use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Pawn;
+
+static ATTACKS: OnceLock<[[Bitboard; 64]; 2]> = OnceLock::new();
 
 impl Eq for Pawn {}
 
@@ -33,11 +37,6 @@ impl Piece for Pawn {
     const WHITE_SYMBOL: &'static str = "♟";
     const BLACK_SYMBOL: &'static str = "♙";
 
-    /// - [X] Advances 1 square forward
-    /// - [X] Advances 2 squares forward if on second rank
-    /// - [X] Takes diagonally forward
-    /// - [X] En passant
-    /// - [X] Promotion
     fn get_moveset(square: Square, _: &Board, color: Color) -> Vec<Ply> {
         let (direction, starting_rank, en_passant_rank, back_rank) = match color {
             Color::White => (Direction::North, 1, 4, 7),
@@ -45,15 +44,16 @@ impl Piece for Pawn {
         };
 
         // Directional captures
-        let mut output: Vec<Ply> = vec![
-            Ply::new(square, square + direction),
-            Ply::builder(square, square + direction + Direction::East).build(),
-            Ply::builder(square, square + direction + Direction::West).build(),
-        ];
+        let move_mask = Self::get_attacks(square, color);
+        let squares: Vec<Square> = move_mask.into();
 
+        let mut moveset: Vec<Ply> = squares.into_iter().map(|s| Ply::new(square, s)).collect();
+
+        // Single pawn push
+        moveset.push(Ply::new(square, square + direction));
         // Double pawn push
         if square.rank == starting_rank {
-            output.push(
+            moveset.push(
                 Ply::builder(square, square + direction + direction)
                     .double_pawn_push(true)
                     .build(),
@@ -62,13 +62,13 @@ impl Piece for Pawn {
 
         // En Passant
         if square.rank == en_passant_rank {
-            output.push(
+            moveset.push(
                 Ply::builder(square, square + direction + Direction::East)
                     .en_passant(true)
                     .captured(Kind::Pawn(color.opposite()))
                     .build(),
             );
-            output.push(
+            moveset.push(
                 Ply::builder(square, square + direction + Direction::West)
                     .en_passant(true)
                     .captured(Kind::Pawn(color.opposite()))
@@ -77,10 +77,29 @@ impl Piece for Pawn {
         }
 
         // Promotion
-        output
+        moveset
             .iter()
             .flat_map(|ply| Self::explode_promotion(*ply, color, back_rank))
             .collect()
+    }
+}
+
+impl PrecomputedColor for Pawn {
+    fn init_attacks() -> [[Bitboard; 64]; 2] {
+        let mut attacks = [[Bitboard::new(0); 64]; 2];
+        for idx in 0..64u8 {
+            let origin = Bitboard::new(1 << idx);
+            attacks[Color::White as usize][idx as usize] =
+                ((origin << 9) & !(File::A as u64)) | ((origin << 7) & !(File::H as u64));
+            attacks[Color::Black as usize][idx as usize] =
+                ((origin >> 9) & !(File::H as u64)) | ((origin >> 7) & !(File::A as u64));
+        }
+
+        attacks
+    }
+
+    fn get_attacks(square: Square, color: Color) -> Bitboard {
+        ATTACKS.get_or_init(Self::init_attacks)[color as usize][square.u8() as usize]
     }
 }
 

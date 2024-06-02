@@ -14,8 +14,8 @@ impl Piece for Knight {
     const WHITE_SYMBOL: &'static str = "♞";
     const BLACK_SYMBOL: &'static str = "♘";
 
-    fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
-        let move_mask = Self::get_attacks(square, board.bitboards.all_pieces);
+    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
+        let move_mask = Self::get_attacks(square);
         let squares: Vec<Square> = move_mask.into();
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
@@ -37,7 +37,7 @@ impl Precomputed for Knight {
         attacks
     }
 
-    fn get_attacks(square: Square, _: Bitboard) -> Bitboard {
+    fn get_attacks(square: Square) -> Bitboard {
         ATTACKS.get_or_init(Self::init_attacks)[square.u8() as usize]
     }
 }
