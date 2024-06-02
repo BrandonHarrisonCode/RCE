@@ -1,5 +1,9 @@
+use super::square::Square;
 use std::fmt;
-use std::ops::{BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, Deref, Not, Shl, Shr, ShlAssign, ShrAssign, Mul};
+use std::ops::{
+    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, Deref, Mul, Not, Shl, ShlAssign, Shr,
+    ShrAssign,
+};
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Bitboard(u64);
@@ -202,6 +206,21 @@ impl From<Bitboard> for u64 {
     }
 }
 
+impl From<Bitboard> for Vec<Square> {
+    fn from(bitboard: Bitboard) -> Self {
+        let mut squares = vec![];
+
+        let mut mask = bitboard.0;
+        while mask != 0 {
+            let idx = mask.trailing_zeros();
+            squares.push(Square::from(idx as u8));
+            mask &= mask - 1;
+        }
+
+        squares
+    }
+}
+
 impl Bitboard {
     pub const fn new(value: u64) -> Self {
         Self(value)
@@ -260,7 +279,7 @@ impl Bitboard {
     }
 
     pub fn bitscan_forward(self) -> u32 {
-        assert_ne!(self.0, 0) ;
+        assert_ne!(self.0, 0);
         self.0.trailing_zeros()
     }
 

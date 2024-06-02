@@ -13,7 +13,7 @@ impl Piece for Queen {
     fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
         let move_mask = Rook::get_attacks_wrapper(square, board.bitboards.all_pieces)
             | Bishop::get_attacks_wrapper(square, board.bitboards.all_pieces);
-        let squares = Square::get_squares_from_mask(move_mask.into());
+        let squares: Vec<Square> = move_mask.into();
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
     }

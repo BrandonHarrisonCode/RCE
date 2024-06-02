@@ -24,6 +24,7 @@ pub mod tests {
         (lhs, rhs) = sort_and_dedup(lhs, rhs);
         assert_eq!(lhs, rhs);
     }
+
     pub fn perft(board: &mut Board, depth: u32) -> u64 {
         if depth == 0 {
             return 1;
@@ -69,8 +70,52 @@ pub mod tests {
     fn test_perft_depth_4() {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 4);
-        assert_eq!(nodes, 197281);
+        assert_eq!(nodes, 197_281);
     }
+
+    #[test]
+    fn test_perft_depth_5() {
+        let mut board = Board::construct_starting_board();
+        let nodes = perft(&mut board, 5);
+        assert_eq!(nodes, 4_865_609);
+    }
+
+    /*
+    #[test]
+    fn test_perft_depth_6() {
+        let mut board = Board::construct_starting_board();
+        let nodes = perft(&mut board, 6);
+        assert_eq!(nodes, 119_060_324);
+    }
+
+    #[test]
+    fn test_perft_depth_7() {
+        let mut board = Board::construct_starting_board();
+        let nodes = perft(&mut board, 7);
+        assert_eq!(nodes, 3_195_901_860);
+    }
+
+    #[test]
+    fn test_perft_depth_8() {
+        let mut board = Board::construct_starting_board();
+        let nodes = perft(&mut board, 8);
+        assert_eq!(nodes, 84_998_978_956);
+    }
+
+    #[test]
+    fn test_perft_depth_9() {
+        let mut board = Board::construct_starting_board();
+        let nodes = perft(&mut board, 9);
+        assert_eq!(nodes, 2_439_530_234_167);
+    }
+
+    #[test]
+    fn test_perft_depth_10() {
+        let mut board = Board::construct_starting_board();
+        let nodes = perft(&mut board, 10);
+        assert_eq!(nodes, 69_352_859_712_417);
+    }
+    */
 
     #[bench]
     fn bench_perft_depth_1(bencher: &mut Bencher) {

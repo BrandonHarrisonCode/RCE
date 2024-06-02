@@ -53,8 +53,8 @@ impl Piece for Knight {
 #[cfg(test)]
 mod tests {
     use super::{Color, Knight, Piece, Ply, Square};
-    use crate::board::Kind;
     use crate::board::Board;
+    use crate::board::Kind;
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 

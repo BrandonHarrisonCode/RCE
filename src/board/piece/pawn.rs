@@ -89,7 +89,7 @@ impl Piece for Pawn {
 #[cfg(test)]
 mod tests {
     use super::{Color, Pawn, Piece, Ply, Square};
-    use crate::board::{Kind, Board};
+    use crate::board::{Board, Kind};
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 

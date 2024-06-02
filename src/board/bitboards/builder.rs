@@ -1,5 +1,5 @@
-use super::Bitboards;
 use super::super::bitboard::Bitboard;
+use super::Bitboards;
 use crate::board::piece::Color;
 
 #[derive(Default)]

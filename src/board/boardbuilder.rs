@@ -374,9 +374,9 @@ impl BoardBuilder {
 
 #[cfg(test)]
 mod tests {
+    use super::super::bitboard::Bitboard;
     use super::super::square::Square;
     use super::*;
-    use super::super::bitboard::Bitboard;
     use pretty_assertions::assert_eq;
 
     #[test]

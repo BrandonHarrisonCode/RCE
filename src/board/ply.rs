@@ -15,7 +15,9 @@ pub struct Ply {
 
 impl Ord for Ply {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.start.cmp(&other.start).then(self.dest.cmp(&other.dest))
+        self.start
+            .cmp(&other.start)
+            .then(self.dest.cmp(&other.dest))
     }
 }
 
