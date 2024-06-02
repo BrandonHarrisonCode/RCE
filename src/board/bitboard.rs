@@ -11,27 +11,27 @@ pub struct Bitboard(u64);
 #[repr(u64)]
 #[allow(dead_code)]
 pub enum Rank {
-    First = 0x00000000_000000ff,
-    Second = 0x00000000_0000ff00,
-    Third = 0x00000000_00ff0000,
-    Fourth = 0x00000000_ff000000,
-    Fifth = 0x000000ff_00000000,
-    Sixth = 0x0000ff00_00000000,
-    Seventh = 0x00ff0000_00000000,
-    Eighth = 0xff000000_00000000,
+    First = 0x0000_0000_0000_00ff,
+    Second = 0x0000_0000_0000_ff00,
+    Third = 0x0000_0000_00ff_0000,
+    Fourth = 0x0000_0000_ff00_0000,
+    Fifth = 0x0000_00ff_0000_0000,
+    Sixth = 0x0000_ff00_0000_0000,
+    Seventh = 0x00ff_0000_0000_0000,
+    Eighth = 0xff00_0000_0000_0000,
 }
 
 #[repr(u64)]
 #[allow(dead_code)]
 pub enum File {
-    A = 0x01010101_01010101,
-    B = 0x02020202_02020202,
-    C = 0x04040404_04040404,
-    D = 0x08080808_08080808,
-    E = 0x10101010_10101010,
-    F = 0x20202020_20202020,
-    G = 0x40404040_40404040,
-    H = 0x80808080_80808080,
+    A = 0x0101_0101_0101_0101,
+    B = 0x0202_0202_0202_0202,
+    C = 0x0404_0404_0404_0404,
+    D = 0x0808_0808_0808_0808,
+    E = 0x1010_1010_1010_1010,
+    F = 0x2020_2020_2020_2020,
+    G = 0x4040_4040_4040_4040,
+    H = 0x8080_8080_8080_8080,
 }
 
 impl Deref for Bitboard {
@@ -66,7 +66,7 @@ impl BitOr for Bitboard {
 
 impl BitOrAssign for Bitboard {
     fn bitor_assign(&mut self, rhs: Self) {
-        self.0 |= rhs.0
+        self.0 |= rhs.0;
     }
 }
 
@@ -165,15 +165,16 @@ impl Not for Bitboard {
     }
 }
 
+#[allow(clippy::cast_possible_truncation)]
 impl fmt::Debug for Bitboard {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mask = 0xFF;
 
-        write!(f, "Debug bitboard: {:0>64b}\n", self.0)?;
+        writeln!(f, "Debug bitboard: {:0>64b}", self.0)?;
         for i in (0..8).rev() {
-            write!(
+            writeln!(
                 f,
-                "{:0>8b}\n",
+                "{:0>8b}",
                 (((self.0 >> (8 * i)) & mask) as u8).reverse_bits()
             )?;
         }
@@ -188,9 +189,10 @@ impl From<usize> for Bitboard {
     }
 }
 
+#[allow(clippy::cast_possible_truncation)]
 impl From<Bitboard> for usize {
     fn from(bitboard: Bitboard) -> Self {
-        bitboard.0 as usize
+        bitboard.0 as Self
     }
 }
 
@@ -206,14 +208,15 @@ impl From<Bitboard> for u64 {
     }
 }
 
+#[allow(clippy::cast_possible_truncation)]
 impl From<Bitboard> for Vec<Square> {
     fn from(bitboard: Bitboard) -> Self {
         let mut squares = vec![];
 
         let mut mask = bitboard.0;
         while mask != 0 {
-            let idx = mask.trailing_zeros();
-            squares.push(Square::from(idx as u8));
+            let idx = mask.trailing_zeros() as u8;
+            squares.push(Square::from(idx));
             mask &= mask - 1;
         }
 
@@ -250,7 +253,7 @@ impl Bitboard {
             & !(File::H as u64)
     }
 
-    pub fn shift_east(self, n: u8) -> Bitboard {
+    pub fn shift_east(self, n: u8) -> Self {
         let mut output = self;
         for _ in 0..n {
             output = (output << 1) & !(File::A as u64);
@@ -259,7 +262,7 @@ impl Bitboard {
         output
     }
 
-    pub fn shift_west(self, n: u8) -> Bitboard {
+    pub fn shift_west(self, n: u8) -> Self {
         let mut output = self;
         for _ in 0..n {
             output = (output >> 1) & !(File::H as u64);
@@ -268,7 +271,7 @@ impl Bitboard {
         output
     }
 
-    pub fn count_ones(self) -> u32 {
+    pub const fn count_ones(self) -> u32 {
         self.0.count_ones()
     }
 
@@ -278,12 +281,11 @@ impl Bitboard {
         idx
     }
 
-    pub fn bitscan_forward(self) -> u32 {
-        assert_ne!(self.0, 0);
+    pub const fn bitscan_forward(self) -> u32 {
         self.0.trailing_zeros()
     }
 
-    pub fn bitscan_reverse(self) -> u32 {
+    pub const fn bitscan_reverse(self) -> u32 {
         63 - self.0.leading_zeros()
     }
 }

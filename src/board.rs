@@ -547,7 +547,7 @@ impl Board {
             CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0xE,
             CastlingKind::WhiteQueenside => self.bitboards.all_pieces & 0x60,
             CastlingKind::BlackKingside => self.bitboards.all_pieces & 0x_60000000_00000000,
-            CastlingKind::BlackQueenside => self.bitboards.all_pieces & 0x_E000000_00000000,
+            CastlingKind::BlackQueenside => self.bitboards.all_pieces & 0x_0E00_0000_0000_0000,
         };
 
         if pieces_blocking.is_empty() {

@@ -51,7 +51,7 @@ impl Builder {
     ///
     /// let bitboards: BitBoards = BitBoardsBuilder::default().pawns(Color::White, 5).build();
     /// ```
-    pub fn build(&mut self) -> Bitboards {
+    pub const fn build(&self) -> Bitboards {
         let white_pieces = self.white_pawns
             | self.white_king
             | self.white_queens

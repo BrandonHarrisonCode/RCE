@@ -351,7 +351,7 @@ impl BoardBuilder {
     ///
     /// let board: Board = BoardBuilder::default().fullmove_counter(5).build();
     /// ```
-    pub fn build(&mut self) -> Board {
+    pub fn build(&self) -> Board {
         Board {
             current_turn: self.current_turn,
             halfmove_clock: self.halfmove_clock,

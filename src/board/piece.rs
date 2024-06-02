@@ -133,7 +133,7 @@ trait Magic {
             }
         }
 
-        return blockers;
+        blockers
     }
 }
 

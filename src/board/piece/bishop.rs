@@ -19,7 +19,7 @@ impl Piece for Bishop {
     const BLACK_SYMBOL: &'static str = "♗";
 
     fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
-        let move_mask = Bishop::get_attacks(square, board.bitboards.all_pieces);
+        let move_mask = Self::get_attacks(square, board.bitboards.all_pieces);
         let squares: Vec<Square> = move_mask.into();
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
@@ -29,9 +29,7 @@ impl Piece for Bishop {
 impl Magic for Bishop {
     fn init_masks() -> [Bitboard; 64] {
         let mut masks: [Bitboard; 64] = [Bitboard::new(0); 64];
-        let rays = RAYS
-            .get_or_init(|| crate::board::square::rays::Rays::new())
-            .rays;
+        let rays = RAYS.get_or_init(crate::board::square::rays::Rays::new).rays;
 
         for i in 0..64u8 {
             let mask: Bitboard = (rays[i as usize][Direction::NorthEast as usize]
@@ -46,20 +44,18 @@ impl Magic for Bishop {
         masks
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard {
-        let masked_blockers =
-            blockers & MASKS.get_or_init(|| Self::init_masks())[square.u8() as usize];
+        let masked_blockers = blockers & MASKS.get_or_init(Self::init_masks)[square.u8() as usize];
         let key: u64 = ((masked_blockers * Self::MAGICS[square.u8() as usize])
             >> (64 - Self::INDEX_BITS[square.u8() as usize]).into())
         .into();
 
-        ATTACKS.get_or_init(|| Self::init_attacks())[square.u8() as usize][key as usize]
+        ATTACKS.get_or_init(Self::init_attacks)[square.u8() as usize][key as usize]
     }
 
     fn get_attacks_slow(square: Square, blockers: Bitboard) -> Bitboard {
-        let rays = RAYS
-            .get_or_init(|| crate::board::square::rays::Rays::new())
-            .rays;
+        let rays = RAYS.get_or_init(crate::board::square::rays::Rays::new).rays;
 
         let northwest_ray = rays[square.u8() as usize][Direction::NorthWest as usize];
         let northeast_ray = rays[square.u8() as usize][Direction::NorthEast as usize];
@@ -93,6 +89,7 @@ impl Magic for Bishop {
 }
 
 impl Bishop {
+    #[allow(clippy::unreadable_literal)]
     const MAGICS: [u64; 64] = [
         0x89a1121896040240,
         0x2004844802002010,
@@ -166,6 +163,7 @@ impl Bishop {
         5, 5, 5, 6,
     ];
 
+    #[allow(clippy::cast_possible_truncation)]
     fn init_attacks() -> [Vec<Bitboard>; 64] {
         let mut attacks: [Vec<Bitboard>; 64] =
             core::array::from_fn(|_| Vec::<Bitboard>::with_capacity(ATTACKS_TABLE_SIZE));
@@ -174,7 +172,7 @@ impl Bishop {
             for idx in 0u16..(1 << Self::INDEX_BITS[square as usize]) {
                 let blockers: Bitboard = Self::get_blockers_from_index(
                     idx,
-                    MASKS.get_or_init(|| Self::init_masks())[square as usize],
+                    MASKS.get_or_init(Self::init_masks)[square as usize],
                 );
                 let second_index = (blockers.wrapping_mul(Self::MAGICS[square as usize]))
                     >> (64 - Self::INDEX_BITS[square as usize]);
