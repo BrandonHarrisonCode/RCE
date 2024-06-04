@@ -556,4 +556,26 @@ mod tests {
         let correct_set: HashSet<Ply> = correct.into_iter().collect();
         assert_eq!(result_set, correct_set);
     }
+
+    #[test]
+    fn test_bishop_get_moveset_black_e8() {
+        let board = Board::construct_empty_board();
+        let piece = Kind::Bishop(Color::Black);
+        let start_square = Square::from("e8");
+
+        let result = piece.get_moveset(start_square, &board);
+        let correct = vec![
+            Ply::new(start_square, Square::from("a4")),
+            Ply::new(start_square, Square::from("b5")),
+            Ply::new(start_square, Square::from("c6")),
+            Ply::new(start_square, Square::from("d7")),
+            Ply::new(start_square, Square::from("f7")),
+            Ply::new(start_square, Square::from("g6")),
+            Ply::new(start_square, Square::from("h5")),
+        ];
+
+        let result_set: HashSet<Ply> = result.into_iter().collect();
+        let correct_set: HashSet<Ply> = correct.into_iter().collect();
+        assert_eq!(result_set, correct_set);
+    }
 }

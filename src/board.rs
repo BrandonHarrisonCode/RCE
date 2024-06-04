@@ -1,5 +1,4 @@
 use std::fmt;
-
 pub mod bitboard;
 mod bitboards;
 mod boardbuilder;
@@ -252,11 +251,11 @@ impl Board {
 
         // Don't allow leaving your king in check
         self.make_move(ply);
-        let result = self.is_in_check();
-        self.unmake_move();
-        if result {
+        if self.is_in_check(self.current_turn.opposite()) {
+            self.unmake_move();
             return Err("Move is not valid. The move would leave the king in check.");
         }
+        self.unmake_move();
 
         Ok(ply)
     }
@@ -595,15 +594,15 @@ impl Board {
     /// assert!(!board.is_in_check());
     /// ```
     #[allow(dead_code)]
-    pub fn is_in_check(&self) -> bool {
-        let attacking_pieces = match self.current_turn {
+    pub fn is_in_check(&self, color: Color) -> bool {
+        let attacking_pieces = match color {
             Color::White => self.bitboards.black_pieces,
             Color::Black => self.bitboards.white_pieces,
         };
 
         let mut attacks = Bitboard::new(0);
         for square in 0..64u8 {
-            if attacking_pieces & 1 << square == Bitboard::new(0) {
+            if attacking_pieces & (1 << square) == Bitboard::new(0) {
                 continue;
             }
 
@@ -614,10 +613,15 @@ impl Board {
             attacks |= piece.get_attacks(Square::from(square), self);
         }
 
-        let king_pos = match self.current_turn {
+        let king_pos = match color {
             Color::White => self.bitboards.white_king,
             Color::Black => self.bitboards.black_king,
         };
+
+        if king_pos & attacks != Bitboard::new(0) {
+            println!("{self}");
+            dbg!(attacks);
+        }
 
         king_pos & attacks != Bitboard::new(0)
     }
@@ -830,12 +834,8 @@ impl Board {
             };
         }
 
-        if self
-            .history
-            .last()
-            .map_or(false, |mv| mv.is_double_pawn_push)
-        {
-            self.en_passant_file = Some(self.history.last().unwrap().start.file);
+        if self.history.last().is_some_and(|f| f.en_passant) {
+            self.en_passant_file = Some(self.history.last().unwrap().dest.file);
         } else {
             self.en_passant_file = None;
         }
@@ -1186,19 +1186,19 @@ mod tests {
     #[test]
     fn test_is_not_in_check() {
         let board = Board::construct_starting_board();
-        assert!(!board.is_in_check());
+        assert!(!board.is_in_check(Color::White));
     }
 
     #[test]
     fn test_is_in_check_white_by_queen() {
         let board = Board::from_fen("8/1k6/2q5/8/8/2K3Q1/8/8 w - - 0 1");
-        assert!(board.is_in_check());
+        assert!(board.is_in_check(Color::White));
     }
 
     #[test]
     fn test_is_in_check_black_by_queen() {
         let board = Board::from_fen("8/1K6/2Q5/8/8/2k3q1/8/8 b - - 0 1");
-        assert!(board.is_in_check());
+        assert!(board.is_in_check(Color::Black));
     }
 
     #[test]
@@ -1213,7 +1213,6 @@ mod tests {
     #[test]
     fn test_get_legal_moves_count_from_position_1() {
         let mut board = Board::from_fen("2k1b3/8/8/8/2K5/5Q2/5PPP/5RN1 w - - 0 1");
-        println!("{board}");
         let result = board.get_legal_moves().len();
         let correct = 39;
 
