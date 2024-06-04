@@ -86,6 +86,7 @@ impl Piece for Pawn {
 
 impl PrecomputedColor for Pawn {
     fn init_attacks() -> [[Bitboard; 64]; 2] {
+        assert!(ATTACKS.get().is_none());
         let mut attacks = [[Bitboard::new(0); 64]; 2];
         for idx in 0..64u8 {
             let origin = Bitboard::new(1 << idx);

@@ -156,6 +156,7 @@ impl Board {
 mod tests {
     use super::super::bitboards::Bitboards;
     use super::*;
+    use crate::board::GameState;
     use pretty_assertions::assert_eq;
 
     #[test]
@@ -171,6 +172,7 @@ mod tests {
             current_turn: Color::White,
             halfmove_clock: 0,
             fullmove_counter: 21,
+            game_state: GameState::InProgress,
 
             white_kingside_castling: CastlingStatus::Unavailiable,
             white_queenside_castling: CastlingStatus::Unavailiable,
@@ -207,6 +209,7 @@ mod tests {
             current_turn: Color::Black,
             halfmove_clock: 12,
             fullmove_counter: 31,
+            game_state: GameState::InProgress,
 
             white_kingside_castling: CastlingStatus::Unavailiable,
             white_queenside_castling: CastlingStatus::Unavailiable,

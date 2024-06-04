@@ -29,12 +29,25 @@ pub enum CastlingKind {
     BlackQueenside,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
+pub enum GameState {
+    #[default]
+    Unknown,
+    InProgress,
+    CheckmateWhite,
+    CheckmateBlack,
+    Stalemate,
+    ThreefoldRepition,
+    FiftyMoveRule,
+}
+
 // Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
     pub current_turn: Color,
     pub halfmove_clock: u8,
     pub fullmove_counter: u16,
+    pub game_state: GameState,
 
     white_kingside_castling: CastlingStatus,
     white_queenside_castling: CastlingStatus,
@@ -60,6 +73,7 @@ impl Default for Board {
             current_turn: Color::White,
             halfmove_clock: 0,
             fullmove_counter: 1,
+            game_state: GameState::InProgress,
 
             white_kingside_castling: CastlingStatus::Availiable,
             white_queenside_castling: CastlingStatus::Availiable,
@@ -621,12 +635,17 @@ impl Board {
         king_pos & attacks != Bitboard::new(0)
     }
 
+    #[allow(dead_code)]
     pub fn is_in_checkmate(&mut self) -> bool {
-        self.is_in_check(self.current_turn) && self.get_legal_moves().is_empty()
+        self.set_game_state();
+        return self.game_state == GameState::CheckmateWhite
+            || self.game_state == GameState::CheckmateBlack;
     }
 
+    #[allow(dead_code)]
     pub fn is_stalemate(&mut self) -> bool {
-        !self.is_in_check(self.current_turn) && self.get_legal_moves().is_empty()
+        self.set_game_state();
+        return self.game_state == GameState::Stalemate;
     }
 
     // TODO
@@ -636,12 +655,47 @@ impl Board {
 
     #[allow(dead_code)]
     pub fn is_draw(&mut self) -> bool {
-        self.halfmove_clock >= 100 || self.is_stalemate() || self.is_threefold_repetition()
+        self.set_game_state();
+        match self.game_state {
+            GameState::Stalemate | GameState::ThreefoldRepition | GameState::FiftyMoveRule => true,
+            _ => false,
+        }
     }
 
     #[allow(dead_code)]
     pub fn is_game_over(&mut self) -> bool {
-        self.is_in_checkmate() || self.is_draw()
+        self.set_game_state();
+        return self.game_state != GameState::InProgress;
+    }
+
+    fn set_game_state(&mut self) {
+        if self.game_state != GameState::Unknown {
+            return;
+        }
+
+        let is_in_check = self.is_in_check(self.current_turn);
+        let legal_moves_empty = self.get_legal_moves().is_empty();
+        let threefold_repetition = self.is_threefold_repetition();
+
+        match (
+            is_in_check,
+            legal_moves_empty,
+            self.halfmove_clock >= 100,
+            threefold_repetition,
+        ) {
+            (true, true, _, _) => {
+                self.game_state = match self.current_turn {
+                    Color::White => GameState::CheckmateWhite,
+                    Color::Black => GameState::CheckmateBlack,
+                };
+            }
+            (false, true, _, _) => self.game_state = GameState::Stalemate,
+            (_, _, true, _) => self.game_state = GameState::FiftyMoveRule,
+            (_, _, _, true) => self.game_state = GameState::ThreefoldRepition,
+            (false, false, false, false) | (true, false, false, false) => {
+                self.game_state = GameState::InProgress
+            }
+        }
     }
 
     /// Adds a new piece of the specified kind to a square on the board
@@ -750,6 +804,7 @@ impl Board {
             };
         }
 
+        self.game_state = GameState::Unknown;
         self.switch_turn();
         self.history.push(new_move);
     }
@@ -857,6 +912,9 @@ impl Board {
         } else {
             self.en_passant_file = None;
         }
+
+        // Cannot make a move if game is over, so all previous moves are in progress
+        self.game_state = GameState::InProgress;
 
         self.switch_turn();
     }

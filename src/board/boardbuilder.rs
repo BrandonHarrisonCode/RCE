@@ -2,6 +2,7 @@ use super::piece::Color;
 use super::ply::Ply;
 use super::Board;
 use super::CastlingStatus;
+use super::GameState;
 
 use super::bitboards::builder::Builder;
 use super::bitboards::Bitboards;
@@ -11,6 +12,7 @@ pub struct BoardBuilder {
     pub current_turn: Color,
     pub halfmove_clock: u8,
     pub fullmove_counter: u16,
+    pub game_state: GameState,
 
     pub white_kingside_castling: CastlingStatus,
     pub white_queenside_castling: CastlingStatus,
@@ -31,6 +33,7 @@ impl BoardBuilder {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
+            game_state: GameState::InProgress,
 
             white_kingside_castling: CastlingStatus::Availiable,
             white_queenside_castling: CastlingStatus::Availiable,
@@ -43,6 +46,12 @@ impl BoardBuilder {
 
             history: Vec::new(),
         }
+    }
+
+    #[allow(dead_code)]
+    pub const fn game_state(mut self, state: GameState) -> Self {
+        self.game_state = state;
+        self
     }
 
     /// Set the color of the player who is currently playing
@@ -356,6 +365,7 @@ impl BoardBuilder {
             current_turn: self.current_turn,
             halfmove_clock: self.halfmove_clock,
             fullmove_counter: self.fullmove_counter,
+            game_state: self.game_state,
 
             white_kingside_castling: self.white_kingside_castling,
             white_queenside_castling: self.white_queenside_castling,

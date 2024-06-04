@@ -28,6 +28,7 @@ impl Piece for Rook {
 
 impl Magic for Rook {
     fn init_masks() -> [Bitboard; 64] {
+        assert!(MASKS.get().is_none());
         let mut masks: [Bitboard; 64] = [Bitboard::new(0); 64];
         let rays = RAYS.get_or_init(crate::board::square::rays::Rays::new).rays;
 
@@ -165,6 +166,7 @@ impl Rook {
 
     #[allow(clippy::cast_possible_truncation)]
     fn init_attacks() -> [Vec<Bitboard>; 64] {
+        assert!(ATTACKS.get().is_none());
         let mut attacks: [Vec<Bitboard>; 64] =
             core::array::from_fn(|_| Vec::<Bitboard>::with_capacity(ATTACKS_TABLE_SIZE));
         for square in 0..64u8 {

@@ -24,6 +24,7 @@ impl Piece for Knight {
 
 impl Precomputed for Knight {
     fn init_attacks() -> [Bitboard; 64] {
+        assert!(ATTACKS.get().is_none());
         let mut attacks = [Bitboard::new(0); 64];
         for (idx, attacks_at_square) in attacks.iter_mut().enumerate() {
             let origin = Bitboard::new(1 << idx);
