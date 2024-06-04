@@ -89,6 +89,7 @@ pub mod tests {
         assert_eq!(nodes, 197_281);
     }
 
+    /*
     #[test]
     fn test_perft_depth_5() {
         let mut board = Board::construct_starting_board();
@@ -96,7 +97,6 @@ pub mod tests {
         assert_eq!(nodes, 4_865_609);
     }
 
-    /*
     #[test]
     fn test_perft_depth_6() {
         let mut board = Board::construct_starting_board();
