@@ -112,7 +112,7 @@ fn history(builder: BoardBuilder) -> BoardBuilder {
             Color::Black => (Square { rank: 6, file }, Square { rank: 4, file }),
         };
 
-        history.push(Ply::builder(start, dest).en_passant(true).build());
+        history.push(Ply::builder(start, dest).double_pawn_push(true).build());
     }
 
     builder.history(&history)

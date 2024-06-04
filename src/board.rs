@@ -191,7 +191,7 @@ impl Board {
                             .map(|mut mv| {
                                 if mv.en_passant {
                                     mv.captured_piece = self.get_piece(Square {
-                                        rank: square.rank,
+                                        rank: mv.start.rank,
                                         file: mv.dest.file,
                                     });
                                 } else {
@@ -391,11 +391,11 @@ impl Board {
 
         let ep_captured_piece = match start_piece {
             Kind::Pawn(Color::White) if ply.start.rank == 4 => self.get_piece(Square {
-                rank: ply.dest.rank - 1,
+                rank: ply.start.rank,
                 file: ply.dest.file,
             }),
             Kind::Pawn(Color::Black) if ply.start.rank == 3 => self.get_piece(Square {
-                rank: ply.dest.rank + 1,
+                rank: ply.start.rank,
                 file: ply.dest.file,
             }),
             _ => None,
@@ -618,12 +618,30 @@ impl Board {
             Color::Black => self.bitboards.black_king,
         };
 
-        if king_pos & attacks != Bitboard::new(0) {
-            println!("{self}");
-            dbg!(attacks);
-        }
-
         king_pos & attacks != Bitboard::new(0)
+    }
+
+    pub fn is_in_checkmate(&mut self) -> bool {
+        self.is_in_check(self.current_turn) && self.get_legal_moves().is_empty()
+    }
+
+    pub fn is_stalemate(&mut self) -> bool {
+        !self.is_in_check(self.current_turn) && self.get_legal_moves().is_empty()
+    }
+
+    // TODO
+    pub fn is_threefold_repetition(&mut self) -> bool {
+        false
+    }
+
+    #[allow(dead_code)]
+    pub fn is_draw(&mut self) -> bool {
+        self.halfmove_clock >= 100 || self.is_stalemate() || self.is_threefold_repetition()
+    }
+
+    #[allow(dead_code)]
+    pub fn is_game_over(&mut self) -> bool {
+        self.is_in_checkmate() || self.is_draw()
     }
 
     /// Adds a new piece of the specified kind to a square on the board
@@ -834,7 +852,7 @@ impl Board {
             };
         }
 
-        if self.history.last().is_some_and(|f| f.en_passant) {
+        if self.history.last().is_some_and(|f| f.is_double_pawn_push) {
             self.en_passant_file = Some(self.history.last().unwrap().dest.file);
         } else {
             self.en_passant_file = None;

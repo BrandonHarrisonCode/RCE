@@ -26,7 +26,11 @@ pub mod tests {
     }
 
     pub fn perft(board: &mut Board, depth: u32) -> u64 {
-        if depth == 0 {
+        perft_helper(board, depth, depth)
+    }
+
+    fn perft_helper(board: &mut Board, depth: u32, max_depth: u32) -> u64 {
+        if depth == 0 || board.is_game_over() {
             return 1;
         }
 
@@ -36,10 +40,22 @@ pub mod tests {
         }
 
         let mut nodes = 0;
+        let mut output: Vec<String> = Vec::new();
         for mv in moves {
             board.make_move(mv);
-            nodes += perft(board, depth - 1);
+            let new_nodes = perft_helper(board, depth - 1, max_depth);
+            if depth == max_depth {
+                output.push(format!("{mv}: {new_nodes}"));
+            }
+            nodes += new_nodes;
             board.unmake_move();
+        }
+
+        if depth == max_depth {
+            output.sort();
+            for line in output {
+                println!("{line}");
+            }
         }
 
         nodes
@@ -133,5 +149,21 @@ pub mod tests {
     fn bench_perft_depth_3(bencher: &mut Bencher) {
         let mut board = Board::construct_starting_board();
         bencher.iter(|| perft(&mut board, 3));
+    }
+
+    #[test]
+    fn test_perft_from_position_1() {
+        let mut board =
+            Board::from_fen("rnbqkbnr/1ppppppp/p7/P7/8/8/1PPPPPPP/RNBQKBNR b KQkq - 0 2");
+        let nodes = perft(&mut board, 2);
+        assert_eq!(nodes, 380);
+    }
+
+    #[test]
+    fn test_perft_from_position_2() {
+        let mut board =
+            Board::from_fen("rnbqkbnr/2pppppp/p7/Pp6/8/8/1PPPPPPP/RNBQKBNR w KQkq b6 0 3");
+        let nodes = perft(&mut board, 1);
+        assert_eq!(nodes, 22);
     }
 }
