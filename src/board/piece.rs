@@ -102,6 +102,17 @@ impl Kind {
             })
             .collect::<Vec<Ply>>()
     }
+
+    pub fn get_attacks(self, square: Square, board: &Board) -> Bitboard {
+        match self {
+            Self::Pawn(color) => Pawn::get_attacks(square, color),
+            Self::King(_) => King::get_attacks(square),
+            Self::Queen(_) => Queen::get_attacks(square, board.bitboards.all_pieces),
+            Self::Rook(_) => Rook::get_attacks(square, board.bitboards.all_pieces),
+            Self::Bishop(_) => Bishop::get_attacks(square, board.bitboards.all_pieces),
+            Self::Knight(_) => Knight::get_attacks(square),
+        }
+    }
 }
 
 pub trait Piece: Clone + PartialEq + Eq {

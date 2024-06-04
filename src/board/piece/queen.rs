@@ -1,3 +1,4 @@
+use super::super::bitboard::Bitboard;
 use super::{Bishop, Color, Piece, Ply, Rook, Square};
 use crate::board::Board;
 
@@ -11,11 +12,16 @@ impl Piece for Queen {
     const BLACK_SYMBOL: &'static str = "♕";
 
     fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
-        let move_mask = Rook::get_attacks_wrapper(square, board.bitboards.all_pieces)
-            | Bishop::get_attacks_wrapper(square, board.bitboards.all_pieces);
+        let move_mask = Self::get_attacks(square, board.bitboards.all_pieces);
         let squares: Vec<Square> = move_mask.into();
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
+    }
+}
+
+impl Queen {
+    pub fn get_attacks(square: Square, blockers: Bitboard) -> Bitboard {
+        Rook::get_attacks_wrapper(square, blockers) | Bishop::get_attacks_wrapper(square, blockers)
     }
 }
 
