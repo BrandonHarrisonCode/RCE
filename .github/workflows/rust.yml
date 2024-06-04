@@ -23,7 +23,7 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Run slow tests
-      run: cargo test --verbose -- --ignored
+      run: cargo test --release --verbose -- --ignored
   bench:
     runs-on: ubuntu-latest
     steps:
