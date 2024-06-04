@@ -30,7 +30,10 @@ pub mod tests {
     }
 
     fn perft_helper(board: &mut Board, depth: u32, max_depth: u32) -> u64 {
-        if depth == 0 || board.is_game_over() {
+        if board.is_game_over() {
+            return 0;
+        }
+        if depth == 0 {
             return 1;
         }
 
@@ -89,8 +92,8 @@ pub mod tests {
         assert_eq!(nodes, 197_281);
     }
 
-    /*
     #[test]
+    #[ignore]
     fn test_perft_depth_5() {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 5);
@@ -98,6 +101,7 @@ pub mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_perft_depth_6() {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 6);
@@ -105,6 +109,7 @@ pub mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_perft_depth_7() {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 7);
@@ -112,6 +117,7 @@ pub mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_perft_depth_8() {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 8);
@@ -119,6 +125,7 @@ pub mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_perft_depth_9() {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 9);
@@ -126,12 +133,12 @@ pub mod tests {
     }
 
     #[test]
+    #[ignore]
     fn test_perft_depth_10() {
         let mut board = Board::construct_starting_board();
         let nodes = perft(&mut board, 10);
         assert_eq!(nodes, 69_352_859_712_417);
     }
-    */
 
     #[bench]
     fn bench_perft_depth_1(bencher: &mut Bencher) {
@@ -165,5 +172,21 @@ pub mod tests {
             Board::from_fen("rnbqkbnr/2pppppp/p7/Pp6/8/8/1PPPPPPP/RNBQKBNR w KQkq b6 0 3");
         let nodes = perft(&mut board, 1);
         assert_eq!(nodes, 22);
+    }
+
+    #[test]
+    fn test_perft_from_position_3() {
+        let mut board =
+            Board::from_fen("rnbqkbnr/pppppppp/8/8/8/5P2/PPPPP1PP/RNBQKBNR b KQkq - 0 1");
+        let nodes = perft(&mut board, 4);
+        assert_eq!(nodes, 178_889);
+    }
+
+    #[test]
+    fn test_perft_from_position_4() {
+        let mut board =
+            Board::from_fen("rnbqkbnr/pppp1ppp/8/4p3/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 0 2");
+        let nodes = perft(&mut board, 3);
+        assert_eq!(nodes, 11_679);
     }
 }
