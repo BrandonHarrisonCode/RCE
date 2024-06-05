@@ -816,6 +816,18 @@ impl Board {
             };
         }
 
+        if new_move.captured_piece.is_some()
+            || matches!(self.get_piece(new_move.dest), Some(Kind::Pawn(_)))
+        {
+            self.halfmove_clock = 0;
+        } else {
+            self.halfmove_clock += 1;
+        }
+
+        if self.current_turn == Color::Black {
+            self.fullmove_counter += 1;
+        }
+
         self.game_state = GameState::Unknown;
         self.switch_turn();
         self.history.push(new_move);
@@ -923,6 +935,11 @@ impl Board {
             self.en_passant_file = Some(self.history.last().unwrap().dest.file);
         } else {
             self.en_passant_file = None;
+        }
+
+        // TODO halfmove clock (probably need to store in Ply)
+        if self.current_turn == Color::White {
+            self.fullmove_counter -= 1;
         }
 
         // Cannot make a move if game is over, so all previous moves are in progress
