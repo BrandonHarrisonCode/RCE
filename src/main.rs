@@ -6,32 +6,34 @@ extern crate strum_macros;
 extern crate derive_more;
 
 mod board;
+mod evaluate;
+mod search;
 mod utils;
 
 use board::piece::Color;
 use board::Board;
 use board::Ply;
-
-use rand::seq::SliceRandom;
-use rand::thread_rng;
+use evaluate::simple_evaluator::SimpleEvaluator;
+use evaluate::Evaluator;
 
 const TITLE: &str = "Rust Chess Engine";
 const SHORT_TITLE: &str = "RCE";
 
 fn main() {
     println!("{TITLE} - {SHORT_TITLE}");
+    let evaluator = SimpleEvaluator::new();
 
     let mut board = Board::construct_starting_board();
 
     println!("{board}");
-    let mut rng = thread_rng();
 
     loop {
         if board.is_game_over() {
             println!("Game over! {:#?}", board.game_state);
             break;
         }
-        let moves = board.get_legal_moves();
+
+        println!("Current eval: {}", evaluator.evaluate(&board));
 
         if board.current_turn == Color::White {
             let mut line = String::new();
@@ -39,6 +41,7 @@ fn main() {
             std::io::stdin().read_line(&mut line).unwrap();
 
             let player_move = Ply::parse_move(line.trim());
+            let moves = board.get_legal_moves();
             let filtered_move = moves
                 .iter()
                 .find(|mv| mv.start == player_move.start && mv.dest == player_move.dest)
@@ -47,9 +50,9 @@ fn main() {
 
             println!("{filtered_move}:\n{board}");
         } else {
-            let computer_move = moves.choose(&mut rng).unwrap();
+            let computer_move = search::search(&mut board, &evaluator);
             println!("Computer's move: {computer_move}");
-            board.make_move(*computer_move);
+            board.make_move(computer_move);
             println!("{computer_move}:\n{board}");
         }
         println!();

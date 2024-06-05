@@ -56,7 +56,7 @@ pub struct Board {
 
     en_passant_file: Option<u8>,
 
-    bitboards: Bitboards,
+    pub bitboards: Bitboards,
 
     history: Vec<Ply>,
 }
