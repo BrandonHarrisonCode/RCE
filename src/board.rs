@@ -560,8 +560,8 @@ impl Board {
 
     fn no_pieces_between_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
         let pieces_blocking = match kind {
-            CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0xE,
-            CastlingKind::WhiteQueenside => self.bitboards.all_pieces & 0x60,
+            CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0x60,
+            CastlingKind::WhiteQueenside => self.bitboards.all_pieces & 0xE,
             CastlingKind::BlackKingside => self.bitboards.all_pieces & 0x_60000000_00000000,
             CastlingKind::BlackQueenside => self.bitboards.all_pieces & 0x_0E00_0000_0000_0000,
         };
@@ -965,6 +965,8 @@ impl fmt::Display for Board {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::tests::check_unique_equality;
+
     use super::*;
     use pretty_assertions::assert_eq;
 
@@ -1138,6 +1140,90 @@ mod tests {
             board.queenside_castle_status(),
             CastlingStatus::Unavailiable
         );
+    }
+
+    #[test]
+    fn test_castle_make_unmake_move() {
+        let mut board = Board::from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
+
+        let moves_1 = board.get_legal_moves();
+        let white_queenside_castle_move = moves_1
+            .clone()
+            .into_iter()
+            .find(|mv| mv.is_castles && mv.dest.file == 2);
+        assert!(white_queenside_castle_move.is_some());
+        board.make_move(white_queenside_castle_move.unwrap());
+        assert_eq!(
+            board
+                .get_piece(Square::from("c1"))
+                .expect("No King found at c1!"),
+            Kind::King(Color::White)
+        );
+        assert_eq!(
+            board
+                .get_piece(Square::from("d1"))
+                .expect("No Rook found at d1!"),
+            Kind::Rook(Color::White)
+        );
+
+        let moves_2 = board.get_legal_moves();
+        let black_pawn_move = moves_2
+            .clone()
+            .into_iter()
+            .find(|mv| mv.start.file == 0 && mv.dest.rank == 5);
+        assert!(black_pawn_move.is_some());
+        board.make_move(black_pawn_move.unwrap());
+        assert_eq!(board.get_piece(Square::from("a7")), None);
+        assert_eq!(
+            board
+                .get_piece(Square::from("a6"))
+                .expect("No pawn found at a6!"),
+            Kind::Pawn(Color::Black)
+        );
+
+        board.unmake_move();
+        let moves_3 = board.get_legal_moves();
+        check_unique_equality(moves_2.clone(), moves_3.clone());
+        let black_queenside_castle_move = moves_3
+            .into_iter()
+            .find(|mv| mv.is_castles && mv.dest.file == 2);
+        assert!(black_queenside_castle_move.is_some());
+        board.make_move(black_queenside_castle_move.unwrap());
+        assert_eq!(
+            board
+                .get_piece(Square::from("c8"))
+                .expect("No King found at c8!"),
+            Kind::King(Color::Black)
+        );
+        assert_eq!(
+            board
+                .get_piece(Square::from("d8"))
+                .expect("No Rook found at d8!"),
+            Kind::Rook(Color::Black)
+        );
+
+        board.unmake_move();
+        check_unique_equality(moves_2, board.get_legal_moves());
+        board.unmake_move();
+
+        let moves_4 = board.get_legal_moves();
+        check_unique_equality(moves_1.clone(), moves_4.clone());
+        let white_pawn_move = moves_4
+            .clone()
+            .into_iter()
+            .find(|mv| mv.start.file == 0 && mv.dest.rank == 2);
+        assert!(white_pawn_move.is_some());
+        board.make_move(white_pawn_move.unwrap());
+        assert_eq!(board.get_piece(Square::from("a2")), None);
+        assert_eq!(
+            board
+                .get_piece(Square::from("a3"))
+                .expect("No pawn found at a3!"),
+            Kind::Pawn(Color::White)
+        );
+
+        board.unmake_move();
+        check_unique_equality(moves_1, board.get_legal_moves());
     }
 
     #[test]
