@@ -37,7 +37,7 @@ pub enum GameState {
     CheckmateWhite,
     CheckmateBlack,
     Stalemate,
-    ThreefoldRepition,
+    ThreefoldRepetition,
     FiftyMoveRule,
 }
 
@@ -209,7 +209,7 @@ impl Board {
                                         file: mv.dest.file,
                                     });
                                 } else {
-                                    mv.captured_piece = self.get_piece(mv.dest).clone();
+                                    mv.captured_piece = self.get_piece(mv.dest);
                                 }
 
                                 mv
@@ -446,7 +446,7 @@ impl Board {
     /// let ply = Ply(Square::new("e1"), Square::new("g1"));
     /// assert!(board.is_illegal_castling(ply));
     ///
-    fn is_illegal_castling(&mut self, ply: Ply) -> Result<Ply, &'static str> {
+    fn is_illegal_castling(&self, ply: Ply) -> Result<Ply, &'static str> {
         if !ply.is_castles {
             return Ok(ply);
         }
@@ -588,7 +588,7 @@ impl Board {
     /// assert!(board.no_checks_between(Square::new("a1"), Square::new("h1")).is_ok());
     /// assert!(board.no_checks_between(Square::new("a8"), Square::new("h8")).is_err());
     /// ```
-    fn no_checks_castling(&mut self, kind: CastlingKind) -> Result<(), &'static str> {
+    fn no_checks_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
         let attacks = self.get_attacked_squares(self.current_turn);
         if match kind {
             CastlingKind::WhiteKingside => (attacks & 0x1C).is_empty(),
@@ -646,34 +646,28 @@ impl Board {
     #[allow(dead_code)]
     pub fn is_in_checkmate(&mut self) -> bool {
         self.set_game_state();
-        return self.game_state == GameState::CheckmateWhite
-            || self.game_state == GameState::CheckmateBlack;
+        self.game_state == GameState::CheckmateWhite || self.game_state == GameState::CheckmateBlack
     }
 
     #[allow(dead_code)]
     pub fn is_stalemate(&mut self) -> bool {
         self.set_game_state();
-        return self.game_state == GameState::Stalemate;
-    }
-
-    // TODO
-    pub fn is_threefold_repetition(&mut self) -> bool {
-        false
+        self.game_state == GameState::Stalemate
     }
 
     #[allow(dead_code)]
     pub fn is_draw(&mut self) -> bool {
         self.set_game_state();
-        match self.game_state {
-            GameState::Stalemate | GameState::ThreefoldRepition | GameState::FiftyMoveRule => true,
-            _ => false,
-        }
+        matches!(
+            self.game_state,
+            GameState::Stalemate | GameState::ThreefoldRepetition | GameState::FiftyMoveRule
+        )
     }
 
     #[allow(dead_code)]
     pub fn is_game_over(&mut self) -> bool {
         self.set_game_state();
-        return self.game_state != GameState::InProgress;
+        self.game_state != GameState::InProgress
     }
 
     fn set_game_state(&mut self) {
@@ -683,7 +677,8 @@ impl Board {
 
         let is_in_check = self.is_in_check(self.current_turn);
         let legal_moves_empty = self.get_legal_moves().is_empty();
-        let threefold_repetition = self.is_threefold_repetition();
+        //let threefold_repetition = self.is_threefold_repetition();
+        let threefold_repetition = false;
 
         match (
             is_in_check,
@@ -699,9 +694,9 @@ impl Board {
             }
             (false, true, _, _) => self.game_state = GameState::Stalemate,
             (_, _, true, _) => self.game_state = GameState::FiftyMoveRule,
-            (_, _, _, true) => self.game_state = GameState::ThreefoldRepition,
-            (false, false, false, false) | (true, false, false, false) => {
-                self.game_state = GameState::InProgress
+            (_, _, _, true) => self.game_state = GameState::ThreefoldRepetition,
+            (_, false, false, false) => {
+                self.game_state = GameState::InProgress;
             }
         }
     }
@@ -775,8 +770,8 @@ impl Board {
             );
         } else {
             if new_move.captured_piece != dest_piece_kind {
-                println!("{}", self);
-                println!("{:?}", new_move);
+                println!("{self}");
+                println!("{new_move:?}");
             }
             assert_eq!(new_move.captured_piece, dest_piece_kind);
         }

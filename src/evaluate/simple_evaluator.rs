@@ -12,8 +12,8 @@ impl SimpleEvaluator {
     const KNIGHT_VALUE: i32 = 3;
     const PAWN_VALUE: i32 = 1;
 
-    pub fn new() -> Self {
-        SimpleEvaluator {}
+    pub const fn new() -> Self {
+        Self {}
     }
 }
 
@@ -24,12 +24,12 @@ impl Evaluator for SimpleEvaluator {
         for square in 0..64u8 {
             if let Some(piece) = board.get_piece(Square::from(square)) {
                 let piece_value = match piece {
-                    Kind::King(_) => SimpleEvaluator::KING_VALUE,
-                    Kind::Queen(_) => SimpleEvaluator::QUEEN_VALUE,
-                    Kind::Rook(_) => SimpleEvaluator::ROOK_VALUE,
-                    Kind::Bishop(_) => SimpleEvaluator::BISHOP_VALUE,
-                    Kind::Knight(_) => SimpleEvaluator::KNIGHT_VALUE,
-                    Kind::Pawn(_) => SimpleEvaluator::PAWN_VALUE,
+                    Kind::King(_) => Self::KING_VALUE,
+                    Kind::Queen(_) => Self::QUEEN_VALUE,
+                    Kind::Rook(_) => Self::ROOK_VALUE,
+                    Kind::Bishop(_) => Self::BISHOP_VALUE,
+                    Kind::Knight(_) => Self::KNIGHT_VALUE,
+                    Kind::Pawn(_) => Self::PAWN_VALUE,
                 };
 
                 if piece.get_color() == board.current_turn {
