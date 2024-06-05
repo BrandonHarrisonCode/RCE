@@ -209,7 +209,7 @@ impl Board {
                                         file: mv.dest.file,
                                     });
                                 } else {
-                                    mv.captured_piece = self.get_piece(mv.dest);
+                                    mv.captured_piece = self.get_piece(mv.dest).clone();
                                 }
 
                                 mv
@@ -456,7 +456,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::WhiteKingside)
-                    .and(self.no_checks_between(Square::from("e1"), Square::from("g1")))
+                    .and(self.no_checks_castling(CastlingKind::WhiteKingside))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle kingside."),
@@ -465,7 +465,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::WhiteQueenside)
-                    .and(self.no_checks_between(Square::from("e1"), Square::from("c1")))
+                    .and(self.no_checks_castling(CastlingKind::WhiteQueenside))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The white king cannot castle queenside."),
@@ -474,7 +474,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::BlackKingside)
-                    .and(self.no_checks_between(Square::from("e1"), Square::from("g1")))
+                    .and(self.no_checks_castling(CastlingKind::BlackKingside))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle kingside."),
@@ -483,7 +483,7 @@ impl Board {
                 == CastlingStatus::Availiable
                 && self
                     .no_pieces_between_castling(CastlingKind::BlackQueenside)
-                    .and(self.no_checks_between(Square::from("e1"), Square::from("g1")))
+                    .and(self.no_checks_castling(CastlingKind::BlackQueenside))
                     .is_ok())
             .then_some(ply)
             .ok_or("Move is not valid. The black king cannot castle queenside."),
@@ -588,27 +588,21 @@ impl Board {
     /// assert!(board.no_checks_between(Square::new("a1"), Square::new("h1")).is_ok());
     /// assert!(board.no_checks_between(Square::new("a8"), Square::new("h8")).is_err());
     /// ```
-    fn no_checks_between(&mut self, start: Square, dest: Square) -> Result<(), &'static str> {
-        let squares = start.get_transit_squares(dest);
-        if squares
-            .into_iter()
-            .all(|sq| self.is_legal_move(Ply::new(start, sq)).is_ok())
-        {
+    fn no_checks_castling(&mut self, kind: CastlingKind) -> Result<(), &'static str> {
+        let attacks = self.get_attacked_squares(self.current_turn);
+        if match kind {
+            CastlingKind::WhiteKingside => (attacks & 0x1C).is_empty(),
+            CastlingKind::WhiteQueenside => (attacks & 0x70).is_empty(),
+            CastlingKind::BlackKingside => (attacks & 0x_7000_0000_0000_0000).is_empty(),
+            CastlingKind::BlackQueenside => (attacks & 0x1C00_0000_0000_0000).is_empty(),
+        } {
             Ok(())
         } else {
             Err("There are checks between the start and destination squares.")
         }
     }
 
-    /// Returns a boolean representing whether or not the current side is in check
-    ///
-    /// # Examples
-    /// ```
-    /// let board = Board::construct_starting_board();
-    /// assert!(!board.is_in_check());
-    /// ```
-    #[allow(dead_code)]
-    pub fn is_in_check(&self, color: Color) -> bool {
+    fn get_attacked_squares(&self, color: Color) -> Bitboard {
         let attacking_pieces = match color {
             Color::White => self.bitboards.black_pieces,
             Color::Black => self.bitboards.white_pieces,
@@ -626,6 +620,20 @@ impl Board {
 
             attacks |= piece.get_attacks(Square::from(square), self);
         }
+
+        attacks
+    }
+
+    /// Returns a boolean representing whether or not the current side is in check
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// assert!(!board.is_in_check());
+    /// ```
+    #[allow(dead_code)]
+    pub fn is_in_check(&self, color: Color) -> bool {
+        let attacks = self.get_attacked_squares(color);
 
         let king_pos = match color {
             Color::White => self.bitboards.white_king,
@@ -766,6 +774,10 @@ impl Board {
                 Kind::Pawn(self.current_turn.opposite()),
             );
         } else {
+            if new_move.captured_piece != dest_piece_kind {
+                println!("{}", self);
+                println!("{:?}", new_move);
+            }
             assert_eq!(new_move.captured_piece, dest_piece_kind);
         }
 

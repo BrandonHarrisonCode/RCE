@@ -189,4 +189,20 @@ pub mod tests {
         let nodes = perft(&mut board, 3);
         assert_eq!(nodes, 11_679);
     }
+
+    #[test]
+    fn test_perft_from_position_5() {
+        let mut board =
+            Board::from_fen("rn1qkbnr/p1pppppp/bp6/8/8/N3PN2/PPPP1PPP/R1BQKB1R b KQkq - 0 3");
+        let nodes = perft(&mut board, 2);
+        assert_eq!(nodes, 636);
+    }
+
+    #[test]
+    fn test_perft_from_position_6() {
+        let mut board =
+            Board::from_fen("rn1qkbnr/p1pppppp/1p6/8/8/N3PN2/PPPP1PPP/R1BQKb1R w KQkq - 0 4");
+        let nodes = perft(&mut board, 1);
+        assert_eq!(nodes, 24);
+    }
 }
