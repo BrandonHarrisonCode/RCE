@@ -27,11 +27,11 @@ fn main() {
     let mut rng = thread_rng();
 
     loop {
-        let moves = board.get_legal_moves();
-        if moves.is_empty() {
-            println!("Game over!");
+        if board.is_game_over() {
+            println!("Game over! {:#?}", board.game_state);
             break;
         }
+        let moves = board.get_legal_moves();
 
         if board.current_turn == Color::White {
             let mut line = String::new();
