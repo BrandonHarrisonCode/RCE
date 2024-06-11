@@ -10,7 +10,7 @@ use super::bitboards::Bitboards;
 #[derive(Default)]
 pub struct BoardBuilder {
     pub current_turn: Color,
-    pub halfmove_clock: u8,
+    pub halfmove_clock: u16,
     pub fullmove_counter: u16,
     pub game_state: GameState,
 
@@ -320,7 +320,7 @@ impl BoardBuilder {
     ///
     /// let builder = BoardBuilder::default().halfmove_clock(5);
     /// ```
-    pub const fn halfmove_clock(mut self, value: u8) -> Self {
+    pub const fn halfmove_clock(mut self, value: u16) -> Self {
         self.halfmove_clock = value;
         self
     }

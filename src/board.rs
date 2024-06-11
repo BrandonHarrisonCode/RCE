@@ -45,7 +45,7 @@ pub enum GameState {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
     pub current_turn: Color,
-    pub halfmove_clock: u8,
+    pub halfmove_clock: u16,
     pub fullmove_counter: u16,
     pub game_state: GameState,
 
@@ -591,8 +591,8 @@ impl Board {
     fn no_checks_castling(&mut self, kind: CastlingKind) -> Result<(), &'static str> {
         let attacks = self.get_attacked_squares(self.current_turn);
         if match kind {
-            CastlingKind::WhiteKingside => (attacks & 0x1C).is_empty(),
-            CastlingKind::WhiteQueenside => (attacks & 0x70).is_empty(),
+            CastlingKind::WhiteKingside => (attacks & 0x70).is_empty(),
+            CastlingKind::WhiteQueenside => (attacks & 0x1C).is_empty(),
             CastlingKind::BlackKingside => (attacks & 0x_7000_0000_0000_0000).is_empty(),
             CastlingKind::BlackQueenside => (attacks & 0x1C00_0000_0000_0000).is_empty(),
         } {
@@ -774,10 +774,6 @@ impl Board {
                 Kind::Pawn(self.current_turn.opposite()),
             );
         } else {
-            if new_move.captured_piece != dest_piece_kind {
-                println!("{}", self);
-                println!("{:?}", new_move);
-            }
             assert_eq!(new_move.captured_piece, dest_piece_kind);
         }
 
@@ -938,6 +934,7 @@ impl Board {
         }
 
         // TODO halfmove clock (probably need to store in Ply)
+        self.halfmove_clock = self.halfmove_clock.saturating_sub(1);
         if self.current_turn == Color::White {
             self.fullmove_counter -= 1;
         }

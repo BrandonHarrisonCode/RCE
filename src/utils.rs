@@ -205,4 +205,27 @@ pub mod tests {
         let nodes = perft(&mut board, 1);
         assert_eq!(nodes, 24);
     }
+
+    #[test]
+    fn test_perft_from_position_7() {
+        let mut board =
+            Board::from_fen("rnb1kbnr/1p1p1ppp/8/2p5/p1QPP3/2N4q/PPP1NP2/R1B1K1R1 w Qkq - 1 13");
+        let nodes = perft(&mut board, 2);
+        assert_eq!(nodes, 1515);
+    }
+
+    #[test]
+    fn test_perft_from_position_8() {
+        let mut board = Board::from_fen("rnb1kqRQ/1p1p3p/8/2p5/p3P3/8/PPP1NP2/R3K3 b Q - 2 24");
+        let nodes = perft(&mut board, 2);
+        assert_eq!(nodes, 591);
+    }
+
+    // doesn't allow castling for some reason
+    #[test]
+    fn test_perft_from_position_9() {
+        let mut board = Board::from_fen("rnb1k1qQ/1p1p3p/8/2p5/p3P3/8/PPP1NP2/R3K3 w Q - 0 25");
+        let nodes = perft(&mut board, 1);
+        assert_eq!(nodes, 28);
+    }
 }

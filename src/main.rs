@@ -24,6 +24,7 @@ fn main() {
     let evaluator = SimpleEvaluator::new();
 
     let mut board = Board::construct_starting_board();
+    board = Board::from_fen("8/3p2K1/8/8/8/4R3/4Q3/k7 w - - 1 4");
 
     println!("{board}");
 
@@ -32,8 +33,6 @@ fn main() {
             println!("Game over! {:#?}", board.game_state);
             break;
         }
-
-        println!("Current eval: {}", evaluator.evaluate(&board));
 
         if board.current_turn == Color::White {
             let mut line = String::new();

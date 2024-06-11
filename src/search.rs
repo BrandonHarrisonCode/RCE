@@ -22,6 +22,7 @@ fn negamax(board: &mut Board, evaluator: &impl Evaluator) -> Ply {
         board.unmake_move();
     }
 
+    println!("Best value: {}", best_value);
     best_ply
 }
 
