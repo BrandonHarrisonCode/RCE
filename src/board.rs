@@ -964,7 +964,6 @@ impl fmt::Display for Board {
 mod tests {
     use crate::utils::tests::check_unique_equality;
     use boardbuilder::BoardBuilder;
-    use piece::rook::Rook;
 
     use super::*;
     use pretty_assertions::assert_eq;
