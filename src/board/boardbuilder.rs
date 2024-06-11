@@ -4,8 +4,8 @@ use super::Board;
 use super::CastlingStatus;
 use super::GameState;
 
-use super::bitboards::builder::Builder;
-use super::bitboards::Bitboards;
+use super::bitboards;
+use super::bitboards::builder::Builder as BitboardsBuilder;
 
 #[derive(Default)]
 pub struct BoardBuilder {
@@ -14,43 +14,84 @@ pub struct BoardBuilder {
     pub fullmove_counter: u16,
     pub game_state: GameState,
 
-    pub white_kingside_castling: CastlingStatus,
-    pub white_queenside_castling: CastlingStatus,
-    pub black_kingside_castling: CastlingStatus,
-    pub black_queenside_castling: CastlingStatus,
-
     pub en_passant_file: Option<u8>,
 
-    pub bitboards: Builder,
+    pub bitboards: BitboardsBuilder,
 
     pub history: Vec<Ply>,
 }
 
 impl BoardBuilder {
+    /// Creates a new board object that represents the starting board state in a normal game
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::construct_starting_board();
+    /// ```
+    pub fn construct_starting_board() -> Board {
+        Self::default().build()
+    }
+
     #[allow(dead_code)]
-    pub const fn default() -> Self {
+    /// Creates a new board object without any pieces on the board
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_empty_board();
+    /// ```
+    pub fn construct_empty_board() -> Board {
+        Self::default().clear().build()
+    }
+
+    #[allow(dead_code)]
+    pub fn default() -> Self {
         Self {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
             game_state: GameState::InProgress,
 
-            white_kingside_castling: CastlingStatus::Availiable,
-            white_queenside_castling: CastlingStatus::Availiable,
-            black_kingside_castling: CastlingStatus::Availiable,
-            black_queenside_castling: CastlingStatus::Availiable,
+            en_passant_file: None,
+
+            bitboards: BitboardsBuilder::default(),
+
+            history: vec![Ply::default()],
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn new() -> Self {
+        Self {
+            current_turn: Color::default(),
+            halfmove_clock: 0,
+            fullmove_counter: 1,
+            game_state: GameState::InProgress,
 
             en_passant_file: None,
 
-            bitboards: Bitboards::builder(),
+            bitboards: BitboardsBuilder::new(),
 
-            history: Vec::new(),
+            history: vec![Ply::default()],
         }
     }
 
     #[allow(dead_code)]
     pub const fn game_state(mut self, state: GameState) -> Self {
         self.game_state = state;
+        self
+    }
+
+    pub fn get_last_history(&mut self) -> &mut Ply {
+        if self.history.is_empty() {
+            self.history.push(Ply::default());
+        }
+        self.history
+            .last_mut()
+            .expect("History could not be written to")
+    }
+
+    pub fn clear(mut self) -> Self {
+        self.bitboards = bitboards::builder::Builder::new();
         self
     }
 
@@ -94,10 +135,10 @@ impl BoardBuilder {
     ///
     /// let builder = BoardBuilder::default().kingside_castling(Color::Black, Castling::Unavailiable);
     /// ```
-    pub const fn kingside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
+    pub fn kingside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
         match color {
-            Color::White => self.white_kingside_castling = value,
-            Color::Black => self.black_kingside_castling = value,
+            Color::White => self.get_last_history().castling_rights.white_kingside = value,
+            Color::Black => self.get_last_history().castling_rights.black_kingside = value,
         }
         self
     }
@@ -119,10 +160,10 @@ impl BoardBuilder {
     ///
     /// let builder = BoardBuilder::default().queenside_castling(Color::Black, Castling::Unavailiable);
     /// ```
-    pub const fn queenside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
+    pub fn queenside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
         match color {
-            Color::White => self.white_queenside_castling = value,
-            Color::Black => self.black_queenside_castling = value,
+            Color::White => self.get_last_history().castling_rights.white_queenside = value,
+            Color::Black => self.get_last_history().castling_rights.black_queenside = value,
         }
         self
     }
@@ -363,14 +404,8 @@ impl BoardBuilder {
     pub fn build(&self) -> Board {
         Board {
             current_turn: self.current_turn,
-            halfmove_clock: self.halfmove_clock,
             fullmove_counter: self.fullmove_counter,
             game_state: self.game_state,
-
-            white_kingside_castling: self.white_kingside_castling,
-            white_queenside_castling: self.white_queenside_castling,
-            black_kingside_castling: self.black_kingside_castling,
-            black_queenside_castling: self.black_queenside_castling,
 
             en_passant_file: self.en_passant_file,
 
@@ -385,6 +420,7 @@ impl BoardBuilder {
 #[cfg(test)]
 mod tests {
     use super::super::bitboard::Bitboard;
+    use super::super::bitboards::Bitboards;
     use super::super::square::Square;
     use super::*;
     use pretty_assertions::assert_eq;
@@ -392,17 +428,17 @@ mod tests {
     #[test]
     fn board_builder_default() {
         let board = BoardBuilder::default().build();
-        let correct = Board::construct_empty_board();
+        let correct = BoardBuilder::construct_starting_board();
 
         assert_eq!(board, correct);
     }
 
     #[test]
     fn board_builder_black_turn() {
-        let board = BoardBuilder::default().turn(Color::Black).build();
+        let board = BoardBuilder::new().turn(Color::Black).build();
         let correct = Board {
             current_turn: Color::Black,
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -414,7 +450,7 @@ mod tests {
             .turn(Color::Black)
             .turn(Color::White)
             .build();
-        let correct = Board::construct_empty_board();
+        let correct = BoardBuilder::construct_starting_board();
 
         assert_eq!(board, correct);
     }
@@ -424,12 +460,16 @@ mod tests {
         let board = BoardBuilder::default()
             .kingside_castling(Color::White, CastlingStatus::Unavailiable)
             .build();
-        let correct = Board {
-            white_kingside_castling: CastlingStatus::Unavailiable,
-            ..Board::construct_empty_board()
-        };
 
-        assert_eq!(board, correct);
+        assert_eq!(
+            board
+                .history
+                .last()
+                .expect("No history")
+                .castling_rights
+                .white_kingside,
+            CastlingStatus::Unavailiable
+        )
     }
 
     #[test]
@@ -437,12 +477,16 @@ mod tests {
         let board = BoardBuilder::default()
             .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
             .build();
-        let correct = Board {
-            black_kingside_castling: CastlingStatus::Unavailiable,
-            ..Board::construct_empty_board()
-        };
 
-        assert_eq!(board, correct);
+        assert_eq!(
+            board
+                .history
+                .last()
+                .expect("No history")
+                .castling_rights
+                .black_kingside,
+            CastlingStatus::Unavailiable
+        )
     }
 
     #[test]
@@ -450,12 +494,16 @@ mod tests {
         let board = BoardBuilder::default()
             .queenside_castling(Color::White, CastlingStatus::Unavailiable)
             .build();
-        let correct = Board {
-            white_queenside_castling: CastlingStatus::Unavailiable,
-            ..Board::construct_empty_board()
-        };
 
-        assert_eq!(board, correct);
+        assert_eq!(
+            board
+                .history
+                .last()
+                .expect("No history")
+                .castling_rights
+                .white_queenside,
+            CastlingStatus::Unavailiable
+        )
     }
 
     #[test]
@@ -463,17 +511,21 @@ mod tests {
         let board = BoardBuilder::default()
             .queenside_castling(Color::Black, CastlingStatus::Unavailiable)
             .build();
-        let correct = Board {
-            black_queenside_castling: CastlingStatus::Unavailiable,
-            ..Board::construct_empty_board()
-        };
 
-        assert_eq!(board, correct);
+        assert_eq!(
+            board
+                .history
+                .last()
+                .expect("No history")
+                .castling_rights
+                .black_queenside,
+            CastlingStatus::Unavailiable
+        )
     }
 
     #[test]
     fn board_builder_pawns() {
-        let board = BoardBuilder::default()
+        let board = BoardBuilder::new()
             .pawns(Color::White, 1)
             .pawns(Color::Black, 2)
             .build();
@@ -486,7 +538,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -494,7 +546,7 @@ mod tests {
 
     #[test]
     fn board_builder_king() {
-        let board = BoardBuilder::default()
+        let board = BoardBuilder::new()
             .king(Color::White, 1)
             .king(Color::Black, 2)
             .build();
@@ -507,14 +559,14 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_empty_board()
         };
         assert_eq!(board, correct);
     }
 
     #[test]
     fn board_builder_queens() {
-        let board = BoardBuilder::default()
+        let board = BoardBuilder::new()
             .queens(Color::White, 1)
             .queens(Color::Black, 2)
             .build();
@@ -527,7 +579,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -535,7 +587,7 @@ mod tests {
 
     #[test]
     fn board_builder_rooks() {
-        let board = BoardBuilder::default()
+        let board = BoardBuilder::new()
             .rooks(Color::White, 1)
             .rooks(Color::Black, 2)
             .build();
@@ -548,7 +600,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -556,7 +608,7 @@ mod tests {
 
     #[test]
     fn board_builder_bishops() {
-        let board = BoardBuilder::default()
+        let board = BoardBuilder::new()
             .bishops(Color::White, 1)
             .bishops(Color::Black, 2)
             .build();
@@ -569,7 +621,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -577,7 +629,7 @@ mod tests {
 
     #[test]
     fn board_builder_knights() {
-        let board = BoardBuilder::default()
+        let board = BoardBuilder::new()
             .knights(Color::White, 1)
             .knights(Color::Black, 2)
             .build();
@@ -590,7 +642,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_empty_board()
         };
 
         assert_eq!(board, correct);
@@ -602,7 +654,7 @@ mod tests {
         let board = BoardBuilder::default().history(&history).build();
         let correct = Board {
             history,
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_starting_board()
         };
 
         assert_eq!(board, correct);
@@ -613,18 +665,7 @@ mod tests {
         let board = BoardBuilder::default().en_passant_file(Some(1)).build();
         let correct = Board {
             en_passant_file: Some(1),
-            ..Board::construct_empty_board()
-        };
-
-        assert_eq!(board, correct);
-    }
-
-    #[test]
-    fn board_builder_halfmove_clock() {
-        let board = BoardBuilder::default().halfmove_clock(5).build();
-        let correct = Board {
-            halfmove_clock: 5,
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_starting_board()
         };
 
         assert_eq!(board, correct);
@@ -635,7 +676,7 @@ mod tests {
         let board = BoardBuilder::default().fullmove_counter(5).build();
         let correct = Board {
             fullmove_counter: 5,
-            ..Board::construct_empty_board()
+            ..BoardBuilder::construct_starting_board()
         };
 
         assert_eq!(board, correct);

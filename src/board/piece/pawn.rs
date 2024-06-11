@@ -109,7 +109,8 @@ impl PrecomputedColor for Pawn {
 #[cfg(test)]
 mod tests {
     use super::{Color, Pawn, Piece, Ply, Square};
-    use crate::board::{Board, Kind};
+    use crate::board::boardbuilder::BoardBuilder;
+    use crate::board::Kind;
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 
@@ -180,7 +181,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_a2() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::White);
         let start_square = Square::from("a2");
 
@@ -200,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_d2() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::White);
         let start_square = Square::from("d2");
 
@@ -221,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::White);
         let start_square = Square::from("h6");
 
@@ -238,7 +239,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_a3() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::Black);
         let start_square = Square::from("a3");
 
@@ -255,7 +256,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_d5() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::Black);
         let start_square = Square::from("d5");
 
@@ -273,7 +274,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_h7() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::Black);
         let start_square = Square::from("h7");
 
@@ -293,7 +294,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_h7() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::White);
         let start_square = Square::from("h7");
 
@@ -332,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_h2() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::Black);
         let start_square = Square::from("h2");
 
@@ -371,7 +372,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_d7() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::White);
         let start_square = Square::from("d7");
 
@@ -422,7 +423,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_d2() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Pawn(Color::Black);
         let start_square = Square::from("d2");
 

@@ -198,7 +198,8 @@ impl Rook {
 #[cfg(test)]
 mod tests {
     use super::{Color, Piece, Ply, Rook, Square};
-    use crate::board::{Board, Kind};
+    use crate::board::boardbuilder::BoardBuilder;
+    use crate::board::Kind;
     use crate::utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
@@ -270,7 +271,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_white_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Rook(Color::White);
         let start_square = Square::from("b1");
 
@@ -299,7 +300,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_white_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Rook(Color::White);
         let start_square = Square::from("d4");
 
@@ -328,7 +329,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_white_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Rook(Color::White);
         let start_square = Square::from("h6");
 
@@ -357,7 +358,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Rook(Color::Black);
         let start_square = Square::from("b1");
 
@@ -386,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Rook(Color::Black);
         let start_square = Square::from("d4");
 
@@ -415,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Rook(Color::Black);
         let start_square = Square::from("h6");
 
@@ -444,7 +445,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_white_a1_blockers_1() {
-        let mut board = Board::construct_empty_board();
+        let mut board = BoardBuilder::construct_empty_board();
         board.add_piece(Square::from("a3"), Kind::Pawn(Color::White));
         let piece = Kind::Rook(Color::Black);
         let start_square = Square::from("a1");
@@ -467,7 +468,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_a1_blockers_1() {
-        let mut board = Board::construct_empty_board();
+        let mut board = BoardBuilder::construct_empty_board();
         board.add_piece(Square::from("a3"), Kind::Pawn(Color::Black));
         let piece = Kind::Rook(Color::Black);
         let start_square = Square::from("a1");
@@ -490,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_white_d4_blockers_1() {
-        let mut board = Board::construct_empty_board();
+        let mut board = BoardBuilder::construct_empty_board();
         board.add_piece(Square::from("a4"), Kind::Pawn(Color::White));
         board.add_piece(Square::from("d6"), Kind::Queen(Color::White));
         board.add_piece(Square::from("d1"), Kind::Rook(Color::White));
@@ -520,7 +521,7 @@ mod tests {
 
     #[test]
     fn test_rook_get_moveset_black_d4_blockers_1() {
-        let mut board = Board::construct_empty_board();
+        let mut board = BoardBuilder::construct_empty_board();
         board.add_piece(Square::from("a4"), Kind::Pawn(Color::Black));
         board.add_piece(Square::from("d6"), Kind::Queen(Color::Black));
         board.add_piece(Square::from("d1"), Kind::Rook(Color::Black));

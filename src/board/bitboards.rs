@@ -117,6 +117,7 @@ impl Bitboards {
     /// let builder = BitBoards::builder();
     /// let bitboards = builder.build();
     /// ```
+    #[allow(dead_code)]
     pub const fn builder() -> Builder {
         Builder::default()
     }

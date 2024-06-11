@@ -198,9 +198,9 @@ impl Bishop {
 #[cfg(test)]
 mod tests {
     use super::{Bishop, Color, Piece, Ply, Square};
-    use crate::board::{Board, Kind};
+    use crate::board::Kind;
+    use crate::{board::boardbuilder::BoardBuilder, utils::tests::check_unique_equality};
     use pretty_assertions::{assert_eq, assert_ne};
-    use std::collections::HashSet;
 
     #[test]
     fn test_bishop_derived_traits() {
@@ -269,7 +269,7 @@ mod tests {
 
     #[test]
     fn test_bishop_get_moveset_white_a1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("a1");
 
@@ -284,14 +284,12 @@ mod tests {
             Ply::new(start_square, Square::from("h8")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_white_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("b1");
 
@@ -306,14 +304,12 @@ mod tests {
             Ply::new(start_square, Square::from("a2")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_white_e4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("e4");
 
@@ -334,14 +330,12 @@ mod tests {
             Ply::new(start_square, Square::from("h1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_white_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("d4");
 
@@ -362,14 +356,12 @@ mod tests {
             Ply::new(start_square, Square::from("g1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_white_g6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("g6");
 
@@ -386,14 +378,12 @@ mod tests {
             Ply::new(start_square, Square::from("b1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_white_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::White);
         let start_square = Square::from("h6");
 
@@ -407,15 +397,12 @@ mod tests {
             Ply::new(start_square, Square::from("d2")),
             Ply::new(start_square, Square::from("c1")),
         ];
-
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_black_a1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("a1");
 
@@ -430,14 +417,12 @@ mod tests {
             Ply::new(start_square, Square::from("h8")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_black_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("b1");
 
@@ -452,14 +437,12 @@ mod tests {
             Ply::new(start_square, Square::from("a2")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_black_e4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("e4");
 
@@ -480,14 +463,12 @@ mod tests {
             Ply::new(start_square, Square::from("h1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_black_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("d4");
 
@@ -508,14 +489,12 @@ mod tests {
             Ply::new(start_square, Square::from("g1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_black_g6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("g6");
 
@@ -532,14 +511,12 @@ mod tests {
             Ply::new(start_square, Square::from("b1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_black_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("h6");
 
@@ -554,14 +531,12 @@ mod tests {
             Ply::new(start_square, Square::from("c1")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 
     #[test]
     fn test_bishop_get_moveset_black_e8() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Bishop(Color::Black);
         let start_square = Square::from("e8");
 
@@ -576,8 +551,6 @@ mod tests {
             Ply::new(start_square, Square::from("h5")),
         ];
 
-        let result_set: HashSet<Ply> = result.into_iter().collect();
-        let correct_set: HashSet<Ply> = correct.into_iter().collect();
-        assert_eq!(result_set, correct_set);
+        check_unique_equality(result, correct)
     }
 }

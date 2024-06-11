@@ -11,7 +11,7 @@ mod search;
 mod utils;
 
 use board::piece::Color;
-use board::Board;
+use board::BoardBuilder;
 use board::Ply;
 use evaluate::simple_evaluator::SimpleEvaluator;
 use evaluate::Evaluator;
@@ -23,7 +23,7 @@ fn main() {
     println!("{TITLE} - {SHORT_TITLE}");
     let evaluator = SimpleEvaluator::new();
 
-    let mut board = Board::construct_starting_board();
+    let mut board = BoardBuilder::construct_starting_board();
 
     println!("{board}");
 

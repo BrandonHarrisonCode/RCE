@@ -102,17 +102,26 @@ fn en_passant_file(builder: BoardBuilder, str: &str) -> BoardBuilder {
     })
 }
 
-fn history(builder: BoardBuilder) -> BoardBuilder {
-    // If the first move is en passant, add the previous pawn push to the
-    // history so we can restore en passant rights
+fn history(mut builder: BoardBuilder) -> BoardBuilder {
+    let rights = builder.get_last_history().castling_rights;
     let mut history = Vec::new();
+
     if let Some(file) = builder.en_passant_file {
         let (start, dest) = match builder.current_turn {
             Color::White => (Square { rank: 1, file }, Square { rank: 3, file }),
             Color::Black => (Square { rank: 6, file }, Square { rank: 4, file }),
         };
 
-        history.push(Ply::builder(start, dest).double_pawn_push(true).build());
+        let ply = Ply::builder(start, dest)
+            .double_pawn_push(true)
+            .castling_rights(rights)
+            .build();
+        history.push(ply);
+    } else {
+        let ply = Ply::builder(Square::from("a1"), Square::from("a1"))
+            .castling_rights(rights)
+            .build();
+        history.push(ply);
     }
 
     builder.history(&history)
@@ -154,49 +163,41 @@ impl Board {
 
 #[cfg(test)]
 mod tests {
-    use super::super::bitboards::Bitboards;
     use super::*;
-    use crate::board::GameState;
     use pretty_assertions::assert_eq;
 
     #[test]
     fn from_fen_starting_position() {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        assert_eq!(Board::construct_starting_board(), Board::from_fen(fen));
+        assert_eq!(
+            BoardBuilder::construct_starting_board(),
+            Board::from_fen(fen)
+        );
     }
 
     #[test]
     fn from_fen_white_position1() {
         let fen = "1k1r3r/p6p/1pp1pp2/2Np1qp1/1Q1P4/2P1PP2/PP4PP/R4nK1 w - - 0 21";
-        let correct = Board {
-            current_turn: Color::White,
-            halfmove_clock: 0,
-            fullmove_counter: 21,
-            game_state: GameState::InProgress,
-
-            white_kingside_castling: CastlingStatus::Unavailiable,
-            white_queenside_castling: CastlingStatus::Unavailiable,
-            black_kingside_castling: CastlingStatus::Unavailiable,
-            black_queenside_castling: CastlingStatus::Unavailiable,
-
-            en_passant_file: None,
-
-            bitboards: Bitboards::builder()
-                .pawns(Color::White, 137675520)
-                .pawns(Color::Black, 36369954861219840)
-                .king(Color::White, 64)
-                .king(Color::Black, 144115188075855872)
-                .queens(Color::White, 33554432)
-                .queens(Color::Black, 137438953472)
-                .rooks(Color::White, 1)
-                .rooks(Color::Black, 9799832789158199296)
-                .bishops(Color::White, 0)
-                .bishops(Color::Black, 0)
-                .knights(Color::White, 17179869184)
-                .knights(Color::Black, 32)
-                .build(),
-            history: Vec::new(),
-        };
+        let correct = BoardBuilder::new()
+            .halfmove_clock(0)
+            .fullmove_counter(21)
+            .pawns(Color::White, 137675520)
+            .pawns(Color::Black, 36369954861219840)
+            .king(Color::White, 64)
+            .king(Color::Black, 144115188075855872)
+            .queens(Color::White, 33554432)
+            .queens(Color::Black, 137438953472)
+            .rooks(Color::White, 1)
+            .rooks(Color::Black, 9799832789158199296)
+            .bishops(Color::White, 0)
+            .bishops(Color::Black, 0)
+            .knights(Color::White, 17179869184)
+            .knights(Color::Black, 32)
+            .kingside_castling(Color::White, CastlingStatus::Unavailiable)
+            .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .queenside_castling(Color::White, CastlingStatus::Unavailiable)
+            .queenside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .build();
 
         dbg!(Board::from_fen(fen));
         assert_eq!(Board::from_fen(fen), correct);
@@ -205,36 +206,27 @@ mod tests {
     #[test]
     fn from_fen_black_position1() {
         let fen = "5b2/pp1N2pk/2pn1q1p/3n1p1Q/3P1P2/2PB3R/PP3KPP/R1B1r3 b - - 12 31";
-        let correct = Board {
-            current_turn: Color::Black,
-            halfmove_clock: 12,
-            fullmove_counter: 31,
-            game_state: GameState::InProgress,
-
-            white_kingside_castling: CastlingStatus::Unavailiable,
-            white_queenside_castling: CastlingStatus::Unavailiable,
-            black_kingside_castling: CastlingStatus::Unavailiable,
-            black_queenside_castling: CastlingStatus::Unavailiable,
-
-            en_passant_file: None,
-
-            bitboards: Bitboards::builder()
-                .pawns(Color::White, 671400704)
-                .pawns(Color::Black, 19004096413433856)
-                .king(Color::White, 8192)
-                .king(Color::Black, 36028797018963968)
-                .queens(Color::White, 549755813888)
-                .queens(Color::Black, 35184372088832)
-                .rooks(Color::White, 8388609)
-                .rooks(Color::Black, 16)
-                .bishops(Color::White, 524292)
-                .bishops(Color::Black, 2305843009213693952)
-                .knights(Color::White, 2251799813685248)
-                .knights(Color::Black, 8830452760576)
-                .build(),
-
-            history: Vec::new(),
-        };
+        let correct = BoardBuilder::new()
+            .turn(Color::Black)
+            .halfmove_clock(12)
+            .fullmove_counter(31)
+            .pawns(Color::White, 671400704)
+            .pawns(Color::Black, 19004096413433856)
+            .king(Color::White, 8192)
+            .king(Color::Black, 36028797018963968)
+            .queens(Color::White, 549755813888)
+            .queens(Color::Black, 35184372088832)
+            .rooks(Color::White, 8388609)
+            .rooks(Color::Black, 16)
+            .bishops(Color::White, 524292)
+            .bishops(Color::Black, 2305843009213693952)
+            .knights(Color::White, 2251799813685248)
+            .knights(Color::Black, 8830452760576)
+            .kingside_castling(Color::White, CastlingStatus::Unavailiable)
+            .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .queenside_castling(Color::White, CastlingStatus::Unavailiable)
+            .queenside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .build();
 
         dbg!(Board::from_fen(fen));
         assert_eq!(Board::from_fen(fen), correct);
