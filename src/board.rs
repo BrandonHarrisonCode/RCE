@@ -832,6 +832,26 @@ impl Board {
             }
         }
 
+        if let Some(piece) = new_move.captured_piece {
+            if matches!(piece, Kind::Rook(_)) {
+                match (self.current_turn, new_move.dest) {
+                    (Color::White, Square { rank: 7, file: 0 }) => {
+                        new_move.castling_rights.black_queenside = CastlingStatus::Unavailiable;
+                    }
+                    (Color::White, Square { rank: 7, file: 7 }) => {
+                        new_move.castling_rights.black_kingside = CastlingStatus::Unavailiable;
+                    }
+                    (Color::Black, Square { rank: 0, file: 0 }) => {
+                        new_move.castling_rights.white_queenside = CastlingStatus::Unavailiable;
+                    }
+                    (Color::Black, Square { rank: 0, file: 7 }) => {
+                        new_move.castling_rights.white_kingside = CastlingStatus::Unavailiable;
+                    }
+                    _ => (),
+                }
+            }
+        }
+
         /* if new_move.captured_piece.is_some()
             || matches!(self.get_piece(new_move.dest), Some(Kind::Pawn(_)))
         {
@@ -944,6 +964,7 @@ impl fmt::Display for Board {
 mod tests {
     use crate::utils::tests::check_unique_equality;
     use boardbuilder::BoardBuilder;
+    use piece::rook::Rook;
 
     use super::*;
     use pretty_assertions::assert_eq;
@@ -1324,6 +1345,120 @@ mod tests {
         assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
         assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::Black));
         assert_eq!(board.current_turn, Color::White);
+    }
+
+    #[test]
+    fn test_castling_capture_rook() {
+        let mut board =
+            Board::from_fen("r3k2r/pppppppp/1N4N1/8/8/1n4n1/PPPPPPPP/R3K2R w KQkq - 0 1");
+
+        let ply_capture_black_kingside_rook = Ply::builder(Square::from("g6"), Square::from("h8"))
+            .captured(Kind::Rook(Color::Black))
+            .build();
+        let ply_capture_black_queenside_rook = Ply::builder(Square::from("b6"), Square::from("a8"))
+            .captured(Kind::Rook(Color::Black))
+            .build();
+        let ply_capture_white_kingside_rook = Ply::builder(Square::from("g3"), Square::from("h1"))
+            .captured(Kind::Rook(Color::White))
+            .build();
+        let ply_capture_white_queenside_rook = Ply::builder(Square::from("b3"), Square::from("a1"))
+            .captured(Kind::Rook(Color::White))
+            .build();
+
+        board.make_move(ply_capture_black_kingside_rook);
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::Black)),
+            CastlingStatus::Unavailiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::Black)),
+            CastlingStatus::Availiable
+        );
+
+        board.make_move(ply_capture_white_kingside_rook);
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::White)),
+            CastlingStatus::Unavailiable
+        );
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::Black)),
+            CastlingStatus::Unavailiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::Black)),
+            CastlingStatus::Availiable
+        );
+
+        board.unmake_move();
+        board.unmake_move();
+
+        board.make_move(ply_capture_black_queenside_rook);
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::Black)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::Black)),
+            CastlingStatus::Unavailiable
+        );
+
+        board.make_move(ply_capture_white_queenside_rook);
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::Black)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::White)),
+            CastlingStatus::Unavailiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::Black)),
+            CastlingStatus::Unavailiable
+        );
+
+        board.unmake_move();
+        board.unmake_move();
+
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.kingside_castle_status(Some(Color::Black)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::White)),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.queenside_castle_status(Some(Color::Black)),
+            CastlingStatus::Availiable
+        );
     }
 
     #[test]

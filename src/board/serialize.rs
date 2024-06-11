@@ -151,8 +151,8 @@ impl Board {
         builder = current_turn(builder, fields[1]);
         builder = castling_rights(builder, fields[2]);
         builder = en_passant_file(builder, fields[3]);
-        builder = halfmove_clock(builder, fields[4]);
-        builder = fullmove_counter(builder, fields[5]);
+        builder = halfmove_clock(builder, fields.get(4).unwrap_or(&"0"));
+        builder = fullmove_counter(builder, fields.get(5).unwrap_or(&"1"));
         builder = history(builder);
 
         builder.build()
