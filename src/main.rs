@@ -47,7 +47,7 @@ fn main() {
 
             println!("{filtered_move}:\n{board}");
         } else {
-            let computer_move = search::search(&mut board, &evaluator);
+            let computer_move = search::search(&mut board, &evaluator, None);
             println!("Computer's move: {computer_move}");
             board.make_move(computer_move);
             println!("{computer_move}:\n{board}");
