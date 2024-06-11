@@ -1,20 +1,20 @@
 use super::board::{Board, Ply};
 use super::evaluate::Evaluator;
 
-const DEFAULT_DEPTH: usize = 4;
+const DEFAULT_DEPTH: usize = 5;
 
 pub fn search(board: &mut Board, evaluator: &impl Evaluator, depth: Option<usize>) -> Ply {
-    negamax(board, evaluator, depth.unwrap_or(DEFAULT_DEPTH))
+    alpha_beta_start(board, evaluator, depth.unwrap_or(DEFAULT_DEPTH))
 }
 
-fn negamax(board: &mut Board, evaluator: &impl Evaluator, depth: usize) -> Ply {
+fn alpha_beta_start(board: &mut Board, evaluator: &impl Evaluator, depth: usize) -> Ply {
     let mut best_value = i32::MIN;
     let moves = board.get_legal_moves();
     let mut best_ply = moves[0];
 
     for mv in moves {
         board.make_move(mv);
-        let value = negamax_helper(board, depth - 1, evaluator).saturating_neg();
+        let value = alpha_beta_min(board, evaluator, i32::MIN, i32::MAX, depth - 1);
         if value > best_value {
             best_value = value;
             best_ply = mv;
@@ -22,26 +22,63 @@ fn negamax(board: &mut Board, evaluator: &impl Evaluator, depth: usize) -> Ply {
         board.unmake_move();
     }
 
-    println!("Best value: {best_value}");
     best_ply
 }
 
-fn negamax_helper(board: &mut Board, depth: usize, evaluator: &impl Evaluator) -> i32 {
+fn alpha_beta_max(
+    board: &mut Board,
+    evaluator: &impl Evaluator,
+    mut alpha: i32,
+    beta: i32,
+    depth: usize,
+) -> i32 {
     if depth == 0 {
         return evaluator.evaluate(board);
     }
 
-    let mut best_value = i32::MIN;
     let moves = board.get_legal_moves();
 
     for mv in moves {
         board.make_move(mv);
-        let value = negamax_helper(board, depth - 1, evaluator).saturating_neg();
-        best_value = best_value.max(value);
+        let score = alpha_beta_min(board, evaluator, alpha, beta, depth - 1);
         board.unmake_move();
+        if score >= beta {
+            return beta;
+        }
+        if score > alpha {
+            alpha = score;
+        }
     }
 
-    best_value
+    alpha
+}
+
+fn alpha_beta_min(
+    board: &mut Board,
+    evaluator: &impl Evaluator,
+    alpha: i32,
+    mut beta: i32,
+    depth: usize,
+) -> i32 {
+    if depth == 0 {
+        return -evaluator.evaluate(board);
+    }
+
+    let moves = board.get_legal_moves();
+
+    for mv in moves {
+        board.make_move(mv);
+        let score = alpha_beta_max(board, evaluator, alpha, beta, depth - 1);
+        board.unmake_move();
+        if score <= alpha {
+            return alpha;
+        }
+        if score < beta {
+            beta = score;
+        }
+    }
+
+    beta
 }
 
 ////////////////////////////////////////////////////////////////////////////////
