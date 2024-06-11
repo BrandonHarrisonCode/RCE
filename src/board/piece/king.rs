@@ -73,7 +73,7 @@ impl Precomputed for King {
 #[cfg(test)]
 mod tests {
     use super::{Color, King, Piece, Ply, Square};
-    use crate::board::Board;
+    use crate::board::boardbuilder::BoardBuilder;
     use crate::board::Kind;
     use crate::utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_white_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::White);
         let start_square = Square::from("b1");
 
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_white_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::White);
         let start_square = Square::from("d4");
 
@@ -184,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_white_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::White);
         let start_square = Square::from("h6");
 
@@ -202,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_black_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::Black);
         let start_square = Square::from("b1");
 
@@ -220,7 +220,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_black_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::Black);
         let start_square = Square::from("d4");
 
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_black_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::Black);
         let start_square = Square::from("h6");
 
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_white_e1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::White);
         let start_square = Square::from("e1");
 
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_black_e1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::White);
         let start_square = Square::from("e1");
 
@@ -307,7 +307,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_white_e8() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::White);
         let start_square = Square::from("e8");
 
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_black_e8() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::King(Color::White);
         let start_square = Square::from("e8");
 

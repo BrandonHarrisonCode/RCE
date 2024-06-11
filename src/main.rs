@@ -11,10 +11,9 @@ mod search;
 mod utils;
 
 use board::piece::Color;
-use board::Board;
+use board::BoardBuilder;
 use board::Ply;
 use evaluate::simple_evaluator::SimpleEvaluator;
-use evaluate::Evaluator;
 
 const TITLE: &str = "Rust Chess Engine";
 const SHORT_TITLE: &str = "RCE";
@@ -23,8 +22,7 @@ fn main() {
     println!("{TITLE} - {SHORT_TITLE}");
     let evaluator = SimpleEvaluator::new();
 
-    let mut board = Board::construct_starting_board();
-    board = Board::from_fen("8/3p2K1/8/8/8/4R3/4Q3/k7 w - - 1 4");
+    let mut board = BoardBuilder::construct_starting_board();
 
     println!("{board}");
 

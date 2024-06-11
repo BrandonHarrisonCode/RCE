@@ -48,7 +48,7 @@ impl Precomputed for Knight {
 #[cfg(test)]
 mod tests {
     use super::{Color, Knight, Piece, Ply, Square};
-    use crate::board::Board;
+    use crate::board::BoardBuilder;
     use crate::board::Kind;
     use crate::utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_white_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Knight(Color::White);
         let start_square = Square::from("b1");
 
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_white_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Knight(Color::White);
         let start_square = Square::from("d4");
 
@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_white_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Knight(Color::White);
         let start_square = Square::from("h6");
 
@@ -179,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_black_b1() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Knight(Color::Black);
         let start_square = Square::from("b1");
 
@@ -195,7 +195,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_black_d4() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Knight(Color::Black);
         let start_square = Square::from("d4");
 
@@ -218,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_knight_get_moveset_black_h6() {
-        let board = Board::construct_empty_board();
+        let board = BoardBuilder::construct_empty_board();
         let piece = Kind::Knight(Color::Black);
         let start_square = Square::from("h6");
 
