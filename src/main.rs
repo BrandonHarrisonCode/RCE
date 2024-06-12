@@ -15,13 +15,16 @@ use board::piece::Color;
 use board::BoardBuilder;
 use board::Ply;
 use evaluate::simple_evaluator::SimpleEvaluator;
-use uci::start;
 
 const TITLE: &str = "Rust Chess Engine";
 const SHORT_TITLE: &str = "RCE";
 
 fn main() {
-    //uci::start();
+    uci::start();
+}
+
+#[allow(dead_code)]
+fn terminal_game() {
     println!("{TITLE} - {SHORT_TITLE}");
     let evaluator = SimpleEvaluator::new();
 
@@ -46,14 +49,15 @@ fn main() {
                 let filtered_move = moves
                     .iter()
                     .find(|mv| mv.start == player_move.start && mv.dest == player_move.dest);
-                if filtered_move.is_none() {
-                    println!("Invalid move! Try again.");
-                } else {
-                    board.make_move(*filtered_move.unwrap());
 
-                    println!("{}:\n{board}", filtered_move.unwrap());
+                if let Some(fmove) = filtered_move {
+                    board.make_move(*fmove);
+
+                    println!("{fmove}:\n{board}");
                     break;
                 }
+
+                println!("Invalid move! Try again.");
             }
         } else {
             let computer_move = search::search(&mut board, &evaluator, None);

@@ -739,6 +739,7 @@ impl Board {
     /// // Move the a pawn one square forward
     /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
+    #[allow(clippy::too_many_lines)]
     pub fn make_move(&mut self, mut new_move: Ply) {
         let previous_move: Ply = self.history.last().copied().unwrap_or_default();
         new_move.halfmove_clock = previous_move.halfmove_clock + 1;
@@ -751,7 +752,6 @@ impl Board {
         }
 
         let dest_piece_kind = self.replace_square(new_move.start, new_move.dest);
-
         if new_move.en_passant {
             self.remove_piece(
                 Square {
@@ -851,19 +851,6 @@ impl Board {
                 }
             }
         }
-
-        /* if new_move.captured_piece.is_some()
-            || matches!(self.get_piece(new_move.dest), Some(Kind::Pawn(_)))
-        {
-            self.halfmove_clock = 0;
-        } else {
-            self.halfmove_clock += 1;
-        }
-
-        if self.current_turn == Color::Black {
-            self.fullmove_counter += 1;
-        }
-        */
 
         self.game_state = GameState::Unknown;
         self.switch_turn();
@@ -1856,6 +1843,16 @@ mod tests {
         let mut board = Board::from_fen("1k6/8/8/4Pp2/1K6/8/8/8 w - f6 0 1");
         let result = board.get_legal_moves().len();
         let correct = 10;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_20() {
+        let mut board =
+            Board::from_fen("3r1rk1/pp1qBpbp/6p1/3p4/3P4/5Q1P/PPP2PP1/R3R1K1 b - - 0 16");
+        let result = board.get_legal_moves().len();
+        let correct = 32;
 
         assert_eq!(result, correct);
     }
