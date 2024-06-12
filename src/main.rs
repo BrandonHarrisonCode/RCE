@@ -8,23 +8,24 @@ extern crate derive_more;
 mod board;
 mod evaluate;
 mod search;
+mod uci;
 mod utils;
 
 use board::piece::Color;
-use board::Board;
 use board::BoardBuilder;
 use board::Ply;
 use evaluate::simple_evaluator::SimpleEvaluator;
+use uci::start;
 
 const TITLE: &str = "Rust Chess Engine";
 const SHORT_TITLE: &str = "RCE";
 
 fn main() {
+    //uci::start();
     println!("{TITLE} - {SHORT_TITLE}");
     let evaluator = SimpleEvaluator::new();
 
     let mut board = BoardBuilder::construct_starting_board();
-    board = Board::from_fen("rnb1kbnr/3ppppp/2p5/qp6/3PP3/PBN2N2/PBP2PPP/1R1QK2R b Kkq - 3 9");
 
     println!("{board}");
 

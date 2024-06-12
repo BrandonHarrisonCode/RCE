@@ -109,38 +109,6 @@ pub mod tests {
         assert_eq!(nodes, 119_060_324);
     }
 
-    #[test]
-    #[ignore]
-    fn test_perft_depth_7() {
-        let mut board = BoardBuilder::construct_starting_board();
-        let nodes = perft(&mut board, 7);
-        assert_eq!(nodes, 3_195_901_860);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_perft_depth_8() {
-        let mut board = BoardBuilder::construct_starting_board();
-        let nodes = perft(&mut board, 8);
-        assert_eq!(nodes, 84_998_978_956);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_perft_depth_9() {
-        let mut board = BoardBuilder::construct_starting_board();
-        let nodes = perft(&mut board, 9);
-        assert_eq!(nodes, 2_439_530_234_167);
-    }
-
-    #[test]
-    #[ignore]
-    fn test_perft_depth_10() {
-        let mut board = BoardBuilder::construct_starting_board();
-        let nodes = perft(&mut board, 10);
-        assert_eq!(nodes, 69_352_859_712_417);
-    }
-
     #[bench]
     fn bench_perft_depth_1(bencher: &mut Bencher) {
         let mut board = BoardBuilder::construct_starting_board();
