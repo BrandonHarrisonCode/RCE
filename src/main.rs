@@ -15,6 +15,7 @@ use board::piece::Color;
 use board::BoardBuilder;
 use board::Ply;
 use evaluate::simple_evaluator::SimpleEvaluator;
+use search::Search;
 
 const TITLE: &str = "Rust Chess Engine";
 const SHORT_TITLE: &str = "RCE";
@@ -60,7 +61,8 @@ fn terminal_game() {
                 println!("Invalid move! Try again.");
             }
         } else {
-            let computer_move = search::search(&mut board, &evaluator, None);
+            let mut search = Search::new(&board, &evaluator, None);
+            let computer_move = search.search(None);
             println!("Computer's move: {computer_move}");
             board.make_move(computer_move);
             println!("{computer_move}:\n{board}");

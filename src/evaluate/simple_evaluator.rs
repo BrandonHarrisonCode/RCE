@@ -2,6 +2,8 @@ use super::Evaluator;
 use crate::board::piece::Kind;
 use crate::board::square::Square;
 use crate::board::Board;
+
+#[derive(Clone)]
 pub struct SimpleEvaluator;
 
 impl SimpleEvaluator {
