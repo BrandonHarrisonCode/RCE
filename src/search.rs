@@ -7,6 +7,7 @@ pub mod limits;
 
 use limits::SearchLimits;
 
+#[allow(dead_code)]
 pub struct Search<T: Evaluator> {
     board: Board,
     evaluator: T,
@@ -17,7 +18,7 @@ pub struct Search<T: Evaluator> {
 
 impl<T: Evaluator> Search<T> {
     pub fn new(board: &Board, evaluator: &T, limits: Option<SearchLimits>) -> Self {
-        Search {
+        Self {
             board: board.clone(),
             evaluator: evaluator.clone(),
             limits: limits.unwrap_or_default(),
@@ -26,10 +27,12 @@ impl<T: Evaluator> Search<T> {
         }
     }
 
-    pub fn get_best_move(&self) -> Option<Ply> {
+    #[allow(dead_code)]
+    pub const fn get_best_move(&self) -> Option<Ply> {
         self.best_move
     }
 
+    #[allow(dead_code)]
     pub fn stop(&mut self) {
         self.running = false;
     }
