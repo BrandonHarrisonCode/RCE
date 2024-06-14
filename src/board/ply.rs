@@ -82,13 +82,6 @@ impl Ply {
         }
     }
 
-    pub fn parse_move(move_str: &str) -> Self {
-        let start = Square::from(&move_str[0..2]);
-        let dest = Square::from(&move_str[2..4]);
-
-        Self::new(start, dest)
-    }
-
     #[allow(dead_code)]
     pub const fn builder(start: Square, dest: Square) -> Builder {
         Builder::new(start, dest)

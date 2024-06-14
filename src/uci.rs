@@ -1,4 +1,4 @@
-use std::sync::{Arc, OnceLock};
+use std::sync::mpsc;
 use std::thread;
 
 use crate::board::{Board, BoardBuilder};
@@ -10,10 +10,9 @@ use crate::search::Search;
 const TITLE: &str = "Rust Chess Engine";
 const AUTHOR: &str = "Brandon Harrison";
 
-static SEARCH: OnceLock<Arc<Search<SimpleEvaluator>>> = OnceLock::new();
-
 pub fn start() {
     let mut board = BoardBuilder::construct_starting_board();
+    let mut tx: Option<mpsc::Sender<bool>> = None;
 
     loop {
         println!("{board}");
@@ -38,14 +37,20 @@ pub fn start() {
                     .unwrap_or(board);
             }
             "go" => {
-                let _ = go(&board, &fields)
-                    .inspect_err(|e| eprintln!("Failed to execute go command: {e}"));
+                if let Ok(new_tx) = go(&board, &fields) {
+                    tx = Some(new_tx);
+                } else {
+                    eprintln!("Failed to execute go command!");
+                }
             }
             "stop" => {
                 println!("Attempting to stop...");
-                let arc = SEARCH.get_or_init(|| init_search(&board)).clone();
-                arc.stop();
-                println!("Stopped search");
+                if let Some(tx) = &tx {
+                    tx.send(false).unwrap_or_default();
+                    println!("Stopped search");
+                } else {
+                    eprintln!("No search to stop!");
+                }
             }
             "quit" => break,
             "setoption" => println!("Not supported"),
@@ -86,7 +91,7 @@ fn load_position(fields: &[&str]) -> Result<Board, String> {
     Ok(board)
 }
 
-fn go(board: &Board, fields: &[&str]) -> Result<(), String> {
+fn go(board: &Board, fields: &[&str]) -> Result<mpsc::Sender<bool>, String> {
     let mut limits = SearchLimits::new();
 
     let mut idx = 1;
@@ -135,16 +140,15 @@ fn go(board: &Board, fields: &[&str]) -> Result<(), String> {
         idx += 1;
     }
 
-    let arc = SEARCH.get_or_init(|| init_search(board)).clone();
-    arc.start();
-    arc.set_limits(limits);
+    let (tx, rx) = mpsc::channel::<bool>();
+    let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits), Some(rx));
     thread::spawn(move || {
         println!("Searching...");
-        let best_move = arc.search(None);
+        let best_move = search.search(None);
         println!("bestmove {best_move}");
     });
 
-    Ok(())
+    Ok(tx)
 }
 
 fn parse_value<T>(str: &str, kind: &str) -> Option<T>
@@ -161,8 +165,4 @@ where
     }
 
     Some(result.unwrap())
-}
-
-fn init_search(board: &Board) -> Arc<Search<SimpleEvaluator>> {
-    Arc::new(Search::new(board, &SimpleEvaluator::new(), None))
 }
