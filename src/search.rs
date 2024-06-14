@@ -1,6 +1,7 @@
 use super::board::{Board, Ply};
 use super::evaluate::Evaluator;
-use std::sync::mpsc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 const DEFAULT_DEPTH: usize = 6;
 
@@ -14,8 +15,7 @@ pub struct Search<T: Evaluator> {
     evaluator: T,
     limits: SearchLimits,
     best_move: Option<Ply>,
-    running: bool,
-    rx: Option<mpsc::Receiver<bool>>,
+    running: Arc<AtomicBool>,
 
     depth: u64,
     nodes: u64,
@@ -23,19 +23,13 @@ pub struct Search<T: Evaluator> {
 }
 
 impl<T: Evaluator> Search<T> {
-    pub fn new(
-        board: &Board,
-        evaluator: &T,
-        limits: Option<SearchLimits>,
-        rx: Option<mpsc::Receiver<bool>>,
-    ) -> Self {
+    pub fn new(board: &Board, evaluator: &T, limits: Option<SearchLimits>) -> Self {
         Self {
             board: board.clone(),
             evaluator: evaluator.clone(),
             limits: limits.unwrap_or_default(),
             best_move: None,
-            running: true,
-            rx,
+            running: Arc::new(AtomicBool::new(true)),
 
             depth: 0,
             nodes: 0,
@@ -48,24 +42,16 @@ impl<T: Evaluator> Search<T> {
         self.best_move
     }
 
-    pub fn check_running(&mut self) -> bool {
-        if self.rx.is_none() {
-            return self.running;
-        }
+    pub fn get_running(&self) -> Arc<AtomicBool> {
+        self.running.clone()
+    }
 
-        if let Ok(value) = self.rx.as_ref().unwrap().try_recv() {
-            self.running = value;
-            println!("Recieved new stop signal: {value}!");
-        }
-
-        self.running
+    pub fn check_running(&self) -> bool {
+        self.running.load(Ordering::Relaxed)
     }
 
     pub fn search(&mut self, depth: Option<usize>) -> Ply {
-        println!("Starting search in search.rs");
-        let result = self.alpha_beta_start(depth.unwrap_or(DEFAULT_DEPTH));
-        println!("Stopping search in search.rs!");
-        result
+        self.alpha_beta_start(depth.unwrap_or(DEFAULT_DEPTH))
     }
 
     const fn check_limits(&self) -> bool {
@@ -168,10 +154,18 @@ mod tests {
     use test::Bencher;
 
     #[bench]
+    fn bench_search_depth_3(bencher: &mut Bencher) {
+        let board = BoardBuilder::construct_starting_board();
+        let evaluator = SimpleEvaluator::new();
+        let mut search = Search::new(&board, &evaluator, None);
+        bencher.iter(|| search.search(Some(3)));
+    }
+
+    #[bench]
     fn bench_search_depth_4(bencher: &mut Bencher) {
         let board = BoardBuilder::construct_starting_board();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None, None);
+        let mut search = Search::new(&board, &evaluator, None);
         bencher.iter(|| search.search(Some(4)));
     }
 }

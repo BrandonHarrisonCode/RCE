@@ -1,5 +1,6 @@
-use std::sync::mpsc;
-use std::thread;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+use std::thread::{self, JoinHandle};
 
 use crate::board::{Board, BoardBuilder};
 
@@ -12,7 +13,8 @@ const AUTHOR: &str = "Brandon Harrison";
 
 pub fn start() {
     let mut board = BoardBuilder::construct_starting_board();
-    let mut tx: Option<mpsc::Sender<bool>> = None;
+    let mut search_running: Option<Arc<AtomicBool>> = None;
+    let mut join_handle: Option<thread::JoinHandle<()>> = None;
 
     loop {
         println!("{board}");
@@ -37,19 +39,22 @@ pub fn start() {
                     .unwrap_or(board);
             }
             "go" => {
-                if let Ok(new_tx) = go(&board, &fields) {
-                    tx = Some(new_tx);
+                if let Some(jh) = &join_handle {
+                    if !jh.is_finished() {
+                        eprintln!("Search is already running!");
+                        continue;
+                    }
+                }
+                if let Ok((new_search, new_join_handle)) = go(&board, &fields) {
+                    search_running = Some(new_search);
+                    join_handle = Some(new_join_handle);
                 } else {
                     eprintln!("Failed to execute go command!");
                 }
             }
             "stop" => {
-                println!("Attempting to stop...");
-                if let Some(tx) = &tx {
-                    tx.send(false).unwrap_or_default();
-                    println!("Stopped search");
-                } else {
-                    eprintln!("No search to stop!");
+                if let Some(is_running) = &search_running {
+                    is_running.store(false, std::sync::atomic::Ordering::Relaxed);
                 }
             }
             "quit" => break,
@@ -91,7 +96,7 @@ fn load_position(fields: &[&str]) -> Result<Board, String> {
     Ok(board)
 }
 
-fn go(board: &Board, fields: &[&str]) -> Result<mpsc::Sender<bool>, String> {
+fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>), String> {
     let mut limits = SearchLimits::new();
 
     let mut idx = 1;
@@ -140,15 +145,15 @@ fn go(board: &Board, fields: &[&str]) -> Result<mpsc::Sender<bool>, String> {
         idx += 1;
     }
 
-    let (tx, rx) = mpsc::channel::<bool>();
-    let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits), Some(rx));
-    thread::spawn(move || {
+    let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
+    let is_running = search.get_running();
+    let join_handle = thread::spawn(move || {
         println!("Searching...");
         let best_move = search.search(None);
         println!("bestmove {best_move}");
     });
 
-    Ok(tx)
+    Ok((is_running, join_handle))
 }
 
 fn parse_value<T>(str: &str, kind: &str) -> Option<T>
