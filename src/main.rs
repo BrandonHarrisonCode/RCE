@@ -61,7 +61,7 @@ fn terminal_game() {
                 println!("Invalid move! Try again.");
             }
         } else {
-            let mut search = Search::new(&board, &evaluator, None);
+            let search = Search::new(&board, &evaluator, None);
             let computer_move = search.search(None);
             println!("Computer's move: {computer_move}");
             board.make_move(computer_move);

@@ -1,3 +1,4 @@
+use std::sync::{Arc, OnceLock};
 use std::thread;
 
 use crate::board::{Board, BoardBuilder};
@@ -9,7 +10,7 @@ use crate::search::Search;
 const TITLE: &str = "Rust Chess Engine";
 const AUTHOR: &str = "Brandon Harrison";
 
-const EVALUATOR: SimpleEvaluator = SimpleEvaluator::new();
+static SEARCH: OnceLock<Arc<Search<SimpleEvaluator>>> = OnceLock::new();
 
 pub fn start() {
     let mut board = BoardBuilder::construct_starting_board();
@@ -40,7 +41,12 @@ pub fn start() {
                 let _ = go(&board, &fields)
                     .inspect_err(|e| eprintln!("Failed to execute go command: {e}"));
             }
-            "stop" => println!("Not supported"),
+            "stop" => {
+                println!("Attempting to stop...");
+                let arc = SEARCH.get_or_init(|| init_search(&board)).clone();
+                arc.stop();
+                println!("Stopped search");
+            }
             "quit" => break,
             "setoption" => println!("Not supported"),
             "debug" => println!("Not supported"),
@@ -129,10 +135,12 @@ fn go(board: &Board, fields: &[&str]) -> Result<(), String> {
         idx += 1;
     }
 
-    let mut search = Search::new(board, &EVALUATOR, Some(limits));
+    let arc = SEARCH.get_or_init(|| init_search(board)).clone();
+    arc.start();
+    arc.set_limits(limits);
     thread::spawn(move || {
-        println!("detatching search thread");
-        let best_move = search.search(None);
+        println!("Searching...");
+        let best_move = arc.search(None);
         println!("bestmove {best_move}");
     });
 
@@ -153,4 +161,8 @@ where
     }
 
     Some(result.unwrap())
+}
+
+fn init_search(board: &Board) -> Arc<Search<SimpleEvaluator>> {
+    Arc::new(Search::new(board, &SimpleEvaluator::new(), None))
 }

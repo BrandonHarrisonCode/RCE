@@ -1,5 +1,6 @@
 use super::board::{Board, Ply};
 use super::evaluate::Evaluator;
+use parking_lot::{Mutex, RwLock};
 
 const DEFAULT_DEPTH: usize = 5;
 
@@ -9,21 +10,21 @@ use limits::SearchLimits;
 
 #[allow(dead_code)]
 pub struct Search<T: Evaluator> {
-    board: Board,
+    board: Mutex<Board>,
     evaluator: T,
-    limits: SearchLimits,
+    limits: Mutex<SearchLimits>,
     best_move: Option<Ply>,
-    running: bool,
+    running: RwLock<bool>,
 }
 
 impl<T: Evaluator> Search<T> {
     pub fn new(board: &Board, evaluator: &T, limits: Option<SearchLimits>) -> Self {
         Self {
-            board: board.clone(),
+            board: Mutex::new(board.clone()),
             evaluator: evaluator.clone(),
-            limits: limits.unwrap_or_default(),
+            limits: Mutex::new(limits.unwrap_or_default()),
             best_move: None,
-            running: false,
+            running: RwLock::new(true),
         }
     }
 
@@ -32,44 +33,76 @@ impl<T: Evaluator> Search<T> {
         self.best_move
     }
 
-    #[allow(dead_code)]
-    pub fn stop(&mut self) {
-        self.running = false;
+    pub fn stop(&self) {
+        let mut running = self.running.write();
+        *running = false;
     }
 
-    pub fn search(&mut self, depth: Option<usize>) -> Ply {
+    pub fn start(&self) {
+        let mut running = self.running.write();
+        *running = true;
+    }
+
+    pub fn search(&self, depth: Option<usize>) -> Ply {
         self.alpha_beta_start(depth.unwrap_or(DEFAULT_DEPTH))
     }
 
-    fn alpha_beta_start(&mut self, depth: usize) -> Ply {
+    pub fn set_limits(&self, limits: SearchLimits) {
+        let mut lock = self.limits.lock();
+        *lock = limits;
+    }
+
+    const fn check_limits(&self) -> bool {
+        false
+    }
+
+    fn alpha_beta_start(&self, depth: usize) -> Ply {
         let mut best_value = i32::MIN;
-        let moves = self.board.get_legal_moves();
+        let mut board = self.board.lock();
+        let moves = board.get_legal_moves();
+        drop(board);
         let mut best_ply = moves[0];
 
         for mv in moves {
-            self.board.make_move(mv);
+            let mut board = self.board.lock();
+            board.make_move(mv);
+            drop(board);
             let value = self.alpha_beta_min(i32::MIN, i32::MAX, depth - 1);
             if value > best_value {
                 best_value = value;
                 best_ply = mv;
             }
-            self.board.unmake_move();
+            let mut board = self.board.lock();
+            board.unmake_move();
+            drop(board);
         }
 
         best_ply
     }
 
-    fn alpha_beta_max(&mut self, mut alpha: i32, beta: i32, depth: usize) -> i32 {
-        if depth == 0 {
-            return self.evaluator.evaluate(&self.board);
-        }
+    fn alpha_beta_max(&self, mut alpha: i32, beta: i32, depth: usize) -> i32 {
+        let running_reader = self.running.read();
+        let mut board = self.board.lock();
 
-        let moves = self.board.get_legal_moves();
+        if depth == 0 || !*running_reader || self.check_limits() {
+            return self.evaluator.evaluate(&board);
+        }
+        drop(running_reader);
+
+        let moves = board.get_legal_moves();
+        drop(board);
 
         for mv in moves {
-            self.board.make_move(mv);
+            let mut board = self.board.lock();
+            board.make_move(mv);
+            drop(board);
+
             let score = self.alpha_beta_min(alpha, beta, depth - 1);
-            self.board.unmake_move();
+
+            let mut board = self.board.lock();
+            board.unmake_move();
+            drop(board);
+
             if score >= beta {
                 return beta;
             }
@@ -81,17 +114,29 @@ impl<T: Evaluator> Search<T> {
         alpha
     }
 
-    fn alpha_beta_min(&mut self, alpha: i32, mut beta: i32, depth: usize) -> i32 {
-        if depth == 0 {
-            return -self.evaluator.evaluate(&self.board);
-        }
+    fn alpha_beta_min(&self, alpha: i32, mut beta: i32, depth: usize) -> i32 {
+        let running_reader = self.running.read();
+        let mut board = self.board.lock();
 
-        let moves = self.board.get_legal_moves();
+        if depth == 0 || !*running_reader || self.check_limits() {
+            return self.evaluator.evaluate(&board);
+        }
+        drop(running_reader);
+
+        let moves = board.get_legal_moves();
+        drop(board);
 
         for mv in moves {
-            self.board.make_move(mv);
+            let mut board = self.board.lock();
+            board.make_move(mv);
+            drop(board);
+
             let score = self.alpha_beta_max(alpha, beta, depth - 1);
-            self.board.unmake_move();
+
+            let mut board = self.board.lock();
+            board.unmake_move();
+            drop(board);
+
             if score <= alpha {
                 return alpha;
             }
@@ -119,7 +164,7 @@ mod tests {
     fn bench_search_depth_4(bencher: &mut Bencher) {
         let board = BoardBuilder::construct_starting_board();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
+        let search = Search::new(&board, &evaluator, None);
         bencher.iter(|| search.search(Some(4)));
     }
 }
