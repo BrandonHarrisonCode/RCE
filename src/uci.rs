@@ -72,24 +72,27 @@ fn print_engine_info() {
 
 fn load_position(fields: &[&str]) -> Result<Board, String> {
     let mut board = BoardBuilder::construct_starting_board();
+    let mut idx = 1;
 
     if fields.len() < 2 {
         return Err("No position specified!".to_string());
     }
 
-    match fields[1] {
-        "startpos" => {}
+    match fields[idx] {
+        "startpos" => idx += 1,
         "fen" => {
-            if fields.len() < 3 {
+            if fields.len() < 8 {
                 return Err("No FEN specified!".to_string());
             }
-            board = Board::from_fen(fields[2..].join(" ").as_str());
+            board = Board::from_fen(fields[2..8].join(" ").as_str());
+            idx = 8;
         }
         _ => return Err(format!("Unrecognized position command: {}", fields[1])),
     }
 
-    if fields.len() > 2 && fields[2] == "moves" {
-        for token in &fields[3..] {
+    if fields.len() - idx >= 2 && fields[idx] == "moves" {
+        idx += 1;
+        for token in &fields[idx..] {
             if let Ok(m) = board.find_move(token) {
                 board.make_move(m);
             } else {

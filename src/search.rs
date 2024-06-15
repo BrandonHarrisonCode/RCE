@@ -90,6 +90,10 @@ impl<T: Evaluator> Search<T> {
             self.board.unmake_move();
         }
 
+        println!(
+            "info depth {depth} score cp {} pv {best_ply}",
+            best_value * 100
+        );
         best_ply
     }
 
