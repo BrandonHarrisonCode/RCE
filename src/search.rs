@@ -2,8 +2,9 @@ use super::board::{Board, Ply};
 use super::evaluate::Evaluator;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::time::{Duration, Instant};
 
-const DEFAULT_DEPTH: usize = 5;
+const DEFAULT_DEPTH: usize = 4;
 
 pub mod limits;
 
@@ -75,14 +76,15 @@ impl<T: Evaluator> Search<T> {
     }
 
     fn alpha_beta_start(&mut self, depth: usize) -> Ply {
-        let mut best_value = i32::MIN;
+        let start = Instant::now();
+        let mut best_value = i64::MIN;
         let moves = self.board.get_legal_moves();
         let mut best_ply = moves[0];
 
         for mv in moves {
             self.board.make_move(mv);
 
-            let value = self.alpha_beta_min(i32::MIN, i32::MAX, depth - 1);
+            let value = self.alpha_beta_min(i64::MIN, i64::MAX, depth - 1);
             if value > best_value {
                 best_value = value;
                 best_ply = mv;
@@ -90,14 +92,15 @@ impl<T: Evaluator> Search<T> {
             self.board.unmake_move();
         }
 
+        let duration = start.elapsed();
+        let time_elapsed_in_ms = duration.as_millis();
         println!(
-            "info depth {depth} score cp {} pv {best_ply}",
-            best_value * 100
+            "info depth {depth} time {time_elapsed_in_ms} score cp {best_value} pv {best_ply}",
         );
         best_ply
     }
 
-    fn alpha_beta_max(&mut self, mut alpha: i32, beta: i32, depth: usize) -> i32 {
+    fn alpha_beta_max(&mut self, mut alpha: i64, beta: i64, depth: usize) -> i64 {
         if depth == 0 || !self.check_running() || self.check_limits() {
             return self.evaluator.evaluate(&self.board);
         }
@@ -120,7 +123,7 @@ impl<T: Evaluator> Search<T> {
         alpha
     }
 
-    fn alpha_beta_min(&mut self, alpha: i32, mut beta: i32, depth: usize) -> i32 {
+    fn alpha_beta_min(&mut self, alpha: i64, mut beta: i64, depth: usize) -> i64 {
         if depth == 0 || !self.check_running() || self.check_limits() {
             return self.evaluator.evaluate(&self.board);
         }

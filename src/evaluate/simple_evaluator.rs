@@ -7,12 +7,12 @@ use crate::board::Board;
 pub struct SimpleEvaluator;
 
 impl SimpleEvaluator {
-    const KING_VALUE: i32 = i16::MAX as i32;
-    const QUEEN_VALUE: i32 = 9;
-    const ROOK_VALUE: i32 = 5;
-    const BISHOP_VALUE: i32 = 3;
-    const KNIGHT_VALUE: i32 = 3;
-    const PAWN_VALUE: i32 = 1;
+    const KING_VALUE: i64 = i32::MAX as i64;
+    const QUEEN_VALUE: i64 = 900;
+    const ROOK_VALUE: i64 = 500;
+    const BISHOP_VALUE: i64 = 300;
+    const KNIGHT_VALUE: i64 = 300;
+    const PAWN_VALUE: i64 = 100;
 
     pub const fn new() -> Self {
         Self {}
@@ -20,8 +20,8 @@ impl SimpleEvaluator {
 }
 
 impl Evaluator for SimpleEvaluator {
-    fn evaluate(&self, board: &Board) -> i32 {
-        let mut score: i32 = 0;
+    fn evaluate(&self, board: &Board) -> i64 {
+        let mut score: i64 = 0;
 
         for square in 0..64u8 {
             if let Some(piece) = board.get_piece(Square::from(square)) {
