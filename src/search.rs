@@ -3,7 +3,7 @@ use super::evaluate::Evaluator;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-const DEFAULT_DEPTH: usize = 6;
+const DEFAULT_DEPTH: usize = 5;
 
 pub mod limits;
 

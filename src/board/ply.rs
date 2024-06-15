@@ -8,7 +8,7 @@ pub mod castling;
 use builder::Builder;
 use castling::CastlingRights;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Ply {
     pub start: Square,
     pub dest: Square,
@@ -86,9 +86,31 @@ impl Ply {
     pub const fn builder(start: Square, dest: Square) -> Builder {
         Builder::new(start, dest)
     }
+
+    pub fn to_notation(self) -> String {
+        let mut notation = format!("{}{}", self.start, self.dest);
+
+        if let Some(promoted_to) = self.promoted_to {
+            match promoted_to {
+                Kind::Queen(_) => notation.push('q'),
+                Kind::Rook(_) => notation.push('r'),
+                Kind::Bishop(_) => notation.push('b'),
+                Kind::Knight(_) => notation.push('n'),
+                _ => unreachable!("Invalid promotion piece"),
+            }
+        }
+
+        notation
+    }
 }
 
 impl fmt::Display for Ply {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.to_notation())
+    }
+}
+
+impl fmt::Debug for Ply {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} -> {}", self.start, self.dest,)?;
         if let Some(captured_piece) = self.captured_piece {

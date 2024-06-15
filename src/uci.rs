@@ -17,7 +17,6 @@ pub fn start() {
     let mut join_handle: Option<thread::JoinHandle<()>> = None;
 
     loop {
-        println!("{board}");
         let mut line = String::new();
         std::io::stdin().read_line(&mut line).unwrap();
         let trimmed = line.trim();
@@ -90,7 +89,13 @@ fn load_position(fields: &[&str]) -> Result<Board, String> {
     }
 
     if fields.len() > 2 && fields[2] == "moves" {
-        return Err("Specifying moves is currently not suppoerted! Try again.".to_string());
+        for token in &fields[3..] {
+            if let Ok(m) = board.find_move(token) {
+                board.make_move(m);
+            } else {
+                return Err(format!("Invalid move: {token}"));
+            }
+        }
     }
 
     Ok(board)
@@ -103,9 +108,10 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
     while idx < fields.len() {
         let token = fields[idx];
 
+        #[allow(clippy::match_same_arms)]
         match token {
-            "searchmoves" => return Err("searchmoves is not supported!".to_string()),
-            "ponder" => return Err("ponder is not supported!".to_string()),
+            "searchmoves" => {}
+            "ponder" => {}
             "wtime" => {
                 idx += 1;
                 limits = limits.white_time(parse_value(fields[idx], token));
@@ -122,7 +128,7 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
                 idx += 1;
                 limits = limits.black_increment(parse_value(fields[idx], token));
             }
-            "movestogo" => return Err("movestogo is not supported!".to_string()),
+            "movestogo" => {}
             "depth" => {
                 idx += 1;
                 limits = limits.depth(parse_value(fields[idx], token));
@@ -131,7 +137,7 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
                 idx += 1;
                 limits = limits.nodes(parse_value(fields[idx], token));
             }
-            "mate" => return Err("mate is not supported!".to_string()),
+            "mate" => {}
             "movetime" => {
                 idx += 1;
                 limits = limits.movetime(parse_value(fields[idx], token));
@@ -148,7 +154,6 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
     let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
     let is_running = search.get_running();
     let join_handle = thread::spawn(move || {
-        println!("Searching...");
         let best_move = search.search(None);
         println!("bestmove {best_move}");
     });

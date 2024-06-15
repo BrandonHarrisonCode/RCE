@@ -727,6 +727,13 @@ impl Board {
         dest_piece_kind_option
     }
 
+    pub fn find_move(&mut self, notation: &str) -> Result<Ply, &'static str> {
+        self.get_legal_moves()
+            .into_iter()
+            .find(|m| m.to_notation() == notation)
+            .ok_or("Move not found")
+    }
+
     /// Makes a half-move on this board
     ///
     /// # Arguments
