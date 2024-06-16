@@ -2,7 +2,7 @@ use super::board::{Board, Ply};
 use super::evaluate::Evaluator;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 const DEFAULT_DEPTH: usize = 4;
 
@@ -84,7 +84,7 @@ impl<T: Evaluator> Search<T> {
         for mv in moves {
             self.board.make_move(mv);
 
-            let value = self.alpha_beta_min(i64::MIN, i64::MAX, depth - 1);
+            let value = self.alpha_beta(i64::MIN, i64::MAX, depth - 1);
             if value > best_value {
                 best_value = value;
                 best_ply = mv;
@@ -100,16 +100,17 @@ impl<T: Evaluator> Search<T> {
         best_ply
     }
 
-    fn alpha_beta_max(&mut self, mut alpha: i64, beta: i64, depth: usize) -> i64 {
-        if depth == 0 || !self.check_running() || self.check_limits() {
+    fn alpha_beta(&mut self, mut alpha: i64, beta: i64, depthleft: usize) -> i64 {
+        if depthleft == 0 || !self.check_running() || self.check_limits() {
             return self.evaluator.evaluate(&self.board);
         }
 
         let moves = self.board.get_legal_moves();
-
         for mv in moves {
             self.board.make_move(mv);
-            let score = self.alpha_beta_min(alpha, beta, depth - 1);
+            let score = self
+                .alpha_beta(beta.saturating_neg(), alpha.saturating_neg(), depthleft - 1)
+                .saturating_neg();
             self.board.unmake_move();
 
             if score >= beta {
@@ -121,31 +122,6 @@ impl<T: Evaluator> Search<T> {
         }
 
         alpha
-    }
-
-    fn alpha_beta_min(&mut self, alpha: i64, mut beta: i64, depth: usize) -> i64 {
-        if depth == 0 || !self.check_running() || self.check_limits() {
-            return self.evaluator.evaluate(&self.board);
-        }
-
-        let moves = self.board.get_legal_moves();
-
-        for mv in moves {
-            self.board.make_move(mv);
-
-            let score = self.alpha_beta_max(alpha, beta, depth - 1);
-
-            self.board.unmake_move();
-
-            if score <= alpha {
-                return alpha;
-            }
-            if score < beta {
-                beta = score;
-            }
-        }
-
-        beta
     }
 }
 

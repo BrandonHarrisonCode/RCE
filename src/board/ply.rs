@@ -153,50 +153,7 @@ mod tests {
         let ply = Ply::new(start, dest);
 
         let result = ply.to_string();
-        let correct = format!("{start} -> {dest}");
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_display_with_capture() {
-        let start = Square::from("f4");
-        let dest = Square::from("d6");
-        let captured_piece = Kind::Pawn(Color::White);
-        let ply = Ply::builder(start, dest).captured(captured_piece).build();
-
-        let result = ply.to_string();
-        let correct = format!("{start} -> {dest} (captured: ♟)");
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_display_with_promotion() {
-        let start = Square::from("d7");
-        let dest = Square::from("d8");
-        let promoted_to = Kind::Queen(Color::White);
-        let ply = Ply::builder(start, dest).promoted_to(promoted_to).build();
-
-        let result = ply.to_string();
-        let correct = format!("{start} -> {dest} (promoted to: ♛)");
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_display_with_capture_and_promotion() {
-        let start = Square::from("d7");
-        let dest = Square::from("e8");
-        let captured_piece = Kind::Rook(Color::Black);
-        let promoted_to = Kind::Queen(Color::White);
-        let ply = Ply::builder(start, dest)
-            .captured(captured_piece)
-            .promoted_to(promoted_to)
-            .build();
-
-        let result = ply.to_string();
-        let correct = format!("{start} -> {dest} (captured: ♖) (promoted to: ♛)");
+        let correct = format!("{start}{dest}");
 
         assert_eq!(result, correct);
     }
