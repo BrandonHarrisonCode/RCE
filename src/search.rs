@@ -84,7 +84,9 @@ impl<T: Evaluator> Search<T> {
         for mv in moves {
             self.board.make_move(mv);
 
-            let value = self.alpha_beta(i64::MIN, i64::MAX, depth - 1);
+            let value = self
+                .alpha_beta(i64::MIN, i64::MAX, depth - 1)
+                .saturating_neg();
             if value > best_value {
                 best_value = value;
                 best_ply = mv;
@@ -97,6 +99,9 @@ impl<T: Evaluator> Search<T> {
         println!(
             "info depth {depth} time {time_elapsed_in_ms} score cp {best_value} pv {best_ply}",
         );
+
+        self.best_move = Some(best_ply);
+
         best_ply
     }
 

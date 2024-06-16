@@ -1,3 +1,4 @@
+use build_time::build_time_utc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
@@ -10,6 +11,8 @@ use crate::search::Search;
 
 const TITLE: &str = "Rust Chess Engine";
 const AUTHOR: &str = "Brandon Harrison";
+
+const VERSION: &str = build_time_utc!("%Y.%m.%d %H:%M:%S");
 
 pub fn start() {
     let mut board = BoardBuilder::construct_starting_board();
@@ -65,7 +68,7 @@ pub fn start() {
 }
 
 fn print_engine_info() {
-    println!("id name {TITLE}");
+    println!("id name {TITLE} {VERSION}");
     println!("id author {AUTHOR}");
     println!("uciok");
 }
