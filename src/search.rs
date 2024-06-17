@@ -79,6 +79,7 @@ impl<T: Evaluator> Search<T> {
         let start = Instant::now();
         let mut best_value = i64::MIN;
         let moves = self.board.get_legal_moves();
+
         let mut best_ply = moves[0];
 
         for mv in moves {
@@ -107,10 +108,18 @@ impl<T: Evaluator> Search<T> {
 
     fn alpha_beta(&mut self, mut alpha: i64, beta: i64, depthleft: usize) -> i64 {
         if depthleft == 0 || !self.check_running() || self.check_limits() {
-            return self.evaluator.evaluate(&self.board);
+            return self.evaluator.evaluate(&mut self.board);
         }
 
         let moves = self.board.get_legal_moves();
+        if moves.is_empty() {
+            if self.board.is_in_check(self.board.current_turn) {
+                return i64::MIN; // Checkmate
+            } else {
+                return 0; // Stalemate
+            }
+        }
+
         for mv in moves {
             self.board.make_move(mv);
             let score = self
