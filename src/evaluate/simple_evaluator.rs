@@ -23,17 +23,6 @@ impl Evaluator for SimpleEvaluator {
     fn evaluate(&self, board: &mut Board) -> i64 {
         let mut score: i64 = 0;
 
-        if board.is_checkmate() {
-            return if board
-                .get_winner()
-                .is_some_and(|color| color == board.current_turn)
-            {
-                Self::KING_VALUE
-            } else {
-                -Self::KING_VALUE
-            };
-        }
-
         for square in 0..64u8 {
             if let Some(piece) = board.get_piece(Square::from(square)) {
                 let piece_value = match piece {
