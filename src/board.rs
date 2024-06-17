@@ -602,7 +602,7 @@ impl Board {
     }
 
     #[allow(dead_code)]
-    pub fn is_in_checkmate(&mut self) -> bool {
+    pub fn is_checkmate(&mut self) -> bool {
         self.set_game_state();
         self.game_state == GameState::CheckmateWhite || self.game_state == GameState::CheckmateBlack
     }
@@ -656,6 +656,15 @@ impl Board {
             (_, false, false, false) => {
                 self.game_state = GameState::InProgress;
             }
+        }
+    }
+
+    pub fn get_winner(&mut self) -> Option<Color> {
+        self.set_game_state();
+        match self.game_state {
+            GameState::CheckmateWhite => Some(Color::Black),
+            GameState::CheckmateBlack => Some(Color::White),
+            _ => None,
         }
     }
 
