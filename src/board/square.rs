@@ -100,44 +100,30 @@ impl From<u8> for Square {
     }
 }
 
-impl Square {
-    /// Returns a vec of squares that are between the start and destination squares
+impl From<Square> for u8 {
+    /// Converts a square to a u8 representation, where 0 is in the bottom right corner and 63 is in the top left
     ///
     /// # Arguments
     ///
-    /// * `start` - The starting square
-    /// * `dest` - The destination square
+    /// * `value` - A number that represents the given square, with h1 being 0 and a8 being 63
     ///
     /// # Examples
     /// ```
-    /// let squares: Vec<Square> = Square::new("a1").get_transit_squares(Square::new("h8"));
+    /// let squareA1 = Square::from(Square { rank: 0, file: 0 });
+    /// let squareA8 = Square::from(Square { rank: 7, file: 0 });
     /// ```
-    pub fn get_transit_squares(self, dest: Self) -> Vec<Self> {
-        let mut squares: Vec<Self> = vec![];
-
-        let mut rank = self.rank;
-        let mut file = self.file;
-
-        while rank != dest.rank || file != dest.file {
-            match rank.cmp(&dest.rank) {
-                std::cmp::Ordering::Less => rank += 1,
-                std::cmp::Ordering::Greater => rank -= 1,
-                std::cmp::Ordering::Equal => {}
-            }
-
-            match file.cmp(&dest.file) {
-                std::cmp::Ordering::Less => file += 1,
-                std::cmp::Ordering::Greater => file -= 1,
-                std::cmp::Ordering::Equal => {}
-            }
-
-            squares.push(Self { rank, file });
-        }
-
-        squares.pop(); // Remove the destination square from the list of transit squares
-        squares
+    fn from(value: Square) -> Self {
+        value.rank * 8 + value.file
     }
+}
 
+impl From<Square> for u64 {
+    fn from(square: Square) -> Self {
+        1u64 << u8::from(square)
+    }
+}
+
+impl Square {
     /// Returns a u64 mask filled with 0s except for a 1 in the designated square
     ///
     /// # Arguments
@@ -587,114 +573,6 @@ mod tests {
         let start_square = Square::from("f3");
         let result = start_square.u8();
         let correct = 21;
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_a1_to_h8() {
-        let start_square = Square::from("a1");
-        let dest_square = Square::from("h8");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![
-            Square::from("b2"),
-            Square::from("c3"),
-            Square::from("d4"),
-            Square::from("e5"),
-            Square::from("f6"),
-            Square::from("g7"),
-        ];
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_h8_to_a1() {
-        let start_square = Square::from("h8");
-        let dest_square = Square::from("a1");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![
-            Square::from("g7"),
-            Square::from("f6"),
-            Square::from("e5"),
-            Square::from("d4"),
-            Square::from("c3"),
-            Square::from("b2"),
-        ];
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_a8_to_h1() {
-        let start_square = Square::from("a8");
-        let dest_square = Square::from("h1");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![
-            Square::from("b7"),
-            Square::from("c6"),
-            Square::from("d5"),
-            Square::from("e4"),
-            Square::from("f3"),
-            Square::from("g2"),
-        ];
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_h1_to_a8() {
-        let start_square = Square::from("h1");
-        let dest_square = Square::from("a8");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![
-            Square::from("g2"),
-            Square::from("f3"),
-            Square::from("e4"),
-            Square::from("d5"),
-            Square::from("c6"),
-            Square::from("b7"),
-        ];
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_e4_to_e7() {
-        let start_square = Square::from("e4");
-        let dest_square = Square::from("e7");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::from("e5"), Square::from("e6")];
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_e7_to_e4() {
-        let start_square = Square::from("e7");
-        let dest_square = Square::from("e4");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::from("e6"), Square::from("e5")];
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_d3_to_f3() {
-        let start_square = Square::from("d3");
-        let dest_square = Square::from("f3");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::from("e3")];
-
-        assert_eq!(result, correct);
-    }
-
-    #[test]
-    fn test_transit_squares_f3_to_d3() {
-        let start_square = Square::from("f3");
-        let dest_square = Square::from("d3");
-        let result = start_square.get_transit_squares(dest_square);
-        let correct = vec![Square::from("e3")];
 
         assert_eq!(result, correct);
     }

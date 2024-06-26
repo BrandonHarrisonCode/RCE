@@ -37,7 +37,7 @@ impl Piece for Pawn {
     const WHITE_SYMBOL: &'static str = "♟";
     const BLACK_SYMBOL: &'static str = "♙";
 
-    fn get_moveset(square: Square, _: &Board, color: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
         let (direction, starting_rank, en_passant_rank, back_rank) = match color {
             Color::White => (Direction::North, 1, 4, 7),
             Color::Black => (Direction::South, 6, 3, 0),
@@ -52,7 +52,15 @@ impl Piece for Pawn {
         // Single pawn push
         moveset.push(Ply::new(square, square + direction));
         // Double pawn push
-        if square.rank == starting_rank {
+        let offset: i32 = match color {
+            Color::White => 8,
+            Color::Black => -8,
+        };
+        if square.rank == starting_rank
+            && (board.bitboards.all_pieces
+                & (Bitboard::new(1) << (i32::from(u8::from(square)) + offset) as u32))
+                .is_empty()
+        {
             moveset.push(
                 Ply::builder(square, square + direction + direction)
                     .double_pawn_push(true)

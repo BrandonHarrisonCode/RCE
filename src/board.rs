@@ -60,7 +60,7 @@ impl Default for Board {
 
             en_passant_file: None,
 
-            history: Vec::new(),
+            history: vec![Ply::default()],
         }
     }
 }
@@ -206,7 +206,6 @@ impl Board {
     fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
         self.is_on_board(ply)
             .and_then(|_| self.is_self_capture(ply))
-            .and_then(|_| self.is_illegal_jump(ply))
             .and_then(|_| self.is_illegal_pawn_move(ply))
             .and_then(|_| self.is_illegal_castling(ply))?;
 
@@ -283,35 +282,6 @@ impl Board {
             Err("Move is not valid. The move would capture a piece of the same color.")
         } else {
             Ok(ply)
-        }
-    }
-
-    /// Returns a boolean representing whether or not a given move jumps through other pieces without being a knight.
-    ///
-    /// # Panics
-    ///
-    /// Will panic if there is no piece at the start square of the move.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// let ply1 = Ply(Square::new("e2"), Square::new("e4"));
-    /// let ply2 = Ply(Square::new("e1"), Square::new("e3"));
-    /// assert!(!board.is_illegal_jump(ply1));
-    /// assert!(board.is_illegal_jump(ply2));
-    /// ```
-    fn is_illegal_jump(&self, ply: Ply) -> Result<Ply, &'static str> {
-        // Castling needs more spaces clear than between the start and dest squares
-        if ply.is_castles {
-            return Ok(ply);
-        }
-
-        match self.get_piece(ply.start).unwrap() {
-            Kind::Knight(_c) => Ok(ply),
-            _ => self.no_pieces_between(ply.start, ply.dest).map_or(
-                Err("Move is not valid. The move jumps through other pieces."),
-                |()| Ok(ply),
-            ),
         }
     }
 
@@ -481,28 +451,6 @@ impl Board {
     /// ```
     pub fn switch_turn(&mut self) {
         self.current_turn = self.current_turn.opposite();
-    }
-
-    /// Returns a Result representing whether or not there are no pieces between two squares
-    ///
-    /// # Arguments
-    ///
-    /// * `start` - The starting square
-    /// * `dest` - The destination square
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// assert!(board.no_pieces_between(Square::new("a4"), Square::new("h4")).is_ok());
-    /// assert!(board.no_pieces_between(Square::new("a1"), Square::new("h1")).is_err());
-    /// ```
-    fn no_pieces_between(&self, start: Square, dest: Square) -> Result<(), &'static str> {
-        let squares = start.get_transit_squares(dest);
-        if squares.into_iter().any(|sq| self.get_piece(sq).is_some()) {
-            Err("There are pieces between the start and destination squares.")
-        } else {
-            Ok(())
-        }
     }
 
     /// Returns a Result representing whether or not there are no squares with pieces on the castling path
@@ -1012,6 +960,15 @@ mod tests {
 
     use super::*;
     use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_default_board() {
+        let board = Board::default();
+        assert_eq!(board.current_turn, Color::White);
+        assert_eq!(board.en_passant_file, None);
+        assert_eq!(board.game_state, GameState::InProgress);
+        assert_eq!(board.history, vec![Ply::default()]);
+    }
 
     #[test]
     fn test_get_piece1() {
@@ -1844,6 +1801,8 @@ mod tests {
     fn test_get_legal_moves_count_from_position_13() {
         let mut board =
             Board::from_fen("r2q1rk1/pp3ppb/2p1pn1p/4Q2P/2B5/3P2N1/PPP2PP1/2KR3R b - - 2 15");
+
+        dbg!(board.get_legal_moves());
         let result = board.get_legal_moves().len();
         let correct = 33;
 

@@ -214,6 +214,12 @@ impl fmt::Debug for Bitboard {
     }
 }
 
+impl From<Square> for Bitboard {
+    fn from(square: Square) -> Self {
+        Self(1 << u8::from(square))
+    }
+}
+
 impl From<usize> for Bitboard {
     fn from(value: usize) -> Self {
         Self(value as u64)
