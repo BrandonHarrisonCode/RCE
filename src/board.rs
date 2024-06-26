@@ -505,6 +505,18 @@ impl Board {
         }
     }
 
+    /// Returns a Result representing whether or not there are no squares with pieces on the castling path
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of castling to check for
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board();
+    /// assert!(board.no_pieces_between_castling(CastlingKind::WhiteKingside).is_err());
+    /// assert!(board.no_pieces_between_castling(CastlingKind::BlackQueenside).is_err());
+    /// ```
     fn no_pieces_between_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
         let pieces_blocking = match kind {
             CastlingKind::WhiteKingside => self.bitboards.all_pieces & 0x60,
@@ -549,6 +561,18 @@ impl Board {
         }
     }
 
+    /// Returns a bitboard representing all squares that are attacked from `color`'s perspective
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the player to calculate the attacked squares for
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board();
+    ///
+    /// let attacked_squares = board.get_attacked_squares(Color::White);
+    /// ```
     fn get_attacked_squares(&self, color: Color) -> Bitboard {
         let attacking_pieces = match color {
             Color::White => self.bitboards.black_pieces,
@@ -571,6 +595,13 @@ impl Board {
         attacks
     }
 
+    /// Returns the halfmove clock of the current board state
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board();
+    /// assert_eq!(0, board.get_halfmove_clock());
+    /// ```
     pub fn get_halfmove_clock(&self) -> u16 {
         self.history
             .last()
@@ -598,18 +629,21 @@ impl Board {
     }
 
     #[allow(dead_code)]
+    /// Returns a boolean representing whether or not the game has ended by checkmate
     pub fn is_checkmate(&mut self) -> bool {
         self.set_game_state();
         self.game_state == GameState::CheckmateWhite || self.game_state == GameState::CheckmateBlack
     }
 
     #[allow(dead_code)]
+    /// Returns a boolean representing whether or not the game has ended by stalemate
     pub fn is_stalemate(&mut self) -> bool {
         self.set_game_state();
         self.game_state == GameState::Stalemate
     }
 
     #[allow(dead_code)]
+    /// Returns a boolean representing whether or not the game has ended by a draw
     pub fn is_draw(&mut self) -> bool {
         self.set_game_state();
         matches!(
@@ -619,11 +653,20 @@ impl Board {
     }
 
     #[allow(dead_code)]
+    /// Returns a boolean representing whether or not the current game is over
     pub fn is_game_over(&mut self) -> bool {
         self.set_game_state();
         self.game_state != GameState::InProgress
     }
 
+    /// Sets the game state by evaluating the board for checkmate, stalemate, threefold repetition, and the fifty move rule
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board();
+    /// board.set_game_state();
+    /// assert_eq!(GameState::InProgress, board.game_state);
+    /// ```
     fn set_game_state(&mut self) {
         if self.game_state != GameState::Unknown {
             return;
@@ -656,6 +699,7 @@ impl Board {
     }
 
     #[allow(dead_code)]
+    /// Returns the winner of the game, if there is one
     pub fn get_winner(&mut self) -> Option<Color> {
         self.set_game_state();
         match self.game_state {
@@ -733,6 +777,7 @@ impl Board {
         dest_piece_kind_option
     }
 
+    /// Finds the move in the list of all legal moves that corresponds to the given notation
     pub fn find_move(&mut self, notation: &str) -> Result<Ply, &'static str> {
         self.get_legal_moves()
             .into_iter()
