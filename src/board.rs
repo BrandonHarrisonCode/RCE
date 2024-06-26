@@ -659,6 +659,7 @@ impl Board {
         }
     }
 
+    #[allow(dead_code)]
     pub fn get_winner(&mut self) -> Option<Color> {
         self.set_game_state();
         match self.game_state {

@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
-const DEFAULT_DEPTH: usize = 4;
+const DEFAULT_DEPTH: usize = 6;
 
 pub mod limits;
 
@@ -97,9 +97,21 @@ impl<T: Evaluator> Search<T> {
 
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        println!(
-            "info depth {depth} time {time_elapsed_in_ms} score cp {best_value} pv {best_ply}",
-        );
+        match best_value {
+            -9223372036854775807 => {
+                println!(
+                    "info depth {depth} time {time_elapsed_in_ms} score mate -1 pv {best_ply}"
+                );
+            }
+            i64::MAX => {
+                println!("info depth {depth} time {time_elapsed_in_ms} score mate 1 pv {best_ply}");
+            }
+            _ => {
+                println!(
+                    "info depth {depth} time {time_elapsed_in_ms} score cp {best_value} pv {best_ply}",
+                );
+            }
+        }
 
         self.best_move = Some(best_ply);
 
