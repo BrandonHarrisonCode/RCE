@@ -28,7 +28,8 @@ pub enum GameState {
     FiftyMoveRule,
 }
 
-// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
+/// A board object, representing all of the state of the game
+/// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
     pub current_turn: Color,
@@ -71,7 +72,6 @@ impl Board {
     /// ```
     /// let board = Board::builder().kingside_castling(true, true).build();
     /// ```
-    #[allow(dead_code)]
     pub fn builder() -> BoardBuilder {
         BoardBuilder::default()
     }
@@ -83,7 +83,6 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board();
     /// assert_eq!(board.kingside_castle_status(), Castling::Availiable);
     /// ```
-    #[allow(dead_code)]
     pub fn kingside_castle_status(&self, color: Option<Color>) -> CastlingStatus {
         match color.unwrap_or(self.current_turn) {
             Color::White => self.history.last().unwrap().castling_rights.white_kingside,
@@ -98,7 +97,6 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board();
     /// assert_eq!(board.queenside_castle_status(), Castling::Availiable);
     /// ```
-    #[allow(dead_code)]
     pub fn queenside_castle_status(&self, color: Option<Color>) -> CastlingStatus {
         match color.unwrap_or(self.current_turn) {
             Color::White => self.history.last().unwrap().castling_rights.white_queenside,
@@ -141,33 +139,31 @@ impl Board {
     fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
 
-        for i in 0..8 {
-            for j in 0..8 {
-                let square = Square { rank: i, file: j };
-                if let Some(piece) = self.get_piece(square) {
-                    if self.current_turn != piece.get_color() {
-                        continue;
-                    }
-
-                    all_moves.append(
-                        &mut piece
-                            .get_moveset(square, self)
-                            .into_iter()
-                            .map(|mut mv| {
-                                if mv.en_passant {
-                                    mv.captured_piece = self.get_piece(Square {
-                                        rank: mv.start.rank,
-                                        file: mv.dest.file,
-                                    });
-                                } else {
-                                    mv.captured_piece = self.get_piece(mv.dest);
-                                }
-
-                                mv
-                            })
-                            .collect::<Vec<Ply>>(),
-                    );
+        for square_idx in 0..64u8 {
+            let square = Square::from(square_idx);
+            if let Some(piece) = self.get_piece(square) {
+                if self.current_turn != piece.get_color() {
+                    continue;
                 }
+
+                all_moves.append(
+                    &mut piece
+                        .get_moveset(square, self)
+                        .into_iter()
+                        .map(|mut mv| {
+                            if mv.en_passant {
+                                mv.captured_piece = self.get_piece(Square {
+                                    rank: mv.start.rank,
+                                    file: mv.dest.file,
+                                });
+                            } else {
+                                mv.captured_piece = self.get_piece(mv.dest);
+                            }
+
+                            mv
+                        })
+                        .collect::<Vec<Ply>>(),
+                );
             }
         }
 

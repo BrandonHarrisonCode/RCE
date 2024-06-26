@@ -39,6 +39,9 @@
 		{
 			"type": "cargo",
 			"command": "llvm-cov",
+			"args": [
+				"--html"
+			],
 			"problemMatcher": [
 				"$rustc"
 			],
