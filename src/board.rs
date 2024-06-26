@@ -275,13 +275,15 @@ impl Board {
     /// assert!(board.is_self_capture(ply2));
     /// ```
     fn is_self_capture(&self, ply: Ply) -> Result<Ply, &'static str> {
-        let dest_piece = self.get_piece(ply.dest);
-        if dest_piece
-            .is_some_and(|pc| pc.get_color() == self.get_piece(ply.start).unwrap().get_color())
-        {
-            Err("Move is not valid. The move would capture a piece of the same color.")
-        } else {
+        let same_pieces = match self.current_turn {
+            Color::White => self.bitboards.white_pieces,
+            Color::Black => self.bitboards.black_pieces,
+        };
+
+        if (same_pieces & (1 << u8::from(ply.dest))).is_empty() {
             Ok(ply)
+        } else {
+            Err("Move is not valid. The move would capture a piece of the same color.")
         }
     }
 
