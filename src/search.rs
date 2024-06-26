@@ -10,6 +10,7 @@ pub mod limits;
 
 use limits::SearchLimits;
 
+const NEGMAX: i64 = -i64::MAX;
 #[allow(dead_code)]
 pub struct Search<T: Evaluator> {
     board: Board,
@@ -98,7 +99,7 @@ impl<T: Evaluator> Search<T> {
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
         match best_value {
-            -9223372036854775807 => {
+            i64::MIN | NEGMAX => {
                 println!(
                     "info depth {depth} time {time_elapsed_in_ms} score mate -1 pv {best_ply}"
                 );
@@ -127,9 +128,8 @@ impl<T: Evaluator> Search<T> {
         if moves.is_empty() {
             if self.board.is_in_check(self.board.current_turn) {
                 return i64::MIN; // Checkmate
-            } else {
-                return 0; // Stalemate
             }
+            return 0; // Stalemate
         }
 
         for mv in moves {

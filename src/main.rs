@@ -1,5 +1,11 @@
 #![feature(test)]
-#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+#![warn(
+    clippy::all,
+    clippy::pedantic,
+    clippy::nursery,
+    clippy::decimal_literal_representation,
+    clippy::format_push_string
+)]
 
 #[macro_use]
 extern crate strum_macros;
