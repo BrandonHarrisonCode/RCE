@@ -199,8 +199,6 @@ impl Board {
     /// assert!(!board.is_legal_move(ply));
     /// ```
     fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
-        self.is_self_capture(ply)?;
-
         // Don't allow leaving your king in check
         self.make_move(ply);
         if self.is_in_check(self.current_turn.opposite()) {
@@ -210,35 +208,6 @@ impl Board {
         self.unmake_move();
 
         Ok(ply)
-    }
-
-    /// Returns a boolean representing whether or not a given move is a self-capture
-    ///
-    /// A self capture is defined as a move that captures a piece of the same color as the moving piece.
-    ///
-    /// # Panics
-    ///
-    /// Will panic if there is no piece at the start square of the move.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// let ply1 = Ply(Square::new("e2"), Square::new("e4"));
-    /// let ply1 = Ply(Square::new("e2"), Square::new("d2"));
-    /// assert!(!board.is_self_capture(ply1));
-    /// assert!(board.is_self_capture(ply2));
-    /// ```
-    fn is_self_capture(&self, ply: Ply) -> Result<Ply, &'static str> {
-        let same_pieces = match self.current_turn {
-            Color::White => self.bitboards.white_pieces,
-            Color::Black => self.bitboards.black_pieces,
-        };
-
-        if (same_pieces & Bitboard::from(ply.dest)).is_empty() {
-            Ok(ply)
-        } else {
-            Err("Move is not valid. The move would capture a piece of the same color.")
-        }
     }
 
     /// Skip the current turn if possible, updating the state information of the board

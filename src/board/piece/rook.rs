@@ -18,8 +18,13 @@ impl Piece for Rook {
     const WHITE_SYMBOL: &'static str = "♜";
     const BLACK_SYMBOL: &'static str = "♖";
 
-    fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
-        let move_mask = Self::get_attacks(square, board.bitboards.all_pieces);
+    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
+        let same_pieces = match color {
+            Color::White => board.bitboards.white_pieces,
+            Color::Black => board.bitboards.black_pieces,
+        };
+
+        let move_mask = Self::get_attacks(square, board.bitboards.all_pieces) & !same_pieces;
         let squares: Vec<Square> = move_mask.into();
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
@@ -476,7 +481,6 @@ mod tests {
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("a2")),
-            Ply::new(start_square, Square::from("a3")),
             Ply::new(start_square, Square::from("b1")),
             Ply::new(start_square, Square::from("c1")),
             Ply::new(start_square, Square::from("d1")),
@@ -502,12 +506,9 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("d1")),
             Ply::new(start_square, Square::from("d2")),
             Ply::new(start_square, Square::from("d3")),
             Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("d6")),
-            Ply::new(start_square, Square::from("a4")),
             Ply::new(start_square, Square::from("b4")),
             Ply::new(start_square, Square::from("c4")),
             Ply::new(start_square, Square::from("e4")),
@@ -532,12 +533,9 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("d1")),
             Ply::new(start_square, Square::from("d2")),
             Ply::new(start_square, Square::from("d3")),
             Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("d6")),
-            Ply::new(start_square, Square::from("a4")),
             Ply::new(start_square, Square::from("b4")),
             Ply::new(start_square, Square::from("c4")),
             Ply::new(start_square, Square::from("e4")),

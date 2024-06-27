@@ -14,8 +14,13 @@ impl Piece for Knight {
     const WHITE_SYMBOL: &'static str = "♞";
     const BLACK_SYMBOL: &'static str = "♘";
 
-    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
-        let move_mask = Self::get_attacks(square);
+    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
+        let same_pieces = match color {
+            Color::White => board.bitboards.white_pieces,
+            Color::Black => board.bitboards.black_pieces,
+        };
+
+        let move_mask = Self::get_attacks(square) & !same_pieces;
         let squares: Vec<Square> = move_mask.into();
 
         squares.into_iter().map(|s| Ply::new(square, s)).collect()
