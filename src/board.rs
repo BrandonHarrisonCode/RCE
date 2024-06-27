@@ -536,6 +536,8 @@ impl Board {
         new_move.halfmove_clock = previous_move.halfmove_clock + 1;
         new_move.castling_rights = previous_move.castling_rights;
 
+        self.make_move_en_passant_checks(&new_move);
+
         if let (Some(promoted_to), Some(Kind::Pawn(c))) =
             (new_move.promoted_to, self.get_piece(new_move.dest))
         {
@@ -543,7 +545,6 @@ impl Board {
             self.add_piece(new_move.dest, promoted_to);
         }
 
-        self.make_move_en_passant_checks(new_move);
         self.make_move_castling_checks(&mut new_move);
 
         self.game_state = GameState::Unknown;
@@ -552,7 +553,7 @@ impl Board {
     }
 
     /// Handles En Passant related logic for making moves
-    fn make_move_en_passant_checks(&mut self, new_move: Ply) {
+    fn make_move_en_passant_checks(&mut self, new_move: &Ply) {
         if new_move.is_double_pawn_push {
             self.en_passant_file = Some(new_move.dest.file);
         } else {
@@ -1412,6 +1413,7 @@ mod tests {
         assert_eq!(board.get_piece(start), Some(Kind::Pawn(Color::White)));
         assert_eq!(board.get_piece(dest), None);
 
+        dbg!(ply);
         board.make_move(ply);
         assert_eq!(board.get_piece(dest), Some(Kind::Queen(Color::White)));
         assert!(board.get_piece(start).is_none());
