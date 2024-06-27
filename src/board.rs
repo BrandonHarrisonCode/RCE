@@ -343,30 +343,6 @@ impl Board {
     }
 
     #[allow(dead_code)]
-    /// Returns a boolean representing whether or not the game has ended by checkmate
-    pub fn is_checkmate(&mut self) -> bool {
-        self.set_game_state();
-        self.game_state == GameState::CheckmateWhite || self.game_state == GameState::CheckmateBlack
-    }
-
-    #[allow(dead_code)]
-    /// Returns a boolean representing whether or not the game has ended by stalemate
-    pub fn is_stalemate(&mut self) -> bool {
-        self.set_game_state();
-        self.game_state == GameState::Stalemate
-    }
-
-    #[allow(dead_code)]
-    /// Returns a boolean representing whether or not the game has ended by a draw
-    pub fn is_draw(&mut self) -> bool {
-        self.set_game_state();
-        matches!(
-            self.game_state,
-            GameState::Stalemate | GameState::ThreefoldRepetition | GameState::FiftyMoveRule
-        )
-    }
-
-    #[allow(dead_code)]
     /// Returns a boolean representing whether or not the current game is over
     pub fn is_game_over(&mut self) -> bool {
         self.set_game_state();
@@ -1466,6 +1442,26 @@ mod tests {
     fn test_is_in_check_black_by_queen() {
         let board = Board::from_fen("8/1K6/2Q5/8/8/2k3q1/8/8 b - - 0 1");
         assert!(board.is_in_check(Color::Black));
+    }
+
+    #[test]
+    fn test_is_game_over() {
+        let mut board = BoardBuilder::construct_starting_board();
+        assert!(!board.is_game_over());
+
+        let tests = [
+            (GameState::InProgress, false),
+            (GameState::CheckmateWhite, true),
+            (GameState::CheckmateBlack, true),
+            (GameState::Stalemate, true),
+            (GameState::FiftyMoveRule, true),
+            (GameState::ThreefoldRepetition, true),
+        ];
+
+        for (state, correct) in tests.iter() {
+            board.game_state = state.clone();
+            assert_eq!(board.is_game_over(), *correct);
+        }
     }
 
     #[test]
