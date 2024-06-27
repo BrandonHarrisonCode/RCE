@@ -100,25 +100,6 @@ impl Board {
         }
     }
 
-    /// Returns a `PieceKind` Option of the piece currently occupying `square`
-    ///
-    /// # Arguments
-    ///
-    /// * `square` - A square on the board we would like to inspect
-    ///
-    /// # Errors
-    /// Returns `None` if there is no piece at the specified square.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new("a1")));
-    /// assert_eq!(None, board.get_piece(Square::new("b3")));
-    /// ```
-    pub fn get_piece(&self, square: Square) -> Option<Kind> {
-        self.bitboards.get_piece_kind(square)
-    }
-
     /// Returns a list of all potential moves for the current side
     ///
     /// The list is not guaranteed to be legal, and may include moves that would
@@ -182,13 +163,14 @@ impl Board {
 
     /// Returns a boolean representing whether or not a given move is legal
     ///
+    /// The move is only considered legal if it does not leave the king in check
+    ///
     /// # Examples
     /// ```
     /// let ply = Ply(Square::new("e2"), Square::new("e9"));
     /// assert!(!board.is_legal_move(ply));
     /// ```
     fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
-        // Don't allow leaving your king in check
         self.make_move(ply);
         if self.is_in_check(self.current_turn.opposite()) {
             self.unmake_move();
@@ -197,34 +179,6 @@ impl Board {
         self.unmake_move();
 
         Ok(ply)
-    }
-
-    /// Skip the current turn if possible, updating the state information of the board
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// board.skip_turn();
-    /// assert_eq!(Color::Black, board.current_turn);
-    /// ```
-    #[allow(dead_code)]
-    pub fn skip_turn(&mut self) {
-        self.switch_turn();
-    }
-
-    /// Reverses a skiped turn, updating the state information of the board
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// board.skip_turn();
-    /// assert_eq!(Color::Black, board.current_turn);
-    /// board.undo_skip_turn();
-    /// assert_eq!(Color::White, board.current_turn);
-    /// ```
-    #[allow(dead_code)]
-    pub fn undo_skip_turn(&mut self) {
-        self.switch_turn();
     }
 
     /// Switches the current turn to the other player
@@ -241,6 +195,18 @@ impl Board {
         self.current_turn = self.current_turn.opposite();
     }
 
+    /// Returns a `CastlingStatus` representing whether or not the current `kind` of castling is availiable
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The kind of castling to check for
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board();
+    /// assert_eq!(CastlingStatus::Availiable, board.castling_ability(CastlingKind::WhiteKingside));
+    /// assert_eq!(CastlingStatus::Availiable, board.castling_ability(CastlingKind::BlackQueenside));
+    /// ```
     pub fn castling_ability(&self, kind: CastlingKind) -> CastlingStatus {
         if self.castle_status(kind) == CastlingStatus::Availiable
             && self
@@ -365,7 +331,6 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board();
     /// assert!(!board.is_in_check());
     /// ```
-    #[allow(dead_code)]
     pub fn is_in_check(&self, color: Color) -> bool {
         let attacks = self.get_attacked_squares(color);
 
@@ -456,6 +421,25 @@ impl Board {
             GameState::CheckmateBlack => Some(Color::White),
             _ => None,
         }
+    }
+
+    /// Returns a `PieceKind` Option of the piece currently occupying `square`
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - A square on the board we would like to inspect
+    ///
+    /// # Errors
+    /// Returns `None` if there is no piece at the specified square.
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board();
+    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new("a1")));
+    /// assert_eq!(None, board.get_piece(Square::new("b3")));
+    /// ```
+    pub fn get_piece(&self, square: Square) -> Option<Kind> {
+        self.bitboards.get_piece_kind(square)
     }
 
     /// Adds a new piece of the specified kind to a square on the board
