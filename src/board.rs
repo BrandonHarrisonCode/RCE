@@ -204,9 +204,7 @@ impl Board {
     /// assert!(!board.is_legal_move(ply));
     /// ```
     fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
-        self.is_on_board(ply)
-            .and_then(|_| self.is_self_capture(ply))
-            .and_then(|_| self.is_illegal_pawn_move(ply))
+        self.is_self_capture(ply)
             .and_then(|_| self.is_illegal_castling(ply))?;
 
         // Don't allow leaving your king in check
@@ -218,44 +216,6 @@ impl Board {
         self.unmake_move();
 
         Ok(ply)
-    }
-
-    /// Returns a boolean representing whether or not a given move is on the constraits of the board.
-    ///
-    /// Checks if the move start and destination are within the bounds of the board, that the move's start and destination are not the same, and that the start square contains a piece.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// let ply1 = Ply(Square::new("e2"), Square::new("e9"));
-    /// let ply2 = Ply(Square::new("e2"), Square::new("e2"));
-    /// let ply3 = Ply(Square::new("e2"), Square::new("e4"));
-    /// assert!(!board.is_on_board(ply1));
-    /// assert!(!board.is_on_board(ply2));
-    /// assert!(board.is_on_board(ply3));
-    /// ```
-    fn is_on_board(&self, ply: Ply) -> Result<Ply, &'static str> {
-        match ply {
-            Ply { start, .. } if start.rank >= 8 => {
-                Err("Move is not valid. The start square rank is off the board.")
-            }
-            Ply { start, .. } if start.file >= 8 => {
-                Err("Move is not valid. The start square file is off the board.")
-            }
-            Ply { dest, .. } if dest.rank >= 8 => {
-                Err("Move is not valid. The dest square rank is off the board.")
-            }
-            Ply { dest, .. } if dest.file >= 8 => {
-                Err("Move is not valid. The dest square file is off the board.")
-            }
-            Ply { start, dest, .. } if start == dest => {
-                Err("Move is not valid. The start and destination squares are the same.")
-            }
-            Ply { start, .. } if self.get_piece(start).is_none() => {
-                Err("Move is not valid. The start square is empty.")
-            }
-            _ => Ok(ply),
-        }
     }
 
     /// Returns a boolean representing whether or not a given move is a self-capture
@@ -280,77 +240,11 @@ impl Board {
             Color::Black => self.bitboards.black_pieces,
         };
 
-        if (same_pieces & (1 << u8::from(ply.dest))).is_empty() {
+        if (same_pieces & Bitboard::from(ply.dest)).is_empty() {
             Ok(ply)
         } else {
             Err("Move is not valid. The move would capture a piece of the same color.")
         }
-    }
-
-    /// Returns a boolean representing whether or not a given move is an illegal pawn move
-    ///
-    /// Checks if a pawn is capturing forward, moving diagonally without
-    /// capturing, or is performing an en passant when it is not allowed.
-    ///
-    /// # Assumptions
-    ///
-    /// Assumes that a pawn only changes a file by 1 when capturing.
-    ///
-    /// # Panics
-    ///
-    /// Will panic if there is no piece at the start square of the move.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// let ply1 = Ply(Square::new("e2"), Square::new("e4"));
-    /// let ply2 = Ply(Square::new("e2"), Square::new("d3"));
-    /// assert!(!board.is_illegal_pawn_move(ply1));
-    /// assert!(board.is_illegal_pawn_move(ply2));
-    /// ```
-    fn is_illegal_pawn_move(&self, ply: Ply) -> Result<Ply, &'static str> {
-        let start_piece = self.get_piece(ply.start).unwrap();
-        if !matches!(start_piece, Kind::Pawn(_c)) {
-            return Ok(ply);
-        }
-
-        if ply.start.file == ply.dest.file {
-            if self.get_piece(ply.dest).is_some() {
-                return Err("Move is not valid. The pawn is capturing forward.");
-            }
-        } else if !ply.en_passant && self.get_piece(ply.dest).is_none() {
-            return Err("Move is not valid. The pawn is moving diagonally without capturing.");
-        }
-
-        let ep_captured_piece = match start_piece {
-            Kind::Pawn(Color::White) if ply.start.rank == 4 => self.get_piece(Square {
-                rank: ply.start.rank,
-                file: ply.dest.file,
-            }),
-            Kind::Pawn(Color::Black) if ply.start.rank == 3 => self.get_piece(Square {
-                rank: ply.start.rank,
-                file: ply.dest.file,
-            }),
-            _ => None,
-        };
-
-        if ply.en_passant
-            && !(self
-                .en_passant_file
-                .is_some_and(|ep_file| ep_file == ply.dest.file)
-                && ply.start.file != ply.dest.file
-                && matches!(
-                    ep_captured_piece,
-                    Some(Kind::Pawn(color))
-                    if color != start_piece.get_color()
-                ))
-        {
-            return Err(
-                "Move is not valid. The pawn is performing an en passant when it is not allowed.",
-            );
-        }
-
-        Ok(ply)
     }
 
     /// Returns a boolean representing whether or not a given move is an illegal castling move
@@ -575,7 +469,7 @@ impl Board {
             Color::Black => self.bitboards.black_king,
         };
 
-        king_pos & attacks != Bitboard::new(0)
+        !(king_pos & attacks).is_empty()
     }
 
     #[allow(dead_code)]
@@ -1783,6 +1677,7 @@ mod tests {
     fn test_get_legal_moves_count_from_position_11() {
         let mut board =
             Board::from_fen("4r2k/4qpRb/2p1p2Q/1p3r1P/p2P4/P4P2/1PP1N3/1K4R1 b - - 2 32");
+        dbg!(board.get_legal_moves());
         let result = board.get_legal_moves().len();
         let correct = 31;
 
@@ -1872,6 +1767,17 @@ mod tests {
             Board::from_fen("3r1rk1/pp1qBpbp/6p1/3p4/3P4/5Q1P/PPP2PP1/R3R1K1 b - - 0 16");
         let result = board.get_legal_moves().len();
         let correct = 32;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_21() {
+        let mut board =
+            Board::from_fen("r3k2r/pbppqNb1/1n2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/1R2K2R b Kkq - 2 2");
+        dbg!(board.get_legal_moves());
+        let result = board.get_legal_moves().len();
+        let correct = 44;
 
         assert_eq!(result, correct);
     }
