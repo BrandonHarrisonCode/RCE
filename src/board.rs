@@ -75,6 +75,7 @@ impl Board {
     pub fn builder() -> BoardBuilder {
         BoardBuilder::default()
     }
+
     /// Returns a boolean representing whether or not the current player has castling rights
     ///
     /// # Examples
@@ -173,19 +174,7 @@ impl Board {
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_legal_moves(&mut self) -> Vec<Ply> {
-        self.filter_moves(self.get_all_moves())
-    }
-
-    /// Filters a list of moves to only include legal moves
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board()
-    /// let movelist = board.get_all_moves(Square::new("e1"));
-    /// let legal_moves = filter_moves(&board, movelist);
-    /// ```
-    fn filter_moves(&mut self, moves: Vec<Ply>) -> Vec<Ply> {
-        moves
+        self.get_all_moves()
             .into_iter()
             .filter(|mv| self.is_legal_move(*mv).is_ok())
             .collect()
