@@ -536,6 +536,23 @@ impl Board {
         new_move.halfmove_clock = previous_move.halfmove_clock + 1;
         new_move.castling_rights = previous_move.castling_rights;
 
+        if let (Some(promoted_to), Some(Kind::Pawn(c))) =
+            (new_move.promoted_to, self.get_piece(new_move.dest))
+        {
+            self.remove_piece(new_move.dest, Kind::Pawn(c));
+            self.add_piece(new_move.dest, promoted_to);
+        }
+
+        self.make_move_en_passant_checks(new_move);
+        self.make_move_castling_checks(&mut new_move);
+
+        self.game_state = GameState::Unknown;
+        self.switch_turn();
+        self.history.push(new_move);
+    }
+
+    /// Handles En Passant related logic for making moves
+    fn make_move_en_passant_checks(&mut self, new_move: Ply) {
         if new_move.is_double_pawn_push {
             self.en_passant_file = Some(new_move.dest.file);
         } else {
@@ -552,20 +569,12 @@ impl Board {
                 Kind::Pawn(self.current_turn.opposite()),
             );
         } else {
-            if new_move.captured_piece != dest_piece_kind {
-                println!("{self}");
-                println!("{new_move:?}");
-            }
             assert_eq!(new_move.captured_piece, dest_piece_kind);
         }
+    }
 
-        if let (Some(promoted_to), Some(Kind::Pawn(c))) =
-            (new_move.promoted_to, self.get_piece(new_move.dest))
-        {
-            self.remove_piece(new_move.dest, Kind::Pawn(c));
-            self.add_piece(new_move.dest, promoted_to);
-        }
-
+    /// Handles Castling related logic for making moves
+    fn make_move_castling_checks(&mut self, new_move: &mut Ply) {
         if new_move.is_castles {
             let (rook_start, rook_dest) = match new_move.dest {
                 Square { rank: 0, file: 6 } => (Square::from("h1"), Square::from("f1")),
@@ -642,10 +651,6 @@ impl Board {
                 }
             }
         }
-
-        self.game_state = GameState::Unknown;
-        self.switch_turn();
-        self.history.push(new_move);
     }
 
     /// Unmakes a half-move on this board
