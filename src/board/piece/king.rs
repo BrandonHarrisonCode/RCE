@@ -1,6 +1,7 @@
 use super::super::bitboard::{Bitboard, File};
 use super::{Color, Piece, Ply, Precomputed, Square};
 use crate::board::Board;
+use crate::board::{CastlingKind, CastlingStatus};
 use std::sync::OnceLock;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -14,35 +15,43 @@ impl Piece for King {
     const WHITE_SYMBOL: &'static str = "♚";
     const BLACK_SYMBOL: &'static str = "♔";
 
-    fn get_moveset(square: Square, _: &Board, _: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, board: &Board, _: Color) -> Vec<Ply> {
         let move_mask = Self::get_attacks(square);
         let squares: Vec<Square> = move_mask.into();
 
         let mut moveset: Vec<Ply> = squares.into_iter().map(|s| Ply::new(square, s)).collect();
         if square == Square::from("e1") {
-            moveset.push(
-                Ply::builder(square, Square::from("g1"))
-                    .castles(true)
-                    .build(),
-            );
-            moveset.push(
-                Ply::builder(square, Square::from("c1"))
-                    .castles(true)
-                    .build(),
-            );
+            if board.castling_ability(CastlingKind::WhiteKingside) == CastlingStatus::Availiable {
+                moveset.push(
+                    Ply::builder(square, Square::from("g1"))
+                        .castles(true)
+                        .build(),
+                );
+            }
+            if board.castling_ability(CastlingKind::WhiteQueenside) == CastlingStatus::Availiable {
+                moveset.push(
+                    Ply::builder(square, Square::from("c1"))
+                        .castles(true)
+                        .build(),
+                );
+            }
         }
 
         if square == Square::from("e8") {
-            moveset.push(
-                Ply::builder(square, Square::from("g8"))
-                    .castles(true)
-                    .build(),
-            );
-            moveset.push(
-                Ply::builder(square, Square::from("c8"))
-                    .castles(true)
-                    .build(),
-            );
+            if board.castling_ability(CastlingKind::BlackKingside) == CastlingStatus::Availiable {
+                moveset.push(
+                    Ply::builder(square, Square::from("g8"))
+                        .castles(true)
+                        .build(),
+                );
+            }
+            if board.castling_ability(CastlingKind::BlackQueenside) == CastlingStatus::Availiable {
+                moveset.push(
+                    Ply::builder(square, Square::from("c8"))
+                        .castles(true)
+                        .build(),
+                );
+            }
         }
 
         moveset

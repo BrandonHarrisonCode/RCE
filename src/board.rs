@@ -75,32 +75,27 @@ impl Board {
     pub fn builder() -> BoardBuilder {
         BoardBuilder::default()
     }
-
-    /// Returns a boolean representing whether or not the current player has kingside castling rights
+    /// Returns a boolean representing whether or not the current player has castling rights
     ///
     /// # Examples
     /// ```
     /// let board = BoardBuilder::construct_starting_board();
-    /// assert_eq!(board.kingside_castle_status(), Castling::Availiable);
+    /// assert_eq!(board.castle_status(CastlingKind::WhiteKingsid), Castling::Availiable);
     /// ```
-    pub fn kingside_castle_status(&self, color: Option<Color>) -> CastlingStatus {
-        match color.unwrap_or(self.current_turn) {
-            Color::White => self.history.last().unwrap().castling_rights.white_kingside,
-            Color::Black => self.history.last().unwrap().castling_rights.black_kingside,
-        }
-    }
-
-    /// Returns a boolean representing whether or not the current player has queenside castling rights
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// assert_eq!(board.queenside_castle_status(), Castling::Availiable);
-    /// ```
-    pub fn queenside_castle_status(&self, color: Option<Color>) -> CastlingStatus {
-        match color.unwrap_or(self.current_turn) {
-            Color::White => self.history.last().unwrap().castling_rights.white_queenside,
-            Color::Black => self.history.last().unwrap().castling_rights.black_queenside,
+    pub fn castle_status(&self, kind: CastlingKind) -> CastlingStatus {
+        match kind {
+            CastlingKind::WhiteKingside => {
+                self.history.last().unwrap().castling_rights.white_kingside
+            }
+            CastlingKind::WhiteQueenside => {
+                self.history.last().unwrap().castling_rights.white_queenside
+            }
+            CastlingKind::BlackKingside => {
+                self.history.last().unwrap().castling_rights.black_kingside
+            }
+            CastlingKind::BlackQueenside => {
+                self.history.last().unwrap().castling_rights.black_queenside
+            }
         }
     }
 
@@ -204,8 +199,7 @@ impl Board {
     /// assert!(!board.is_legal_move(ply));
     /// ```
     fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
-        self.is_self_capture(ply)
-            .and_then(|_| self.is_illegal_castling(ply))?;
+        self.is_self_capture(ply)?;
 
         // Don't allow leaving your king in check
         self.make_move(ply);
@@ -244,66 +238,6 @@ impl Board {
             Ok(ply)
         } else {
             Err("Move is not valid. The move would capture a piece of the same color.")
-        }
-    }
-
-    /// Returns a boolean representing whether or not a given move is an illegal castling move
-    ///
-    /// Checks if castling rights are still availiable, and then ensures there
-    /// are no pieces between the king and the rook and that the king never
-    /// travels through check.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board();
-    /// let ply = Ply(Square::new("e1"), Square::new("g1"));
-    /// assert!(board.is_illegal_castling(ply));
-    ///
-    fn is_illegal_castling(&self, ply: Ply) -> Result<Ply, &'static str> {
-        if !ply.is_castles {
-            return Ok(ply);
-        }
-
-        match (self.current_turn, &ply.dest) {
-            (Color::White, Square { rank: 0, file: 6 }) => (self.kingside_castle_status(None)
-                == CastlingStatus::Availiable
-                && self
-                    .no_pieces_between_castling(CastlingKind::WhiteKingside)
-                    .and(self.no_checks_castling(CastlingKind::WhiteKingside))
-                    .is_ok())
-            .then_some(ply)
-            .ok_or("Move is not valid. The white king cannot castle kingside."),
-
-            (Color::White, Square { rank: 0, file: 2 }) => (self.queenside_castle_status(None)
-                == CastlingStatus::Availiable
-                && self
-                    .no_pieces_between_castling(CastlingKind::WhiteQueenside)
-                    .and(self.no_checks_castling(CastlingKind::WhiteQueenside))
-                    .is_ok())
-            .then_some(ply)
-            .ok_or("Move is not valid. The white king cannot castle queenside."),
-
-            (Color::Black, Square { rank: 7, file: 6 }) => (self.kingside_castle_status(None)
-                == CastlingStatus::Availiable
-                && self
-                    .no_pieces_between_castling(CastlingKind::BlackKingside)
-                    .and(self.no_checks_castling(CastlingKind::BlackKingside))
-                    .is_ok())
-            .then_some(ply)
-            .ok_or("Move is not valid. The black king cannot castle kingside."),
-
-            (Color::Black, Square { rank: 7, file: 2 }) => (self.queenside_castle_status(None)
-                == CastlingStatus::Availiable
-                && self
-                    .no_pieces_between_castling(CastlingKind::BlackQueenside)
-                    .and(self.no_checks_castling(CastlingKind::BlackQueenside))
-                    .is_ok())
-            .then_some(ply)
-            .ok_or("Move is not valid. The black king cannot castle queenside."),
-
-            _ => Err(
-                "Move is not valid. The destination square is not a valid castling destination.",
-            ),
         }
     }
 
@@ -347,6 +281,19 @@ impl Board {
     /// ```
     pub fn switch_turn(&mut self) {
         self.current_turn = self.current_turn.opposite();
+    }
+
+    pub fn castling_ability(&self, kind: CastlingKind) -> CastlingStatus {
+        if self.castle_status(kind) == CastlingStatus::Availiable
+            && self
+                .no_pieces_between_castling(kind)
+                .and(self.no_checks_castling(kind))
+                .is_ok()
+        {
+            CastlingStatus::Availiable
+        } else {
+            CastlingStatus::Unavailiable
+        }
     }
 
     /// Returns a Result representing whether or not there are no squares with pieces on the castling path
@@ -966,11 +913,11 @@ mod tests {
     fn test_kingside_castle_true() {
         let board = BoardBuilder::construct_starting_board();
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
     }
@@ -979,11 +926,11 @@ mod tests {
     fn test_queenside_castle_true() {
         let board = BoardBuilder::construct_starting_board();
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
     }
@@ -992,11 +939,11 @@ mod tests {
     fn test_kingside_castle_false_white() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Qkq - 0 1");
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
     }
@@ -1005,12 +952,12 @@ mod tests {
     fn test_kingside_castle_false_black() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQq - 0 1");
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
-            CastlingStatus::Availiable
+            board.castle_status(CastlingKind::BlackKingside),
+            CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
-            CastlingStatus::Unavailiable
+            board.castle_status(CastlingKind::BlackQueenside),
+            CastlingStatus::Availiable
         );
     }
 
@@ -1018,11 +965,11 @@ mod tests {
     fn test_kingside_castle_false_both() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Qq - 0 1");
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Unavailiable
         );
     }
@@ -1031,11 +978,11 @@ mod tests {
     fn test_queenside_castle_false_white() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kkq - 0 1");
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
     }
@@ -1044,11 +991,11 @@ mod tests {
     fn test_queenside_castle_false_black() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQk - 0 1");
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Unavailiable
         );
     }
@@ -1057,11 +1004,11 @@ mod tests {
     fn test_queenside_castle_false_both() {
         let board = Board::from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w Kk - 0 1");
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Unavailiable
         );
     }
@@ -1264,37 +1211,37 @@ mod tests {
 
         board.make_move(ply_capture_black_kingside_rook);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
 
         board.make_move(ply_capture_white_kingside_rook);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
 
@@ -1303,37 +1250,37 @@ mod tests {
 
         board.make_move(ply_capture_black_queenside_rook);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Unavailiable
         );
 
         board.make_move(ply_capture_white_queenside_rook);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Unavailiable
         );
 
@@ -1341,19 +1288,19 @@ mod tests {
         board.unmake_move();
 
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
     }
@@ -1365,38 +1312,38 @@ mod tests {
         let ply_h1 = Ply::new(Square::from("h1"), Square::from("h2"));
         board.make_move(ply_h1);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
 
         let ply_h8 = Ply::new(Square::from("h8"), Square::from("h7"));
         board.make_move(ply_h8);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
         board.unmake_move();
@@ -1405,38 +1352,38 @@ mod tests {
         let ply_a1 = Ply::new(Square::from("a1"), Square::from("a2"));
         board.make_move(ply_a1);
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
 
         let ply_a8 = Ply::new(Square::from("a8"), Square::from("a7"));
         board.make_move(ply_a8);
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
         board.unmake_move();
@@ -1450,57 +1397,57 @@ mod tests {
         let ply_e1 = Ply::new(Square::from("e1"), Square::from("e2"));
         board.make_move(ply_e1);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
 
         let ply_e8 = Ply::new(Square::from("e8"), Square::from("e7"));
         board.make_move(ply_e8);
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Unavailiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Unavailiable
         );
         board.unmake_move();
         board.unmake_move();
 
         assert_eq!(
-            board.kingside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.kingside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackKingside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::White)),
+            board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
         );
         assert_eq!(
-            board.queenside_castle_status(Some(Color::Black)),
+            board.castle_status(CastlingKind::BlackQueenside),
             CastlingStatus::Availiable
         );
     }
@@ -1656,7 +1603,6 @@ mod tests {
     #[test]
     fn test_get_legal_moves_count_from_position_9() {
         let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
-        dbg!(board.get_legal_moves());
         let result = board.get_legal_moves().len();
         let correct = 26;
 
@@ -1666,7 +1612,6 @@ mod tests {
     #[test]
     fn test_get_legal_moves_count_from_position_10() {
         let mut board = Board::from_fen("r3k2r/pppppppp/8/8/8/8/PPPPPPPP/R3K2R w KQkq - 0 1");
-        println!("{:}", board);
         let result = board.get_legal_moves().len();
         let correct = 25;
 
@@ -1677,7 +1622,6 @@ mod tests {
     fn test_get_legal_moves_count_from_position_11() {
         let mut board =
             Board::from_fen("4r2k/4qpRb/2p1p2Q/1p3r1P/p2P4/P4P2/1PP1N3/1K4R1 b - - 2 32");
-        dbg!(board.get_legal_moves());
         let result = board.get_legal_moves().len();
         let correct = 31;
 
@@ -1699,7 +1643,6 @@ mod tests {
         let mut board =
             Board::from_fen("r2q1rk1/pp3ppb/2p1pn1p/4Q2P/2B5/3P2N1/PPP2PP1/2KR3R b - - 2 15");
 
-        dbg!(board.get_legal_moves());
         let result = board.get_legal_moves().len();
         let correct = 33;
 
@@ -1775,7 +1718,6 @@ mod tests {
     fn test_get_legal_moves_count_from_position_21() {
         let mut board =
             Board::from_fen("r3k2r/pbppqNb1/1n2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/1R2K2R b Kkq - 2 2");
-        dbg!(board.get_legal_moves());
         let result = board.get_legal_moves().len();
         let correct = 44;
 
