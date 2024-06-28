@@ -5,6 +5,68 @@ use std::ops::{
     ShrAssign, Sub,
 };
 
+macro_rules! bitboard_operator {
+    ( $($type:ty, $trait:ident, $fn:ident;)* ) => {$(
+        impl $trait<$type> for Bitboard {
+            type Output = Self;
+
+            fn $fn(self, rhs: $type) -> Self::Output {
+                Self($trait::$fn(self.0, rhs))
+            }
+        }
+    )*};
+
+    ( $($trait:ident, $fn:ident;)* ) => {$(
+        impl $trait for Bitboard {
+            type Output = Self;
+
+            fn $fn(self, rhs: Self) -> Self::Output {
+                Self($trait::$fn(self.0, rhs.0))
+            }
+        }
+    )*};
+}
+
+macro_rules! bitboard_assignment_operator {
+    ( $($type:ty, $trait:ident, $fn:ident;)* ) => {$(
+        impl $trait<$type> for Bitboard {
+            fn $fn(&mut self, rhs: $type) {
+                $trait::<$type>::$fn(&mut self.0, rhs)
+            }
+        }
+    )*};
+
+    ( $($trait:ident, $fn:ident;)* ) => {$(
+        impl $trait for Bitboard {
+            fn $fn(&mut self, rhs: Self) {
+                $trait::$fn(self, rhs.0)
+            }
+        }
+    )*};
+}
+
+bitboard_operator! {
+    BitAnd, bitand;
+    BitOr, bitor;
+    BitXor, bitxor;
+}
+bitboard_operator! {
+    u64, BitAnd, bitand;
+    u64, BitOr, bitor;
+    u64, BitXor, bitxor;
+    usize, Shr, shr;
+}
+
+bitboard_assignment_operator! {
+    BitAndAssign, bitand_assign;
+    BitOrAssign, bitor_assign;
+}
+bitboard_assignment_operator! {
+    u64, BitAndAssign, bitand_assign;
+    u64, BitOrAssign, bitor_assign;
+    usize, ShrAssign, shr_assign;
+}
+
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub struct Bitboard(u64);
 
@@ -58,42 +120,6 @@ impl Sub for Bitboard {
     }
 }
 
-impl BitAnd for Bitboard {
-    type Output = Self;
-
-    fn bitand(self, rhs: Self) -> Self::Output {
-        Self(self.0 & rhs.0)
-    }
-}
-
-impl BitAndAssign for Bitboard {
-    fn bitand_assign(&mut self, rhs: Self) {
-        self.0 &= rhs.0;
-    }
-}
-
-impl BitOr for Bitboard {
-    type Output = Self;
-
-    fn bitor(self, rhs: Self) -> Self::Output {
-        Self(self.0 | rhs.0)
-    }
-}
-
-impl BitOrAssign for Bitboard {
-    fn bitor_assign(&mut self, rhs: Self) {
-        self.0 |= rhs.0;
-    }
-}
-
-impl BitXor for Bitboard {
-    type Output = Self;
-
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        Self(self.0 ^ rhs.0)
-    }
-}
-
 impl Mul for Bitboard {
     type Output = Self;
 
@@ -117,41 +143,6 @@ impl Sub<u64> for Bitboard {
         Self(self.0.saturating_sub(rhs))
     }
 }
-impl BitAnd<u64> for Bitboard {
-    type Output = Self;
-
-    fn bitand(self, rhs: u64) -> Self::Output {
-        Self(self.0 & rhs)
-    }
-}
-
-impl BitAndAssign<u64> for Bitboard {
-    fn bitand_assign(&mut self, rhs: u64) {
-        self.0 &= rhs;
-    }
-}
-
-impl BitOr<u64> for Bitboard {
-    type Output = Self;
-
-    fn bitor(self, rhs: u64) -> Self::Output {
-        Self(self.0 | rhs)
-    }
-}
-
-impl BitOrAssign<u64> for Bitboard {
-    fn bitor_assign(&mut self, rhs: u64) {
-        self.0 |= rhs;
-    }
-}
-
-impl BitXor<u64> for Bitboard {
-    type Output = Self;
-
-    fn bitxor(self, rhs: u64) -> Self::Output {
-        Self(self.0 ^ rhs)
-    }
-}
 
 impl Mul<u64> for Bitboard {
     type Output = Self;
@@ -169,25 +160,12 @@ impl Shl<u32> for Bitboard {
     }
 }
 
-impl Shr<usize> for Bitboard {
-    type Output = Self;
-
-    fn shr(self, rhs: usize) -> Self::Output {
-        Self(self.0 >> rhs)
-    }
-}
-
 impl ShlAssign<u32> for Bitboard {
     fn shl_assign(&mut self, rhs: u32) {
         self.0 = self.0.checked_shl(rhs).unwrap_or(0);
     }
 }
 
-impl ShrAssign<usize> for Bitboard {
-    fn shr_assign(&mut self, rhs: usize) {
-        self.0 = self.0 >> rhs;
-    }
-}
 impl Not for Bitboard {
     type Output = Self;
 
