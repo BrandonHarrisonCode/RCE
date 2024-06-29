@@ -80,7 +80,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// assert_eq!(board.castle_status(CastlingKind::WhiteKingsid), Castling::Availiable);
     /// ```
     pub fn castle_status(&self, kind: CastlingKind) -> CastlingStatus {
@@ -110,7 +110,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     fn get_all_moves(&self) -> Vec<Ply> {
@@ -151,7 +151,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_legal_moves(&mut self) -> Vec<Ply> {
@@ -185,7 +185,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// board.switch_turn();
     /// assert_eq!(Color::Black, board.current_turn);
     /// board.switch_turn();
@@ -203,7 +203,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// assert_eq!(CastlingStatus::Availiable, board.castling_ability(CastlingKind::WhiteKingside));
     /// assert_eq!(CastlingStatus::Availiable, board.castling_ability(CastlingKind::BlackQueenside));
     /// ```
@@ -236,7 +236,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// assert!(board.no_pieces_between_castling(CastlingKind::WhiteKingside).is_err());
     /// assert!(board.no_pieces_between_castling(CastlingKind::BlackQueenside).is_err());
     /// ```
@@ -266,7 +266,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// assert!(board.no_checks_between(Square::new("a1"), Square::new("h1")).is_ok());
     /// assert!(board.no_checks_between(Square::new("a8"), Square::new("h8")).is_err());
     /// ```
@@ -292,7 +292,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     ///
     /// let attacked_squares = board.get_attacked_squares(Color::White);
     /// ```
@@ -322,7 +322,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// assert_eq!(0, board.get_halfmove_clock());
     /// ```
     pub fn get_halfmove_clock(&self) -> u16 {
@@ -336,7 +336,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// assert!(!board.is_in_check());
     /// ```
     pub fn is_in_check(&self, color: Color) -> bool {
@@ -361,7 +361,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// board.set_game_state();
     /// assert_eq!(GameState::InProgress, board.game_state);
     /// ```
@@ -418,7 +418,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new("a1")));
     /// assert_eq!(None, board.get_piece(Square::new("b3")));
     /// ```
@@ -436,7 +436,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// board.add_piece(&Square::new("a3"), &PieceKind::Rook(Color::White));
     /// ```
     pub fn add_piece(&mut self, square: Square, piece: Kind) {
@@ -456,7 +456,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// // Playing with rook odds
     /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
     /// ```
@@ -477,7 +477,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// let captured_piece = board.replace_square(Square::new("e2"), Square::new("e4"));
     /// ```
     fn replace_square(&mut self, origin: Square, to_replace: Square) -> Option<Kind> {
@@ -510,7 +510,7 @@ impl Board {
     ///
     /// # Examples
     /// ```
-    /// let board = BoardBuilder::construct_starting_board();
+    /// let board = BoardBuilder::construct_starting_board().build();
     /// // Move the a pawn one square forward
     /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
@@ -859,8 +859,158 @@ mod tests {
     }
 
     #[test]
+    fn test_no_pieces_between_castling_white() {
+        let mut board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a1"), Kind::Rook(Color::White))
+            .piece(Square::from("e1"), Kind::King(Color::White))
+            .piece(Square::from("h1"), Kind::Rook(Color::White))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteKingside)
+            .is_ok());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteQueenside)
+            .is_ok());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a1"), Kind::Rook(Color::White))
+            .piece(Square::from("e1"), Kind::King(Color::White))
+            .piece(Square::from("h1"), Kind::Rook(Color::White))
+            .piece(Square::from("g1"), Kind::Rook(Color::White))
+            .piece(Square::from("b1"), Kind::Rook(Color::White))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteKingside)
+            .is_err());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteQueenside)
+            .is_err());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a1"), Kind::Rook(Color::White))
+            .piece(Square::from("e1"), Kind::King(Color::White))
+            .piece(Square::from("h1"), Kind::Rook(Color::White))
+            .piece(Square::from("g1"), Kind::Bishop(Color::Black))
+            .piece(Square::from("b1"), Kind::Bishop(Color::Black))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteKingside)
+            .is_err());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteQueenside)
+            .is_err());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a1"), Kind::Rook(Color::White))
+            .piece(Square::from("e1"), Kind::King(Color::White))
+            .piece(Square::from("h1"), Kind::Rook(Color::White))
+            .piece(Square::from("f1"), Kind::Bishop(Color::White))
+            .piece(Square::from("c1"), Kind::Bishop(Color::White))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteKingside)
+            .is_err());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteQueenside)
+            .is_err());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a1"), Kind::Rook(Color::White))
+            .piece(Square::from("e1"), Kind::King(Color::White))
+            .piece(Square::from("h1"), Kind::Rook(Color::White))
+            .piece(Square::from("d1"), Kind::Bishop(Color::White))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteKingside)
+            .is_ok());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::WhiteQueenside)
+            .is_err());
+    }
+
+    #[test]
+    fn test_no_pieces_between_castling_black() {
+        let mut board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a8"), Kind::Rook(Color::Black))
+            .piece(Square::from("e8"), Kind::King(Color::Black))
+            .piece(Square::from("h8"), Kind::Rook(Color::Black))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackKingside)
+            .is_ok());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackQueenside)
+            .is_ok());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a8"), Kind::Rook(Color::Black))
+            .piece(Square::from("e8"), Kind::King(Color::Black))
+            .piece(Square::from("h8"), Kind::Rook(Color::Black))
+            .piece(Square::from("g8"), Kind::Rook(Color::Black))
+            .piece(Square::from("b8"), Kind::Rook(Color::Black))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackKingside)
+            .is_err());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackQueenside)
+            .is_err());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a8"), Kind::Rook(Color::Black))
+            .piece(Square::from("e8"), Kind::King(Color::Black))
+            .piece(Square::from("h8"), Kind::Rook(Color::Black))
+            .piece(Square::from("g8"), Kind::Bishop(Color::White))
+            .piece(Square::from("b8"), Kind::Bishop(Color::White))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackKingside)
+            .is_err());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackQueenside)
+            .is_err());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a8"), Kind::Rook(Color::Black))
+            .piece(Square::from("e8"), Kind::King(Color::Black))
+            .piece(Square::from("h8"), Kind::Rook(Color::Black))
+            .piece(Square::from("f8"), Kind::Bishop(Color::Black))
+            .piece(Square::from("c8"), Kind::Bishop(Color::Black))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackKingside)
+            .is_err());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackQueenside)
+            .is_err());
+
+        board = BoardBuilder::construct_empty_board()
+            .piece(Square::from("a8"), Kind::Rook(Color::Black))
+            .piece(Square::from("e8"), Kind::King(Color::Black))
+            .piece(Square::from("h8"), Kind::Rook(Color::Black))
+            .piece(Square::from("d8"), Kind::Bishop(Color::Black))
+            .build();
+
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackKingside)
+            .is_ok());
+        assert!(board
+            .no_pieces_between_castling(CastlingKind::BlackQueenside)
+            .is_err());
+    }
+
+    #[test]
     fn test_get_piece1() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert_eq!(
             board.get_piece(Square::from("a1")).unwrap(),
             Kind::Rook(Color::White)
@@ -869,7 +1019,7 @@ mod tests {
 
     #[test]
     fn test_get_piece2() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert_eq!(
             board.get_piece(Square::from("h8")).unwrap(),
             Kind::Rook(Color::Black)
@@ -878,7 +1028,7 @@ mod tests {
 
     #[test]
     fn test_get_piece3() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert_eq!(
             board.get_piece(Square::from("h7")).unwrap(),
             Kind::Pawn(Color::Black)
@@ -887,27 +1037,27 @@ mod tests {
 
     #[test]
     fn test_get_piece_none() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert!(board.get_piece(Square::from("e5")).is_none());
     }
 
     #[test]
     #[should_panic = "attempt to shift left with overflow"]
     fn test_get_piece_ooblack_rank() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         board.get_piece(Square { rank: 8, file: 7 }).unwrap();
     }
 
     #[test]
     #[should_panic = "called `Option::unwrap()` on a `None` value"]
     fn test_get_piece_ooblack_file() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         board.get_piece(Square { rank: 0, file: 8 }).unwrap();
     }
 
     #[test]
     fn test_get_all_moves() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         let all_moves = board.get_all_moves();
 
         assert!(!all_moves.is_empty());
@@ -915,7 +1065,7 @@ mod tests {
 
     #[test]
     fn test_add_piece() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let square = Square::from("a3");
         board.add_piece(square, Kind::Queen(Color::White));
         assert_eq!(board.get_piece(square).unwrap(), Kind::Queen(Color::White));
@@ -923,7 +1073,7 @@ mod tests {
 
     #[test]
     fn test_remove_piece() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let square = Square::from("a2");
 
         // Should do nothing, since there is a white pawn here, not a black pawn
@@ -936,7 +1086,7 @@ mod tests {
 
     #[test]
     fn test_board_display() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         let correct =
             "♖♘♗♕♔♗♘♖\n♙♙♙♙♙♙♙♙\n--------\n--------\n--------\n--------\n♟♟♟♟♟♟♟♟\n♜♞♝♛♚♝♞♜\n";
         assert_eq!(board.to_string(), correct);
@@ -944,7 +1094,7 @@ mod tests {
 
     #[test]
     fn test_is_white_turn() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert!(board.current_turn == Color::White);
     }
 
@@ -956,7 +1106,7 @@ mod tests {
 
     #[test]
     fn test_kingside_castle_true() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert_eq!(
             board.castle_status(CastlingKind::WhiteKingside),
             CastlingStatus::Availiable
@@ -969,7 +1119,7 @@ mod tests {
 
     #[test]
     fn test_queenside_castle_true() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert_eq!(
             board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
@@ -1144,7 +1294,7 @@ mod tests {
 
     #[test]
     fn test_make_unmake_move_single() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let start = Square::from("a2");
         let dest = Square::from("a3");
         let ply = Ply::new(start, dest);
@@ -1168,7 +1318,7 @@ mod tests {
     #[test]
     fn test_make_unmake_move_double() {
         // Make and unmake two moves in a row
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let ply1 = Ply::new(Square::from("e2"), Square::from("e4"));
         let ply2 = Ply::new(Square::from("e7"), Square::from("e5"));
 
@@ -1215,7 +1365,7 @@ mod tests {
 
     #[test]
     fn test_make_unmake_move_capture() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let start = Square::from("a2"); // White Pawn
         let dest = Square::from("a7"); // Black Pawn
         let ply = Ply::builder(start, dest)
@@ -1549,7 +1699,7 @@ mod tests {
 
     #[test]
     fn test_is_not_in_check() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         assert!(!board.is_in_check(Color::White));
     }
 
@@ -1567,7 +1717,7 @@ mod tests {
 
     #[test]
     fn test_set_game_state() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         assert_eq!(board.game_state, GameState::Unknown);
         board.set_game_state();
         assert_eq!(board.game_state, GameState::InProgress);
@@ -1610,7 +1760,7 @@ mod tests {
 
     #[test]
     fn test_find_move() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
 
         let notation_exists = "a2a4";
         let notation_made_up = "a2a5";
@@ -1620,7 +1770,7 @@ mod tests {
 
     #[test]
     fn test_is_game_over() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         assert!(!board.is_game_over());
 
         let tests = [
@@ -1640,7 +1790,7 @@ mod tests {
 
     #[test]
     fn test_get_legal_moves_count_start() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let result = board.get_legal_moves().len();
         let correct = 20;
 

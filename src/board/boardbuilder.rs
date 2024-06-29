@@ -1,9 +1,11 @@
 use super::piece::Color;
+use super::piece::Kind as PieceKind;
 use super::ply::castling::CastlingKind;
 use super::ply::Ply;
 use super::Board;
 use super::CastlingStatus;
 use super::GameState;
+use super::Square;
 
 use super::bitboards;
 use super::bitboards::builder::Builder as BitboardsBuilder;
@@ -27,10 +29,10 @@ impl BoardBuilder {
     ///
     /// # Examples
     /// ```
-    /// let board = Board::construct_starting_board();
+    /// let board = Board::construct_starting_board().build();
     /// ```
-    pub fn construct_starting_board() -> Board {
-        Self::default().build()
+    pub fn construct_starting_board() -> Self {
+        Self::default()
     }
 
     #[allow(dead_code)]
@@ -40,8 +42,8 @@ impl BoardBuilder {
     /// ```
     /// let board = BoardBuilder::construct_empty_board();
     /// ```
-    pub fn construct_empty_board() -> Board {
-        Self::default().clear().build()
+    pub fn construct_empty_board() -> Self {
+        Self::default().clear()
     }
 
     #[allow(dead_code)]
@@ -154,6 +156,32 @@ impl BoardBuilder {
                 self.get_last_history().castling_rights.black_queenside = value;
             }
         }
+        self
+    }
+
+    /// Adds a piece on the specified square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square to place the piece on
+    ///
+    /// * `kind` - The kind of piece to place on the square
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    /// use crate::piece::PieceKind;
+    /// use crate::square::Square;
+    ///
+    /// let builder = BoardBuilder::default().piece(Square::from("a1"), PieceKind::WhiteKing);
+    /// ```
+    #[allow(dead_code)]
+    pub fn piece(mut self, square: Square, kind: PieceKind) -> Self {
+        self.bitboards.add_piece(square, kind);
         self
     }
 
@@ -391,6 +419,26 @@ impl BoardBuilder {
     /// let board: Board = BoardBuilder::default().fullmove_counter(5).build();
     /// ```
     pub fn build(&mut self) -> Board {
+        // Ensure that no piece is on the same square as another piece
+        assert_eq!(
+            self.bitboards.white_bishops
+                & self.bitboards.white_knights
+                & self.bitboards.white_queens
+                & self.bitboards.white_rooks
+                & self.bitboards.white_king
+                & self.bitboards.white_pawns,
+            0
+        );
+        assert_eq!(
+            self.bitboards.black_bishops
+                & self.bitboards.black_knights
+                & self.bitboards.black_queens
+                & self.bitboards.black_rooks
+                & self.bitboards.black_king
+                & self.bitboards.black_pawns,
+            0
+        );
+
         self.history[0].halfmove_clock = self.halfmove_clock;
         Board {
             current_turn: self.current_turn,
@@ -418,7 +466,7 @@ mod tests {
     #[test]
     fn board_builder_default() {
         let board = BoardBuilder::default().build();
-        let correct = BoardBuilder::construct_starting_board();
+        let correct = BoardBuilder::construct_starting_board().build();
 
         assert_eq!(board, correct);
     }
@@ -428,7 +476,7 @@ mod tests {
         let board = BoardBuilder::new().turn(Color::Black).build();
         let correct = Board {
             current_turn: Color::Black,
-            ..BoardBuilder::construct_empty_board()
+            ..BoardBuilder::construct_empty_board().build()
         };
 
         assert_eq!(board, correct);
@@ -440,7 +488,7 @@ mod tests {
             .turn(Color::Black)
             .turn(Color::White)
             .build();
-        let correct = BoardBuilder::construct_starting_board();
+        let correct = BoardBuilder::construct_starting_board().build();
 
         assert_eq!(board, correct);
     }
@@ -528,7 +576,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..BoardBuilder::construct_empty_board()
+            ..BoardBuilder::construct_empty_board().build()
         };
 
         assert_eq!(board, correct);
@@ -549,7 +597,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..BoardBuilder::construct_empty_board()
+            ..BoardBuilder::construct_empty_board().build()
         };
         assert_eq!(board, correct);
     }
@@ -569,7 +617,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..BoardBuilder::construct_empty_board()
+            ..BoardBuilder::construct_empty_board().build()
         };
 
         assert_eq!(board, correct);
@@ -590,7 +638,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..BoardBuilder::construct_empty_board()
+            ..BoardBuilder::construct_empty_board().build()
         };
 
         assert_eq!(board, correct);
@@ -611,7 +659,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..BoardBuilder::construct_empty_board()
+            ..BoardBuilder::construct_empty_board().build()
         };
 
         assert_eq!(board, correct);
@@ -632,7 +680,7 @@ mod tests {
                 all_pieces: Bitboard::new(1 | 2),
                 ..Default::default()
             },
-            ..BoardBuilder::construct_empty_board()
+            ..BoardBuilder::construct_empty_board().build()
         };
 
         assert_eq!(board, correct);
@@ -644,7 +692,7 @@ mod tests {
         let board = BoardBuilder::default().history(&history).build();
         let correct = Board {
             history,
-            ..BoardBuilder::construct_starting_board()
+            ..BoardBuilder::construct_starting_board().build()
         };
 
         assert_eq!(board, correct);
@@ -655,7 +703,7 @@ mod tests {
         let board = BoardBuilder::default().en_passant_file(Some(1)).build();
         let correct = Board {
             en_passant_file: Some(1),
-            ..BoardBuilder::construct_starting_board()
+            ..BoardBuilder::construct_starting_board().build()
         };
 
         assert_eq!(board, correct);
@@ -666,7 +714,7 @@ mod tests {
         let board = BoardBuilder::default().fullmove_counter(5).build();
         let correct = Board {
             fullmove_counter: 5,
-            ..BoardBuilder::construct_starting_board()
+            ..BoardBuilder::construct_starting_board().build()
         };
 
         assert_eq!(board, correct);

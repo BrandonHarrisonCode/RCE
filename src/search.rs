@@ -164,7 +164,7 @@ mod tests {
 
     #[bench]
     fn bench_search_depth_3(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
         let mut search = Search::new(&board, &evaluator, None);
         bencher.iter(|| search.search(Some(3)));
@@ -172,7 +172,7 @@ mod tests {
 
     #[bench]
     fn bench_search_depth_4(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
         let mut search = Search::new(&board, &evaluator, None);
         bencher.iter(|| search.search(Some(4)));

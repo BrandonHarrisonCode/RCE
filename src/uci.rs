@@ -15,7 +15,7 @@ const AUTHOR: &str = "Brandon Harrison";
 const VERSION: &str = build_time_utc!("%Y.%m.%d %H:%M:%S");
 
 pub fn start() {
-    let mut board = BoardBuilder::construct_starting_board();
+    let mut board = BoardBuilder::construct_starting_board().build();
     let mut search_running: Option<Arc<AtomicBool>> = None;
     let mut join_handle: Option<thread::JoinHandle<()>> = None;
 
@@ -34,7 +34,7 @@ pub fn start() {
         match token {
             "uci" => print_engine_info(),
             "isready" => println!("readyok"),
-            "ucinewgame" => board = BoardBuilder::construct_starting_board(),
+            "ucinewgame" => board = BoardBuilder::construct_starting_board().build(),
             "position" => {
                 board = load_position(&fields)
                     .inspect_err(|e| eprintln!("Failed to set position: {e}"))
@@ -74,7 +74,7 @@ fn print_engine_info() {
 }
 
 fn load_position(fields: &[&str]) -> Result<Board, String> {
-    let mut board = BoardBuilder::construct_starting_board();
+    let mut board = BoardBuilder::construct_starting_board().build();
     let mut idx = 1;
 
     if fields.len() < 2 {

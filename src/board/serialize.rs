@@ -172,7 +172,7 @@ mod tests {
     fn from_fen_starting_position() {
         let fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         assert_eq!(
-            BoardBuilder::construct_starting_board(),
+            BoardBuilder::construct_starting_board().build(),
             Board::from_fen(fen)
         );
     }

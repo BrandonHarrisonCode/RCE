@@ -1,6 +1,8 @@
 use super::super::bitboard::Bitboard;
 use super::Bitboards;
 use crate::board::piece::Color;
+use crate::board::piece::Kind as PieceKind;
+use crate::board::square::Square;
 
 #[derive(Default)]
 pub struct Builder {
@@ -107,6 +109,38 @@ impl Builder {
             white_pieces: Bitboard::new(white_pieces),
             black_pieces: Bitboard::new(black_pieces),
             all_pieces: Bitboard::new(all_pieces),
+        }
+    }
+
+    /// Adds the specified piece kind to the specified square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The designated square to add the piece to.
+    ///
+    /// * `kind` - The piece kind to add to the square.
+    ///
+    /// # Examples
+    /// ```
+    /// let builder = Builder::default();
+    /// builder.add_piece(Square("a4"), Kind::Rook(Color::White))
+    /// ```
+    pub fn add_piece(&mut self, square: Square, kind: PieceKind) {
+        let mask = square.get_mask();
+
+        match kind {
+            PieceKind::Pawn(Color::White) => self.white_pawns |= mask,
+            PieceKind::Knight(Color::White) => self.white_knights |= mask,
+            PieceKind::Bishop(Color::White) => self.white_bishops |= mask,
+            PieceKind::Rook(Color::White) => self.white_rooks |= mask,
+            PieceKind::Queen(Color::White) => self.white_queens |= mask,
+            PieceKind::King(Color::White) => self.white_king |= mask,
+            PieceKind::Pawn(Color::Black) => self.black_pawns |= mask,
+            PieceKind::Knight(Color::Black) => self.black_knights |= mask,
+            PieceKind::Bishop(Color::Black) => self.black_bishops |= mask,
+            PieceKind::Rook(Color::Black) => self.black_rooks |= mask,
+            PieceKind::Queen(Color::Black) => self.black_queens |= mask,
+            PieceKind::King(Color::Black) => self.black_king |= mask,
         }
     }
 

@@ -67,28 +67,28 @@ pub mod tests {
 
     #[test]
     fn test_perft_depth_1() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let nodes = perft(&mut board, 1);
         assert_eq!(nodes, 20);
     }
 
     #[test]
     fn test_perft_depth_2() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let nodes = perft(&mut board, 2);
         assert_eq!(nodes, 400);
     }
 
     #[test]
     fn test_perft_depth_3() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let nodes = perft(&mut board, 3);
         assert_eq!(nodes, 8902);
     }
 
     #[test]
     fn test_perft_depth_4() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let nodes = perft(&mut board, 4);
         assert_eq!(nodes, 197_281);
     }
@@ -96,7 +96,7 @@ pub mod tests {
     #[test]
     #[ignore]
     fn test_perft_depth_5() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let nodes = perft(&mut board, 5);
         assert_eq!(nodes, 4_865_609);
     }
@@ -104,26 +104,26 @@ pub mod tests {
     #[test]
     #[ignore]
     fn test_perft_depth_6() {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         let nodes = perft(&mut board, 6);
         assert_eq!(nodes, 119_060_324);
     }
 
     #[bench]
     fn bench_perft_depth_1(bencher: &mut Bencher) {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         bencher.iter(|| perft(&mut board, 1));
     }
 
     #[bench]
     fn bench_perft_depth_2(bencher: &mut Bencher) {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         bencher.iter(|| perft(&mut board, 2));
     }
 
     #[bench]
     fn bench_perft_depth_3(bencher: &mut Bencher) {
-        let mut board = BoardBuilder::construct_starting_board();
+        let mut board = BoardBuilder::construct_starting_board().build();
         bencher.iter(|| perft(&mut board, 3));
     }
 

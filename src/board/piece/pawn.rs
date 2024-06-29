@@ -226,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_a2() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         let piece = Kind::Pawn(Color::White);
         let start_square = Square::from("a2");
 
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_white_d2() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         let piece = Kind::Pawn(Color::White);
         let start_square = Square::from("d2");
 
@@ -302,7 +302,7 @@ mod tests {
 
     #[test]
     fn test_pawn_get_moveset_black_h7() {
-        let board = BoardBuilder::construct_starting_board();
+        let board = BoardBuilder::construct_starting_board().build();
         let piece = Kind::Pawn(Color::Black);
         let start_square = Square::from("h7");
 
