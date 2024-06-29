@@ -142,16 +142,16 @@ impl BoardBuilder {
     pub fn castling(mut self, kind: CastlingKind, value: CastlingStatus) -> Self {
         match kind {
             CastlingKind::WhiteKingside => {
-                self.get_last_history().castling_rights.white_kingside = value
+                self.get_last_history().castling_rights.white_kingside = value;
             }
             CastlingKind::WhiteQueenside => {
-                self.get_last_history().castling_rights.white_queenside = value
+                self.get_last_history().castling_rights.white_queenside = value;
             }
             CastlingKind::BlackKingside => {
-                self.get_last_history().castling_rights.black_kingside = value
+                self.get_last_history().castling_rights.black_kingside = value;
             }
             CastlingKind::BlackQueenside => {
-                self.get_last_history().castling_rights.black_queenside = value
+                self.get_last_history().castling_rights.black_queenside = value;
             }
         }
         self

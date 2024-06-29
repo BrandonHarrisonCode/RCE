@@ -207,16 +207,24 @@ impl Board {
     /// assert_eq!(CastlingStatus::Availiable, board.castling_ability(CastlingKind::WhiteKingside));
     /// assert_eq!(CastlingStatus::Availiable, board.castling_ability(CastlingKind::BlackQueenside));
     /// ```
-    pub fn castling_ability(&self, kind: CastlingKind) -> CastlingStatus {
+    pub fn castling_ability(&self, kind: CastlingKind) -> Result<CastlingStatus, &'static str> {
+        match (kind, self.current_turn) {
+            (CastlingKind::WhiteKingside | CastlingKind::WhiteQueenside, Color::Black)
+            | (CastlingKind::BlackKingside | CastlingKind::BlackQueenside, Color::White) => {
+                return Err("Cannot castle when it is not your turn.");
+            }
+            _ => (),
+        }
+
         if self.castle_status(kind) == CastlingStatus::Availiable
             && self
                 .no_pieces_between_castling(kind)
                 .and(self.no_checks_castling(kind))
                 .is_ok()
         {
-            CastlingStatus::Availiable
+            Ok(CastlingStatus::Availiable)
         } else {
-            CastlingStatus::Unavailiable
+            Ok(CastlingStatus::Unavailiable)
         }
     }
 
@@ -761,6 +769,92 @@ mod tests {
         assert_eq!(
             board.castle_status(CastlingKind::WhiteQueenside),
             CastlingStatus::Availiable
+        );
+    }
+
+    #[test]
+    fn test_castling_ability() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteKingside),
+            Ok(CastlingStatus::Availiable)
+        );
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Availiable)
+        );
+
+        board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w - - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteKingside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+
+        board = Board::from_fen("r4rk1/8/8/8/8/8/8/R3K2R w KQq - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteKingside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Availiable)
+        );
+
+        board = Board::from_fen("1r3rk1/8/8/8/8/8/8/R3K2R w KQq - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Availiable)
+        );
+
+        board = Board::from_fen("2r2rk1/8/8/8/8/8/8/R3K2R w KQq - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+
+        board = Board::from_fen("3r1rk1/8/8/8/8/8/8/R3K2R w KQq - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+
+        board = Board::from_fen("4rrk1/8/8/8/8/8/8/R3K2R w KQq - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+
+        board = Board::from_fen("2kr3r/8/8/8/8/8/8/R3K2R w KQk - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteQueenside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteKingside),
+            Ok(CastlingStatus::Availiable)
+        );
+
+        board = Board::from_fen("2kr2r1/8/8/8/8/8/8/R3K2R w KQk - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteKingside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+
+        board = Board::from_fen("2kr1r2/8/8/8/8/8/8/R3K2R w KQk - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteKingside),
+            Ok(CastlingStatus::Unavailiable)
+        );
+
+        board = Board::from_fen("2krr3/8/8/8/8/8/8/R3K2R w KQk - 0 1");
+        assert_eq!(
+            board.castling_ability(CastlingKind::WhiteKingside),
+            Ok(CastlingStatus::Unavailiable)
         );
     }
 

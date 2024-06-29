@@ -25,15 +25,23 @@ impl Piece for King {
         let squares: Vec<Square> = move_mask.into();
 
         let mut moveset: Vec<Ply> = squares.into_iter().map(|s| Ply::new(square, s)).collect();
-        if square == Square::from("e1") {
-            if board.castling_ability(CastlingKind::WhiteKingside) == CastlingStatus::Availiable {
+        if square == Square::from("e1") && color == Color::White {
+            if board
+                .castling_ability(CastlingKind::WhiteKingside)
+                .expect("Tried to castle for the wrong side!")
+                == CastlingStatus::Availiable
+            {
                 moveset.push(
                     Ply::builder(square, Square::from("g1"))
                         .castles(true)
                         .build(),
                 );
             }
-            if board.castling_ability(CastlingKind::WhiteQueenside) == CastlingStatus::Availiable {
+            if board
+                .castling_ability(CastlingKind::WhiteQueenside)
+                .expect("Tried to castle for the wrong side!")
+                == CastlingStatus::Availiable
+            {
                 moveset.push(
                     Ply::builder(square, Square::from("c1"))
                         .castles(true)
@@ -42,15 +50,23 @@ impl Piece for King {
             }
         }
 
-        if square == Square::from("e8") {
-            if board.castling_ability(CastlingKind::BlackKingside) == CastlingStatus::Availiable {
+        if square == Square::from("e8") && color == Color::Black {
+            if board
+                .castling_ability(CastlingKind::BlackKingside)
+                .expect("Tried to castle for the wrong side!")
+                == CastlingStatus::Availiable
+            {
                 moveset.push(
                     Ply::builder(square, Square::from("g8"))
                         .castles(true)
                         .build(),
                 );
             }
-            if board.castling_ability(CastlingKind::BlackQueenside) == CastlingStatus::Availiable {
+            if board
+                .castling_ability(CastlingKind::BlackQueenside)
+                .expect("Tried to castle for the wrong side!")
+                == CastlingStatus::Availiable
+            {
                 moveset.push(
                     Ply::builder(square, Square::from("c8"))
                         .castles(true)
@@ -332,12 +348,6 @@ mod tests {
             Ply::new(start_square, Square::from("e7")),
             Ply::new(start_square, Square::from("f8")),
             Ply::new(start_square, Square::from("f7")),
-            Ply::builder(start_square, Square::from("g8"))
-                .castles(true)
-                .build(),
-            Ply::builder(start_square, Square::from("c8"))
-                .castles(true)
-                .build(),
         ];
 
         check_unique_equality(result, correct);
@@ -345,8 +355,9 @@ mod tests {
 
     #[test]
     fn test_king_get_moveset_black_e8() {
-        let board = BoardBuilder::construct_empty_board();
-        let piece = Kind::King(Color::White);
+        let mut board = BoardBuilder::construct_empty_board();
+        board.switch_turn();
+        let piece = Kind::King(Color::Black);
         let start_square = Square::from("e8");
 
         let result = piece.get_moveset(start_square, &board);
