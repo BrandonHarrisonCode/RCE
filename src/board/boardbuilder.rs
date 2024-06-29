@@ -10,7 +10,7 @@ use super::Square;
 use super::bitboards;
 use super::bitboards::builder::Builder as BitboardsBuilder;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct BoardBuilder {
     pub current_turn: Color,
     pub halfmove_clock: u16,

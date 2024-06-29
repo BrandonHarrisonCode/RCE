@@ -4,7 +4,7 @@ use crate::board::piece::Color;
 use crate::board::piece::Kind as PieceKind;
 use crate::board::square::Square;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Builder {
     pub white_pawns: u64,
     pub white_knights: u64,

@@ -1009,6 +1009,98 @@ mod tests {
     }
 
     #[test]
+    fn test_no_checks_castling_white() {
+        let builder = BoardBuilder::construct_empty_board()
+            .turn(Color::White)
+            .piece(Square::from("a1"), Kind::Rook(Color::White))
+            .piece(Square::from("e1"), Kind::King(Color::White))
+            .piece(Square::from("h1"), Kind::Rook(Color::White));
+
+        let test_cases = [
+            (Square::from("a8"), Ok(()), Ok(())),
+            (Square::from("b8"), Ok(()), Ok(())),
+            (Square::from("c8"), Ok(()), Err(())),
+            (Square::from("d8"), Ok(()), Err(())),
+            (Square::from("e8"), Err(()), Err(())),
+            (Square::from("f8"), Err(()), Ok(())),
+            (Square::from("g8"), Err(()), Ok(())),
+            (Square::from("h8"), Ok(()), Ok(())),
+        ];
+
+        for (square, kingside, queenside) in test_cases {
+            println!("Testing square {}", square);
+            let board = builder
+                .clone()
+                .piece(square, Kind::Rook(Color::Black))
+                .build();
+
+            match kingside {
+                Ok(_) => assert!(board
+                    .no_checks_castling(CastlingKind::WhiteKingside)
+                    .is_ok()),
+                Err(_) => assert!(board
+                    .no_checks_castling(CastlingKind::WhiteKingside)
+                    .is_err()),
+            };
+
+            match queenside {
+                Ok(_) => assert!(board
+                    .no_checks_castling(CastlingKind::WhiteQueenside)
+                    .is_ok()),
+                Err(_) => assert!(board
+                    .no_checks_castling(CastlingKind::WhiteQueenside)
+                    .is_err()),
+            };
+        }
+    }
+
+    #[test]
+    fn test_no_checks_castling_black() {
+        let builder = BoardBuilder::construct_empty_board()
+            .turn(Color::Black)
+            .piece(Square::from("a8"), Kind::Rook(Color::Black))
+            .piece(Square::from("e8"), Kind::King(Color::Black))
+            .piece(Square::from("h8"), Kind::Rook(Color::Black));
+
+        let test_cases = [
+            (Square::from("a1"), Ok(()), Ok(())),
+            (Square::from("b1"), Ok(()), Ok(())),
+            (Square::from("c1"), Ok(()), Err(())),
+            (Square::from("d1"), Ok(()), Err(())),
+            (Square::from("e1"), Err(()), Err(())),
+            (Square::from("f1"), Err(()), Ok(())),
+            (Square::from("g1"), Err(()), Ok(())),
+            (Square::from("h1"), Ok(()), Ok(())),
+        ];
+
+        for (square, kingside, queenside) in test_cases {
+            println!("Testing square {}", square);
+            let board = builder
+                .clone()
+                .piece(square, Kind::Rook(Color::White))
+                .build();
+
+            match kingside {
+                Ok(_) => assert!(board
+                    .no_checks_castling(CastlingKind::BlackKingside)
+                    .is_ok()),
+                Err(_) => assert!(board
+                    .no_checks_castling(CastlingKind::BlackKingside)
+                    .is_err()),
+            };
+
+            match queenside {
+                Ok(_) => assert!(board
+                    .no_checks_castling(CastlingKind::BlackQueenside)
+                    .is_ok()),
+                Err(_) => assert!(board
+                    .no_checks_castling(CastlingKind::BlackQueenside)
+                    .is_err()),
+            };
+        }
+    }
+
+    #[test]
     fn test_get_piece1() {
         let board = BoardBuilder::construct_starting_board().build();
         assert_eq!(
