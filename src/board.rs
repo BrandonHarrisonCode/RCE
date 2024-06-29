@@ -1055,6 +1055,59 @@ mod tests {
     }
 
     #[test]
+    fn test_get_attacked_squares_starting_board() {
+        let board = BoardBuilder::construct_starting_board().build();
+        assert_eq!(
+            board.get_attacked_squares(Color::White),
+            Bitboard::new(0b0111111011111111111111110000000000000000000000000000000000000000)
+        );
+        assert_eq!(
+            board.get_attacked_squares(Color::Black),
+            Bitboard::new(0b0000000000000000000000000000000000000000111111111111111101111110)
+        );
+    }
+
+    #[test]
+    fn test_get_attacked_squares_position_1() {
+        let board = Board::from_fen("r3kb1r/p2bqpp1/5n2/4Q1p1/3P4/8/PPP2PPP/RNB1K2R b KQkq - 0 13");
+        assert_eq!(
+            board.get_attacked_squares(Color::White),
+            Bitboard::new(0b0111111011111001111111101011111011110011100000011000000000000000)
+        );
+        assert_eq!(
+            board.get_attacked_squares(Color::Black),
+            Bitboard::new(0b0000001000010100001110000111111100111000111111111011101101111010)
+        );
+    }
+
+    #[test]
+    fn test_get_attacked_squares_position_2() {
+        let board =
+            Board::from_fen("r1bqkbnr/1p2pppp/p2p4/3Pn3/4PB2/8/PP3PPP/RN1QKBNR w KQkq - 1 7");
+        assert_eq!(
+            board.get_attacked_squares(Color::White),
+            Bitboard::new(0b0111111011111111111111110011011101000100101010000000000000000000)
+        );
+        assert_eq!(
+            board.get_attacked_squares(Color::Black),
+            Bitboard::new(0b0000000000000000100101011111101001001101111111111111110101111110)
+        );
+    }
+
+    #[test]
+    fn test_get_attacked_squares_position_3() {
+        let board = Board::from_fen("2r1kb1r/1p1bpppp/pq6/3PB3/8/2N5/PPQ2PPP/R3KB1R b KQk - 4 13");
+        assert_eq!(
+            board.get_attacked_squares(Color::White),
+            Bitboard::new(0b0111111111111111111111010010011101001111100101100010001000000000)
+        );
+        assert_eq!(
+            board.get_attacked_squares(Color::Black),
+            Bitboard::new(0b0000001011000100011111010010101000111101111111111111101101111110)
+        );
+    }
+
+    #[test]
     fn test_no_checks_castling_black() {
         let builder = BoardBuilder::construct_empty_board()
             .turn(Color::Black)
