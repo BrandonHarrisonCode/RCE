@@ -1,4 +1,5 @@
 use super::piece::Color;
+use super::ply::castling::CastlingKind;
 use super::ply::Ply;
 use super::Board;
 use super::CastlingStatus;
@@ -49,7 +50,7 @@ impl BoardBuilder {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
-            game_state: GameState::InProgress,
+            game_state: GameState::Unknown,
 
             en_passant_file: None,
 
@@ -65,7 +66,7 @@ impl BoardBuilder {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
-            game_state: GameState::InProgress,
+            game_state: GameState::Unknown,
 
             en_passant_file: None,
 
@@ -118,11 +119,13 @@ impl BoardBuilder {
         self
     }
 
-    /// Set the kingside castling rights of the specified color
+    /// Set the castling status for the specified `CastlingKind`
     ///
     /// # Arguments
     ///
-    /// * `color` - The color to set the kingside castling rights for
+    /// * `kind` - The kind of castling being set
+    ///
+    /// * `value` - The status of the castling being set
     ///
     /// # Returns
     ///
@@ -133,37 +136,23 @@ impl BoardBuilder {
     /// ```
     /// use crate::board::{BoardBuilder, Color, Castling};
     ///
-    /// let builder = BoardBuilder::default().kingside_castling(Color::Black, Castling::Unavailiable);
-    /// ```
-    pub fn kingside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
-        match color {
-            Color::White => self.get_last_history().castling_rights.white_kingside = value,
-            Color::Black => self.get_last_history().castling_rights.black_kingside = value,
-        }
-        self
-    }
-
-    /// Set the queenside castling rights of the specified color
-    ///
-    /// # Arguments
-    ///
-    /// * `color` - The color to set the queenside castling rights for
-    ///
-    /// # Returns
-    ///
-    /// * `Self` - The current builder
-    ///
-    /// # Example
+    /// let builder = BoardBuilder::default().castling(Castling::WhiteKingside, CastlingStatus::Unavailiable);
     ///
     /// ```
-    /// use crate::board::{BoardBuilder, Color, Castling};
-    ///
-    /// let builder = BoardBuilder::default().queenside_castling(Color::Black, Castling::Unavailiable);
-    /// ```
-    pub fn queenside_castling(mut self, color: Color, value: CastlingStatus) -> Self {
-        match color {
-            Color::White => self.get_last_history().castling_rights.white_queenside = value,
-            Color::Black => self.get_last_history().castling_rights.black_queenside = value,
+    pub fn castling(mut self, kind: CastlingKind, value: CastlingStatus) -> Self {
+        match kind {
+            CastlingKind::WhiteKingside => {
+                self.get_last_history().castling_rights.white_kingside = value
+            }
+            CastlingKind::WhiteQueenside => {
+                self.get_last_history().castling_rights.white_queenside = value
+            }
+            CastlingKind::BlackKingside => {
+                self.get_last_history().castling_rights.black_kingside = value
+            }
+            CastlingKind::BlackQueenside => {
+                self.get_last_history().castling_rights.black_queenside = value
+            }
         }
         self
     }
@@ -401,7 +390,8 @@ impl BoardBuilder {
     ///
     /// let board: Board = BoardBuilder::default().fullmove_counter(5).build();
     /// ```
-    pub fn build(&self) -> Board {
+    pub fn build(&mut self) -> Board {
+        self.history[0].halfmove_clock = self.halfmove_clock;
         Board {
             current_turn: self.current_turn,
             fullmove_counter: self.fullmove_counter,
@@ -458,7 +448,7 @@ mod tests {
     #[test]
     fn board_builder_white_kingside_castling() {
         let board = BoardBuilder::default()
-            .kingside_castling(Color::White, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
             .build();
 
         assert_eq!(
@@ -475,7 +465,7 @@ mod tests {
     #[test]
     fn board_builder_black_kingside_castling() {
         let board = BoardBuilder::default()
-            .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
             .build();
 
         assert_eq!(
@@ -492,7 +482,7 @@ mod tests {
     #[test]
     fn board_builder_white_queenside_castling() {
         let board = BoardBuilder::default()
-            .queenside_castling(Color::White, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
             .build();
 
         assert_eq!(
@@ -509,7 +499,7 @@ mod tests {
     #[test]
     fn board_builder_black_queenside_castling() {
         let board = BoardBuilder::default()
-            .queenside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable)
             .build();
 
         assert_eq!(

@@ -1,4 +1,4 @@
-use super::{Board, BoardBuilder, CastlingStatus, Color, Ply, Square};
+use super::{Board, BoardBuilder, CastlingKind, CastlingStatus, Color, Ply, Square};
 
 pub enum FENInstruction<'a> {
     Bitboard(&'a mut u64),
@@ -74,17 +74,17 @@ fn current_turn(builder: BoardBuilder, str: &str) -> BoardBuilder {
 
 fn castling_rights(mut builder: BoardBuilder, str: &str) -> BoardBuilder {
     builder = builder
-        .kingside_castling(Color::White, CastlingStatus::Unavailiable)
-        .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
-        .queenside_castling(Color::White, CastlingStatus::Unavailiable)
-        .queenside_castling(Color::Black, CastlingStatus::Unavailiable);
+        .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
+        .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
+        .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
+        .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable);
 
     for chr in str.chars() {
         builder = match chr {
-            'K' => builder.kingside_castling(Color::White, CastlingStatus::Availiable),
-            'k' => builder.kingside_castling(Color::Black, CastlingStatus::Availiable),
-            'Q' => builder.queenside_castling(Color::White, CastlingStatus::Availiable),
-            'q' => builder.queenside_castling(Color::Black, CastlingStatus::Availiable),
+            'K' => builder.castling(CastlingKind::WhiteKingside, CastlingStatus::Availiable),
+            'k' => builder.castling(CastlingKind::BlackKingside, CastlingStatus::Availiable),
+            'Q' => builder.castling(CastlingKind::WhiteQueenside, CastlingStatus::Availiable),
+            'q' => builder.castling(CastlingKind::BlackQueenside, CastlingStatus::Availiable),
             '-' => builder,
             _ => panic!("Unknown FEN castling notation: {chr}"),
         };
@@ -115,11 +115,13 @@ fn history(mut builder: BoardBuilder) -> BoardBuilder {
         let ply = Ply::builder(start, dest)
             .double_pawn_push(true)
             .castling_rights(rights)
+            .halfmove_clock(builder.halfmove_clock)
             .build();
         history.push(ply);
     } else {
         let ply = Ply::builder(Square::from("a1"), Square::from("a1"))
             .castling_rights(rights)
+            .halfmove_clock(builder.halfmove_clock)
             .build();
         history.push(ply);
     }
@@ -193,13 +195,12 @@ mod tests {
             .bishops(Color::Black, 0)
             .knights(Color::White, 17179869184)
             .knights(Color::Black, 32)
-            .kingside_castling(Color::White, CastlingStatus::Unavailiable)
-            .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
-            .queenside_castling(Color::White, CastlingStatus::Unavailiable)
-            .queenside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable)
             .build();
 
-        dbg!(Board::from_fen(fen));
         assert_eq!(Board::from_fen(fen), correct);
     }
 
@@ -222,13 +223,13 @@ mod tests {
             .bishops(Color::Black, 2305843009213693952)
             .knights(Color::White, 2251799813685248)
             .knights(Color::Black, 8830452760576)
-            .kingside_castling(Color::White, CastlingStatus::Unavailiable)
-            .kingside_castling(Color::Black, CastlingStatus::Unavailiable)
-            .queenside_castling(Color::White, CastlingStatus::Unavailiable)
-            .queenside_castling(Color::Black, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable)
             .build();
 
-        dbg!(Board::from_fen(fen));
-        assert_eq!(Board::from_fen(fen), correct);
+        let from_fen = Board::from_fen(fen);
+        assert_eq!(from_fen, correct);
     }
 }

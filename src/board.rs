@@ -738,6 +738,33 @@ mod tests {
     }
 
     #[test]
+    fn test_castle_status() {
+        let board = BoardBuilder::default()
+            .castling(CastlingKind::BlackKingside, CastlingStatus::Availiable)
+            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Availiable)
+            .build();
+
+        assert_eq!(
+            board.castle_status(CastlingKind::BlackKingside),
+            CastlingStatus::Availiable
+        );
+        assert_eq!(
+            board.castle_status(CastlingKind::BlackQueenside),
+            CastlingStatus::Unavailiable
+        );
+        assert_eq!(
+            board.castle_status(CastlingKind::WhiteKingside),
+            CastlingStatus::Unavailiable
+        );
+        assert_eq!(
+            board.castle_status(CastlingKind::WhiteQueenside),
+            CastlingStatus::Availiable
+        );
+    }
+
+    #[test]
     fn test_get_piece1() {
         let board = BoardBuilder::construct_starting_board();
         assert_eq!(
@@ -1442,6 +1469,59 @@ mod tests {
     fn test_is_in_check_black_by_queen() {
         let board = Board::from_fen("8/1K6/2Q5/8/8/2k3q1/8/8 b - - 0 1");
         assert!(board.is_in_check(Color::Black));
+    }
+
+    #[test]
+    fn test_set_game_state() {
+        let mut board = BoardBuilder::construct_starting_board();
+        assert_eq!(board.game_state, GameState::Unknown);
+        board.set_game_state();
+        assert_eq!(board.game_state, GameState::InProgress);
+
+        board = Board::from_fen("7k/8/7K/4N3/6P1/1B3P2/P7/8 b - - 4 72"); // Stalemate
+        assert_eq!(board.game_state, GameState::Unknown);
+        board.set_game_state();
+        assert_eq!(board.game_state, GameState::Stalemate);
+
+        board = Board::from_fen("7k/8/6KP/8/8/8/8/8 w - - 100 1"); // FiftyMoveRule
+        assert_eq!(board.game_state, GameState::Unknown);
+        board.set_game_state();
+        assert_eq!(board.game_state, GameState::FiftyMoveRule);
+
+        board = Board::from_fen("4r1k1/6b1/p7/1pQ5/8/8/PPP2PPP/3q2K1 w - - 0 34"); // Checkmate, Black wins
+        assert_eq!(board.game_state, GameState::Unknown);
+        board.set_game_state();
+        assert_eq!(board.game_state, GameState::CheckmateWhite);
+
+        board = Board::from_fen("Q7/8/8/3P4/3Q1K2/kP6/P7/8 b - - 3 65"); // Checkmate, White wins
+        assert_eq!(board.game_state, GameState::Unknown);
+        board.set_game_state();
+        assert_eq!(board.game_state, GameState::CheckmateBlack);
+    }
+
+    #[test]
+    fn test_get_winner() {
+        let mut board = Board::from_fen("4r1k1/6b1/p7/1pQ5/8/8/PPP2PPP/3q2K1 w - - 0 34"); // Checkmate, Black wins
+        assert_eq!(board.game_state, GameState::Unknown);
+        board.set_game_state();
+        assert_eq!(board.game_state, GameState::CheckmateWhite);
+        assert_eq!(board.get_winner(), Some(Color::Black));
+
+        board = Board::from_fen("Q7/8/8/3P4/3Q1K2/kP6/P7/8 b - - 3 65"); // Checkmate, White wins
+        assert_eq!(board.game_state, GameState::Unknown);
+        board.set_game_state();
+        assert_eq!(board.game_state, GameState::CheckmateBlack);
+        assert_eq!(board.get_winner(), Some(Color::White));
+    }
+
+    #[test]
+    fn test_find_move() {
+        let mut board = BoardBuilder::construct_starting_board();
+
+        let notation_exists = "a2a4";
+        let notation_made_up = "a2a5";
+        assert!(board.find_move(notation_exists).is_ok());
+        assert!(board.find_move(notation_made_up).is_err());
     }
 
     #[test]
