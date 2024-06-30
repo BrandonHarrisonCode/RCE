@@ -286,6 +286,7 @@ impl Bitboard {
         output
     }
 
+    #[cfg_attr(target_arch = "x86_64", target_feature(enable = "popcnt"))]
     pub const fn count_ones(self) -> u32 {
         self.0.count_ones()
     }
@@ -296,10 +297,12 @@ impl Bitboard {
         idx
     }
 
+    #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1"))]
     pub const fn bitscan_forward(self) -> u32 {
         self.0.trailing_zeros()
     }
 
+    #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1"))]
     pub const fn bitscan_reverse(self) -> u32 {
         63 - self.0.leading_zeros()
     }
