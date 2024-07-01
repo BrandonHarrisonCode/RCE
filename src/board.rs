@@ -533,6 +533,9 @@ impl Board {
 
         self.game_state = GameState::Unknown;
         self.switch_turn();
+        if self.current_turn == Color::White {
+            self.fullmove_counter += 1;
+        }
         self.history.push(new_move);
     }
 
@@ -696,11 +699,9 @@ impl Board {
             self.en_passant_file = None;
         }
 
-        /*
         if self.current_turn == Color::White {
             self.fullmove_counter -= 1;
         }
-        */
 
         // Cannot make a move if game is over, so all previous moves are in progress
         self.game_state = GameState::InProgress;
