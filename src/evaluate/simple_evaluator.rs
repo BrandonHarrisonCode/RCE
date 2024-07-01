@@ -3,6 +3,7 @@ use crate::board::piece::Kind;
 use crate::board::square::Square;
 use crate::board::Board;
 
+/// A simple evaluator that assigns a value to each piece and sums them up.
 #[derive(Clone)]
 pub struct SimpleEvaluator;
 

@@ -268,6 +268,7 @@ impl Bitboard {
             & !(File::H as u64)
     }
 
+    /// Moves the entire bitboard `n` squares East
     pub fn shift_east(self, n: u8) -> Self {
         let mut output = self;
         for _ in 0..n {
@@ -277,6 +278,7 @@ impl Bitboard {
         output
     }
 
+    /// Moves the entire bitboard `n` squares West
     pub fn shift_west(self, n: u8) -> Self {
         let mut output = self;
         for _ in 0..n {
@@ -286,34 +288,41 @@ impl Bitboard {
         output
     }
 
+    /// Safe wrapper around the `count_ones` intrinsic
     pub const fn count_ones(self) -> u32 {
         unsafe { self.count_ones_helper() }
     }
 
+    /// `count_ones` using the built-in x86_64 `popcnt` instruction
     #[cfg_attr(target_arch = "x86_64", target_feature(enable = "popcnt"))]
     const unsafe fn count_ones_helper(self) -> u32 {
         self.0.count_ones()
     }
 
+    /// Finds the index of the least significant bit and set it to 0
     pub fn drop_forward(&mut self) -> u32 {
         let idx = self.bitscan_forward();
         self.0 &= self.0 - 1;
         idx
     }
 
+    /// Safe wrapper around the `bitscan_forward` intrinsic
     pub const fn bitscan_forward(self) -> u32 {
         unsafe { self.bitscan_forward_helper() }
     }
 
+    /// `trailing_zeros` using the built-in x86_64 `bmi1` instruction
     #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1"))]
     const unsafe fn bitscan_forward_helper(self) -> u32 {
         self.0.trailing_zeros()
     }
 
+    /// Safe wrapper around the `bitscan_reverse` intrinsic
     pub const fn bitscan_reverse(self) -> u32 {
         unsafe { self.bitscan_reverse_helper() }
     }
 
+    /// `leading_zeros` using the built-in x86_64 `bmi1` instruction
     #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1"))]
     const unsafe fn bitscan_reverse_helper(self) -> u32 {
         63 - self.0.leading_zeros()

@@ -17,6 +17,7 @@ impl Rays {
 pub static RAYS: OnceLock<Rays> = OnceLock::new();
 
 #[allow(clippy::cast_possible_truncation)]
+/// Initializes the rays array for each square and direction.
 fn init_rays() -> [[Bitboard; 8]; 64] {
     let mut rays = [[Bitboard::new(0); 8]; 64];
 

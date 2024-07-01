@@ -7,7 +7,7 @@ pub mod builder;
 use builder::Builder;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Bitboards {
+pub struct PieceBitboards {
     pub white_pawns: Bitboard,
     pub white_king: Bitboard,
     pub white_queens: Bitboard,
@@ -26,13 +26,13 @@ pub struct Bitboards {
     pub all_pieces: Bitboard,
 }
 
-impl Default for Bitboards {
+impl Default for PieceBitboards {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Bitboards {
+impl PieceBitboards {
     pub const fn new() -> Self {
         Self {
             white_pawns: Bitboard::new(0),

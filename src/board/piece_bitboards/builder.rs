@@ -1,5 +1,5 @@
 use super::super::bitboard::Bitboard;
-use super::Bitboards;
+use super::PieceBitboards;
 use crate::board::piece::Color;
 use crate::board::piece::Kind as PieceKind;
 use crate::board::square::Square;
@@ -78,7 +78,7 @@ impl Builder {
     ///
     /// let bitboards: BitBoards = BitBoardsBuilder::default().pawns(Color::White, 5).build();
     /// ```
-    pub const fn build(&self) -> Bitboards {
+    pub const fn build(&self) -> PieceBitboards {
         let white_pieces = self.white_pawns
             | self.white_king
             | self.white_queens
@@ -92,7 +92,7 @@ impl Builder {
             | self.black_bishops
             | self.black_knights;
         let all_pieces = white_pieces | black_pieces;
-        Bitboards {
+        PieceBitboards {
             white_pawns: Bitboard::new(self.white_pawns),
             white_king: Bitboard::new(self.white_king),
             white_queens: Bitboard::new(self.white_queens),

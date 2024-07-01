@@ -7,8 +7,8 @@ use super::CastlingStatus;
 use super::GameState;
 use super::Square;
 
-use super::bitboards;
-use super::bitboards::builder::Builder as BitboardsBuilder;
+use super::piece_bitboards;
+use super::piece_bitboards::builder::Builder as PieceBitboardsBuilder;
 
 #[derive(Default, Clone)]
 pub struct BoardBuilder {
@@ -19,7 +19,7 @@ pub struct BoardBuilder {
 
     pub en_passant_file: Option<u8>,
 
-    pub bitboards: BitboardsBuilder,
+    pub bitboards: PieceBitboardsBuilder,
 
     pub history: Vec<Ply>,
 }
@@ -56,7 +56,7 @@ impl BoardBuilder {
 
             en_passant_file: None,
 
-            bitboards: BitboardsBuilder::default(),
+            bitboards: PieceBitboardsBuilder::default(),
 
             history: vec![Ply::default()],
         }
@@ -72,7 +72,7 @@ impl BoardBuilder {
 
             en_passant_file: None,
 
-            bitboards: BitboardsBuilder::new(),
+            bitboards: PieceBitboardsBuilder::new(),
 
             history: vec![Ply::default()],
         }
@@ -94,7 +94,7 @@ impl BoardBuilder {
     }
 
     pub fn clear(mut self) -> Self {
-        self.bitboards = bitboards::builder::Builder::new();
+        self.bitboards = piece_bitboards::builder::Builder::new();
         self
     }
 
@@ -458,7 +458,7 @@ impl BoardBuilder {
 #[cfg(test)]
 mod tests {
     use super::super::bitboard::Bitboard;
-    use super::super::bitboards::Bitboards;
+    use super::super::piece_bitboards::PieceBitboards;
     use super::super::square::Square;
     use super::*;
     use pretty_assertions::assert_eq;
@@ -568,7 +568,7 @@ mod tests {
             .pawns(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: Bitboards {
+            bitboards: PieceBitboards {
                 white_pawns: Bitboard::new(1),
                 black_pawns: Bitboard::new(2),
                 white_pieces: Bitboard::new(1),
@@ -589,7 +589,7 @@ mod tests {
             .king(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: Bitboards {
+            bitboards: PieceBitboards {
                 white_king: Bitboard::new(1),
                 black_king: Bitboard::new(2),
                 white_pieces: Bitboard::new(1),
@@ -609,7 +609,7 @@ mod tests {
             .queens(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: Bitboards {
+            bitboards: PieceBitboards {
                 white_queens: Bitboard::new(1),
                 black_queens: Bitboard::new(2),
                 white_pieces: Bitboard::new(1),
@@ -630,7 +630,7 @@ mod tests {
             .rooks(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: Bitboards {
+            bitboards: PieceBitboards {
                 white_rooks: Bitboard::new(1),
                 black_rooks: Bitboard::new(2),
                 white_pieces: Bitboard::new(1),
@@ -651,7 +651,7 @@ mod tests {
             .bishops(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: Bitboards {
+            bitboards: PieceBitboards {
                 white_bishops: Bitboard::new(1),
                 black_bishops: Bitboard::new(2),
                 white_pieces: Bitboard::new(1),
@@ -672,7 +672,7 @@ mod tests {
             .knights(Color::Black, 2)
             .build();
         let correct = Board {
-            bitboards: Bitboards {
+            bitboards: PieceBitboards {
                 white_knights: Bitboard::new(1),
                 black_knights: Bitboard::new(2),
                 white_pieces: Bitboard::new(1),

@@ -1,17 +1,17 @@
 use std::fmt;
 pub mod bitboard;
-mod bitboards;
 pub mod boardbuilder;
 pub mod piece;
+mod piece_bitboards;
 pub mod ply;
 pub mod serialize;
 pub mod square;
 
 use bitboard::Bitboard;
-use bitboards::Bitboards;
 #[allow(clippy::module_name_repetitions)]
 pub use boardbuilder::BoardBuilder;
 use piece::{Color, Kind};
+use piece_bitboards::PieceBitboards;
 use ply::castling::{CastlingKind, CastlingStatus};
 pub use ply::Ply;
 use square::Square;
@@ -38,7 +38,7 @@ pub struct Board {
 
     en_passant_file: Option<u8>,
 
-    pub bitboards: Bitboards,
+    pub bitboards: PieceBitboards,
 
     history: Vec<Ply>,
 }
@@ -56,7 +56,7 @@ impl Default for Board {
             fullmove_counter: 1,
             game_state: GameState::InProgress,
 
-            bitboards: Bitboards::default(),
+            bitboards: PieceBitboards::default(),
 
             en_passant_file: None,
 
