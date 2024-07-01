@@ -21,15 +21,41 @@ pub mod tests {
     }
 
     #[allow(dead_code)]
+    /// Check that two vectors are equal after sorting and deduping them.
+    ///
+    /// # Arguments
+    ///
+    /// * `lhs` - The first vector to compare.
+    /// * `rhs` - The second vector to compare.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the two vectors are not equal after sorting and deduping them.
+    ///
+    /// # Example
+    /// ```
+    /// use crate::utils::tests::check_unique_equality;
+    ///
+    /// let lhs = vec![1, 2, 3, 4, 5];
+    /// let rhs = vec![5, 4, 3, 2, 1];
+    /// check_unique_equality(lhs, rhs);
+    /// ```
     pub fn check_unique_equality<T: Ord + std::fmt::Debug>(mut lhs: Vec<T>, mut rhs: Vec<T>) {
         (lhs, rhs) = sort_and_dedup(lhs, rhs);
         assert_eq!(lhs, rhs);
     }
 
+    /// Returns the total number of moves reachable from the current position.
+    ///
+    /// # Arguments
+    ///
+    /// * `board` - The board to analyze.
+    /// * `depth` - The depth to search.
     pub fn perft(board: &mut Board, depth: u32) -> u64 {
         perft_helper(board, depth, depth)
     }
 
+    /// Runs perft and summarize the first level of moves.
     fn perft_helper(board: &mut Board, depth: u32, max_depth: u32) -> u64 {
         if board.is_game_over() {
             return 0;
