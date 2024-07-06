@@ -293,7 +293,7 @@ impl Bitboard {
         unsafe { self.count_ones_helper() }
     }
 
-    /// `count_ones` using the built-in x86_64 `popcnt` instruction
+    /// `count_ones` using the built-in `x86_64` `popcnt` instruction
     #[cfg_attr(target_arch = "x86_64", target_feature(enable = "popcnt"))]
     const unsafe fn count_ones_helper(self) -> u32 {
         self.0.count_ones()
@@ -311,7 +311,7 @@ impl Bitboard {
         unsafe { self.bitscan_forward_helper() }
     }
 
-    /// `trailing_zeros` using the built-in x86_64 `bmi1` instruction
+    /// `trailing_zeros` using the built-in `x86_64` `bmi1` instruction
     #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1"))]
     const unsafe fn bitscan_forward_helper(self) -> u32 {
         self.0.trailing_zeros()
@@ -322,7 +322,7 @@ impl Bitboard {
         unsafe { self.bitscan_reverse_helper() }
     }
 
-    /// `leading_zeros` using the built-in x86_64 `bmi1` instruction
+    /// `leading_zeros` using the built-in `x86_64` `bmi1` instruction
     #[cfg_attr(target_arch = "x86_64", target_feature(enable = "bmi1"))]
     const unsafe fn bitscan_reverse_helper(self) -> u32 {
         63 - self.0.leading_zeros()
