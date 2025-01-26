@@ -160,8 +160,7 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
     let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
     let is_running = search.get_running();
     let join_handle = thread::spawn(move || {
-        let best_move = search.search(None);
-        println!("bestmove {best_move}");
+        search.search(None);
     });
 
     Ok((is_running, join_handle))

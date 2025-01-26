@@ -1,12 +1,17 @@
+use crate::board::piece::Color;
+
 use super::board::{Board, Ply};
 use super::evaluate::Evaluator;
+use logger::Logger;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
+use std::{u128, usize};
 
-const DEFAULT_DEPTH: usize = 6;
+const MILLISECONDS_IN_A_SECOND: u128 = 1000;
 
 pub mod limits;
+mod logger;
 
 use limits::SearchLimits;
 
@@ -21,7 +26,13 @@ pub struct Search<T: Evaluator> {
 
     depth: u64,
     nodes: u64,
-    movetime: u64,
+    movetime: u128,
+}
+
+impl<T: Evaluator> Logger for Search<T> {
+    fn log(&self, message: &str) {
+        println!("{message}");
+    }
 }
 
 impl<T: Evaluator> Search<T> {
@@ -37,6 +48,34 @@ impl<T: Evaluator> Search<T> {
             nodes: 0,
             movetime: 0,
         }
+    }
+
+    /// Logs the UCI output
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The depth of the search
+    /// * `time_elapsed_in_ms` - The time elapsed in milliseconds
+    /// * `best_value` - The best value found by the search
+    /// * `best_ply` - The best move found by the search
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
+    /// ```
+    fn log_uci_info(&self, depth: usize, time_elapsed_in_ms: u128, best_value: i64, best_ply: Ply) {
+        let score = match best_value {
+            i64::MIN | NEGMAX => String::from("mate -1"),
+            i64::MAX => String::from("mate 1"),
+            _ => format!("cp {}", best_value),
+        };
+        self.log(
+            format!("info depth {depth} time {time_elapsed_in_ms} score {score} pv {best_ply}")
+                .as_str(),
+        );
     }
 
     #[allow(dead_code)]
@@ -105,19 +144,22 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let limits_exceeded = search.check_limits();
     /// ```
-    const fn check_limits(&self) -> bool {
+    fn limits_exceeded(&self) -> bool {
         if let Some(depth) = self.limits.depth {
-            if self.depth >= depth {
+            if u128::from(self.depth) >= depth {
+                self.running.store(false, Ordering::Relaxed);
                 return true;
             }
         }
         if let Some(nodes) = self.limits.nodes {
-            if self.nodes >= nodes {
+            if u128::from(self.nodes) >= nodes {
+                self.running.store(false, Ordering::Relaxed);
                 return true;
             }
         }
         if let Some(movetime) = self.limits.movetime {
             if self.movetime >= movetime {
+                self.running.store(false, Ordering::Relaxed);
                 return true;
             }
         }
@@ -142,8 +184,76 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let best_move = search.search(Some(3));
     /// ```
-    pub fn search(&mut self, depth: Option<usize>) -> Ply {
-        self.alpha_beta_start(depth.unwrap_or(DEFAULT_DEPTH))
+    pub fn search(&mut self, max_depth: Option<usize>) {
+        self.iter_deep(max_depth);
+    }
+
+    /// Iterates through the search at increasing depths until the search is stopped or the maximum depth is reached
+    /// or the movetime limit is exceeded
+    ///
+    /// # Arguments
+    ///
+    /// * `max_depth` - An optional `usize` that determines the maximum depth to search to
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.iter_deep(Some(3));
+    /// ```
+    fn iter_deep(&mut self, max_depth: Option<usize>) {
+        let start = Instant::now();
+        // Uses a heuristic to determine the maximum time to spend on a move
+        self.limits.time_management_timer = match self.board.current_turn {
+            Color::White => {
+                MILLISECONDS_IN_A_SECOND * self.limits.white_time.unwrap_or(0) / 20
+                    + MILLISECONDS_IN_A_SECOND * self.limits.white_increment.unwrap_or(0) / 2
+            }
+            .into(),
+            Color::Black => {
+                MILLISECONDS_IN_A_SECOND * self.limits.black_time.unwrap_or(0) / 20
+                    + MILLISECONDS_IN_A_SECOND * self.limits.black_increment.unwrap_or(0) / 2
+            }
+            .into(),
+        };
+
+        self.log(
+            format!(
+                "time management timer limit: {}",
+                self.limits.time_management_timer.unwrap_or_default()
+            )
+            .as_str(),
+        );
+
+        for depth in 1..max_depth.unwrap_or(usize::MAX) {
+            self.log(format!("iterdeep depth: {}", depth).as_str());
+            let current_best_move = self.alpha_beta_start(depth, start);
+
+            if !self.check_running() {
+                break;
+            }
+
+            let duration = start.elapsed();
+            let time_elapsed_in_ms = duration.as_millis();
+            if time_elapsed_in_ms >= self.limits.movetime.unwrap_or(u128::MAX).into()
+                || ([
+                    self.limits.white_time,
+                    self.limits.white_increment,
+                    self.limits.black_time,
+                    self.limits.black_increment,
+                ]
+                .iter()
+                .any(|x| x.is_some())
+                    && time_elapsed_in_ms >= self.limits.time_management_timer.unwrap_or(u128::MAX))
+            {
+                break;
+            }
+            self.best_move = Some(current_best_move);
+            self.log(format!("iterdeep current bestmove {}", self.best_move.unwrap()).as_str());
+        }
+
+        self.log(format!("bestmove {}", self.best_move.unwrap()).as_str());
     }
 
     /// Initializes the alpha-beta search and returns the best move found
@@ -163,8 +273,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let best_move = search.alpha_beta_start(3);
     /// ```
-    fn alpha_beta_start(&mut self, depth: usize) -> Ply {
-        let start = Instant::now();
+    fn alpha_beta_start(&mut self, depth: usize, start: Instant) -> Ply {
         let mut best_value = i64::MIN;
         let moves = self.board.get_legal_moves();
 
@@ -174,7 +283,7 @@ impl<T: Evaluator> Search<T> {
             self.board.make_move(mv);
 
             let value = self
-                .alpha_beta(i64::MIN, i64::MAX, depth - 1)
+                .alpha_beta(i64::MIN, i64::MAX, depth - 1, start)
                 .saturating_neg();
             if value > best_value {
                 best_value = value;
@@ -185,23 +294,7 @@ impl<T: Evaluator> Search<T> {
 
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        match best_value {
-            i64::MIN | NEGMAX => {
-                println!(
-                    "info depth {depth} time {time_elapsed_in_ms} score mate -1 pv {best_ply}"
-                );
-            }
-            i64::MAX => {
-                println!("info depth {depth} time {time_elapsed_in_ms} score mate 1 pv {best_ply}");
-            }
-            _ => {
-                println!(
-                    "info depth {depth} time {time_elapsed_in_ms} score cp {best_value} pv {best_ply}",
-                );
-            }
-        }
-
-        self.best_move = Some(best_ply);
+        self.log_uci_info(depth, time_elapsed_in_ms, best_value, best_ply);
 
         best_ply
     }
@@ -225,8 +318,22 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let score = search.alpha_beta(i64::MIN, i64::MAX, 3);
     /// ```
-    fn alpha_beta(&mut self, mut alpha: i64, beta: i64, depthleft: usize) -> i64 {
-        if depthleft == 0 || !self.check_running() || self.check_limits() {
+    fn alpha_beta(&mut self, mut alpha: i64, beta: i64, depthleft: usize, start: Instant) -> i64 {
+        if depthleft == 0
+            || !self.check_running()
+            || self.limits_exceeded()
+            || start.elapsed().as_millis() >= self.limits.movetime.unwrap_or(u128::MAX).into()
+            || ([
+                self.limits.white_time,
+                self.limits.white_increment,
+                self.limits.black_time,
+                self.limits.black_increment,
+            ]
+            .iter()
+            .any(|x| x.is_some())
+                && start.elapsed().as_millis()
+                    >= self.limits.time_management_timer.unwrap_or(u128::MAX))
+        {
             return self.evaluator.evaluate(&mut self.board);
         }
 
@@ -241,7 +348,12 @@ impl<T: Evaluator> Search<T> {
         for mv in moves {
             self.board.make_move(mv);
             let score = self
-                .alpha_beta(beta.saturating_neg(), alpha.saturating_neg(), depthleft - 1)
+                .alpha_beta(
+                    beta.saturating_neg(),
+                    alpha.saturating_neg(),
+                    depthleft - 1,
+                    start,
+                )
                 .saturating_neg();
             self.board.unmake_move();
 
@@ -280,6 +392,14 @@ mod tests {
     }
 
     #[test]
+    fn test_log_uci() {
+        let board = BoardBuilder::construct_starting_board().build();
+        let evaluator = SimpleEvaluator::new();
+        let search = Search::new(&board, &evaluator, None);
+        search.log_uci_info(3, 1500, 10, Ply::default());
+    }
+
+    #[test]
     fn test_get_running() {
         let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
@@ -294,21 +414,21 @@ mod tests {
         let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
         let mut search = Search::new(&board, &evaluator, None);
-        assert!(!search.check_limits());
+        assert!(!search.limits_exceeded());
         search.limits.depth = Some(3);
-        assert!(!search.check_limits());
+        assert!(!search.limits_exceeded());
         search.depth = 3;
-        assert!(search.check_limits());
+        assert!(search.limits_exceeded());
         search.limits.depth = None;
         search.limits.nodes = Some(100);
-        assert!(!search.check_limits());
+        assert!(!search.limits_exceeded());
         search.nodes = 100;
-        assert!(search.check_limits());
+        assert!(search.limits_exceeded());
         search.limits.nodes = None;
         search.limits.movetime = Some(1000);
-        assert!(!search.check_limits());
+        assert!(!search.limits_exceeded());
         search.movetime = 1000;
-        assert!(search.check_limits());
+        assert!(search.limits_exceeded());
     }
 
     #[test]
@@ -316,7 +436,7 @@ mod tests {
         let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
         let mut search = Search::new(&board, &evaluator, None);
-        let score = search.alpha_beta(i64::MIN, i64::MAX, 4);
+        let score = search.alpha_beta(i64::MIN, i64::MAX, 4, Instant::now());
         assert_eq!(score, 0)
     }
 

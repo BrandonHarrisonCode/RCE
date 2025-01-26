@@ -2,5 +2,23 @@
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
     ],
-    "rust-analyzer.showUnlinkedFileNotification": false
+    "rust-analyzer.showUnlinkedFileNotification": false,
+    "cSpell.words": [
+        "bestmove",
+        "binc",
+        "btime",
+        "depthleft",
+        "isready",
+        "movestogo",
+        "movetime",
+        "NEGMAX",
+        "readyok",
+        "searchmoves",
+        "setoption",
+        "startpos",
+        "ucinewgame",
+        "uciok",
+        "winc",
+        "wtime"
+    ]
 }
