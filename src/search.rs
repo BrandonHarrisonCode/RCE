@@ -8,8 +8,6 @@ use std::sync::Arc;
 use std::time::Instant;
 use std::{u128, usize};
 
-const MILLISECONDS_IN_A_SECOND: u128 = 1000;
-
 pub mod limits;
 mod logger;
 
@@ -167,6 +165,34 @@ impl<T: Evaluator> Search<T> {
         false
     }
 
+    /// Checks if the search has exceeded limits related to time restrictions.
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - A boolean determining if the search has exceeded any of the time-related limits
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// let time_limits_exceeded = search.time_limits_exceeded();
+    /// ```
+    pub fn time_limits_exceeded(&self, start: Instant) -> bool {
+        let duration = start.elapsed();
+        let time_elapsed_in_ms = duration.as_millis();
+        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(u128::MAX).into()
+            || ([
+                self.limits.white_time,
+                self.limits.white_increment,
+                self.limits.black_time,
+                self.limits.black_increment,
+            ]
+            .iter()
+            .any(|x| x.is_some())
+                && time_elapsed_in_ms >= self.limits.time_management_timer.unwrap_or(u128::MAX))
+    }
+
     /// Initializes the search and returns the best move found
     ///
     /// # Arguments
@@ -207,50 +233,28 @@ impl<T: Evaluator> Search<T> {
         // Uses a heuristic to determine the maximum time to spend on a move
         self.limits.time_management_timer = match self.board.current_turn {
             Color::White => {
-                MILLISECONDS_IN_A_SECOND * self.limits.white_time.unwrap_or(0) / 20
-                    + MILLISECONDS_IN_A_SECOND * self.limits.white_increment.unwrap_or(0) / 2
+                self.limits.white_time.unwrap_or(0) / 20
+                    + self.limits.white_increment.unwrap_or(0) / 2
             }
             .into(),
             Color::Black => {
-                MILLISECONDS_IN_A_SECOND * self.limits.black_time.unwrap_or(0) / 20
-                    + MILLISECONDS_IN_A_SECOND * self.limits.black_increment.unwrap_or(0) / 2
+                self.limits.black_time.unwrap_or(0) / 20
+                    + self.limits.black_increment.unwrap_or(0) / 2
             }
             .into(),
         };
 
-        self.log(
-            format!(
-                "time management timer limit: {}",
-                self.limits.time_management_timer.unwrap_or_default()
-            )
-            .as_str(),
-        );
-
         for depth in 1..max_depth.unwrap_or(usize::MAX) {
-            self.log(format!("iterdeep depth: {}", depth).as_str());
             let current_best_move = self.alpha_beta_start(depth, start);
 
             if !self.check_running() {
                 break;
             }
 
-            let duration = start.elapsed();
-            let time_elapsed_in_ms = duration.as_millis();
-            if time_elapsed_in_ms >= self.limits.movetime.unwrap_or(u128::MAX).into()
-                || ([
-                    self.limits.white_time,
-                    self.limits.white_increment,
-                    self.limits.black_time,
-                    self.limits.black_increment,
-                ]
-                .iter()
-                .any(|x| x.is_some())
-                    && time_elapsed_in_ms >= self.limits.time_management_timer.unwrap_or(u128::MAX))
-            {
+            if self.time_limits_exceeded(start) {
                 break;
             }
             self.best_move = Some(current_best_move);
-            self.log(format!("iterdeep current bestmove {}", self.best_move.unwrap()).as_str());
         }
 
         self.log(format!("bestmove {}", self.best_move.unwrap()).as_str());
@@ -322,17 +326,7 @@ impl<T: Evaluator> Search<T> {
         if depthleft == 0
             || !self.check_running()
             || self.limits_exceeded()
-            || start.elapsed().as_millis() >= self.limits.movetime.unwrap_or(u128::MAX).into()
-            || ([
-                self.limits.white_time,
-                self.limits.white_increment,
-                self.limits.black_time,
-                self.limits.black_increment,
-            ]
-            .iter()
-            .any(|x| x.is_some())
-                && start.elapsed().as_millis()
-                    >= self.limits.time_management_timer.unwrap_or(u128::MAX))
+            || self.time_limits_exceeded(start)
         {
             return self.evaluator.evaluate(&mut self.board);
         }
