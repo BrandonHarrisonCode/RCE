@@ -83,6 +83,7 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// assert_eq!(board.castle_status(CastlingKind::WhiteKingsid), Castling::Availiable);
     /// ```
+    #[allow(clippy::missing_const_for_fn)]
     pub fn castle_status(&self, kind: CastlingKind) -> CastlingStatus {
         match kind {
             CastlingKind::WhiteKingside => {
@@ -191,7 +192,7 @@ impl Board {
     /// board.switch_turn();
     /// assert_eq!(Color::White, board.current_turn);
     /// ```
-    pub fn switch_turn(&mut self) {
+    pub const fn switch_turn(&mut self) {
         self.current_turn = self.current_turn.opposite();
     }
 
@@ -296,6 +297,7 @@ impl Board {
     ///
     /// let attacked_squares = board.get_attacked_squares(Color::White);
     /// ```
+    #[allow(clippy::literal_string_with_formatting_args)]
     fn get_attacked_squares(&self, color: Color) -> Bitboard {
         let attacking_pieces = match color {
             Color::White => self.bitboards.black_pieces,
@@ -325,6 +327,7 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// assert_eq!(0, board.get_halfmove_clock());
     /// ```
+    #[allow(clippy::missing_const_for_fn)]
     pub fn get_halfmove_clock(&self) -> u16 {
         self.history
             .last()
@@ -590,7 +593,7 @@ impl Board {
                     new_move.castling_rights.black_queenside = CastlingStatus::Unavailiable;
                 }
                 _ => panic!("Invalid castling king destination {}", new_move.dest),
-            };
+            }
         } else if matches!(self.get_piece(new_move.dest), Some(Kind::King(_))) {
             match self.current_turn {
                 Color::White => {

@@ -300,7 +300,7 @@ impl Bitboard {
     }
 
     /// Finds the index of the least significant bit and set it to 0
-    pub fn drop_forward(&mut self) -> u32 {
+    pub const fn drop_forward(&mut self) -> u32 {
         let idx = self.bitscan_forward();
         self.0 &= self.0 - 1;
         idx

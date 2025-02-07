@@ -125,7 +125,7 @@ impl Builder {
     /// let builder = Builder::default();
     /// builder.add_piece(Square("a4"), Kind::Rook(Color::White))
     /// ```
-    pub fn add_piece(&mut self, square: Square, kind: PieceKind) {
+    pub const fn add_piece(&mut self, square: Square, kind: PieceKind) {
         let mask = square.get_mask();
 
         match kind {

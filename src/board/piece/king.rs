@@ -85,9 +85,9 @@ impl Precomputed for King {
         let mut attacks = [Bitboard::new(0); 64];
         for (idx, attacks_at_square) in attacks.iter_mut().enumerate() {
             let origin = Bitboard::new(1 << idx);
-            *attacks_at_square = ((origin << 7 | origin >> 1 | origin >> 9) & !(File::H as u64)) | // Left by 1 square
-            ((origin << 9 | origin << 1 | origin >> 7) & !(File::A as u64)) | // Right by 1 square
-            (origin << 8 | origin >> 8); // Up or down by 1
+            *attacks_at_square = (((origin << 7) | (origin >> 1) | (origin >> 9)) & !(File::H as u64)) | // Left by 1 square
+            (((origin << 9) | (origin << 1) | (origin >> 7)) & !(File::A as u64)) | // Right by 1 square
+            ((origin << 8) | (origin >> 8)); // Up or down by 1
         }
 
         attacks

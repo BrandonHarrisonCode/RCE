@@ -36,61 +36,65 @@ impl Builder {
     }
 
     #[allow(dead_code)]
-    pub fn start(&mut self, start: Square) -> &mut Self {
+    pub const fn start(&mut self, start: Square) -> &mut Self {
         self.start = start;
         self
     }
 
     #[allow(dead_code)]
-    pub fn dest(&mut self, dest: Square) -> &mut Self {
+    pub const fn dest(&mut self, dest: Square) -> &mut Self {
         self.dest = dest;
         self
     }
 
     #[allow(dead_code)]
-    pub fn captured(&mut self, captured_piece: Kind) -> &mut Self {
+    pub const fn captured(&mut self, captured_piece: Kind) -> &mut Self {
         self.captured_piece = Some(captured_piece);
         self
     }
 
     #[allow(dead_code)]
-    pub fn promoted_to(&mut self, promoted_to: Kind) -> &mut Self {
+    pub const fn promoted_to(&mut self, promoted_to: Kind) -> &mut Self {
         self.promoted_to = Some(promoted_to);
         self
     }
 
     #[allow(dead_code)]
-    pub fn castles(&mut self, is_castles: bool) -> &mut Self {
+    pub const fn castles(&mut self, is_castles: bool) -> &mut Self {
         self.castles = is_castles;
         self
     }
 
     #[allow(dead_code)]
-    pub fn en_passant(&mut self, is_en_passant: bool) -> &mut Self {
+    pub const fn en_passant(&mut self, is_en_passant: bool) -> &mut Self {
         self.en_passant = is_en_passant;
         self
     }
 
     #[allow(dead_code)]
-    pub fn double_pawn_push(&mut self, is_double_pawn_push: bool) -> &mut Self {
+    pub const fn double_pawn_push(&mut self, is_double_pawn_push: bool) -> &mut Self {
         self.double_pawn_push = is_double_pawn_push;
         self
     }
 
     #[allow(dead_code)]
-    pub fn halfmove_clock(&mut self, halfmove_clock: u16) -> &mut Self {
+    pub const fn halfmove_clock(&mut self, halfmove_clock: u16) -> &mut Self {
         self.halfmove_clock = halfmove_clock;
         self
     }
 
     #[allow(dead_code)]
-    pub fn castling_rights(&mut self, rights: CastlingRights) -> &mut Self {
+    pub const fn castling_rights(&mut self, rights: CastlingRights) -> &mut Self {
         self.castling_rights = rights;
         self
     }
 
     #[allow(dead_code)]
-    pub fn castling_status(&mut self, kind: CastlingKind, status: CastlingStatus) -> &mut Self {
+    pub const fn castling_status(
+        &mut self,
+        kind: CastlingKind,
+        status: CastlingStatus,
+    ) -> &mut Self {
         match kind {
             CastlingKind::WhiteKingside => self.castling_rights.white_kingside = status,
             CastlingKind::WhiteQueenside => self.castling_rights.white_queenside = status,

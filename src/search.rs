@@ -6,7 +6,6 @@ use logger::Logger;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
-use std::{u128, usize};
 
 pub mod limits;
 mod logger;
@@ -68,7 +67,7 @@ impl<T: Evaluator> Search<T> {
         let score = match best_value {
             i64::MIN | NEGMAX => String::from("mate -1"),
             i64::MAX => String::from("mate 1"),
-            _ => format!("cp {}", best_value),
+            _ => format!("cp {best_value}"),
         };
         self.log(
             format!("info depth {depth} time {time_elapsed_in_ms} score {score} pv {best_ply}")
@@ -181,7 +180,7 @@ impl<T: Evaluator> Search<T> {
     pub fn time_limits_exceeded(&self, start: Instant) -> bool {
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(u128::MAX).into()
+        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(u128::MAX)
             || ([
                 self.limits.white_time,
                 self.limits.white_increment,
@@ -189,7 +188,7 @@ impl<T: Evaluator> Search<T> {
                 self.limits.black_increment,
             ]
             .iter()
-            .any(|x| x.is_some())
+            .any(Option::is_some)
                 && time_elapsed_in_ms >= self.limits.time_management_timer.unwrap_or(u128::MAX))
     }
 

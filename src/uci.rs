@@ -152,7 +152,7 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
                 limits = limits.depth(None);
             }
             _ => return Err("Invalid go command!".to_string()),
-        };
+        }
 
         idx += 1;
     }

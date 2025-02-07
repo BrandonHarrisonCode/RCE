@@ -93,7 +93,7 @@ impl BoardBuilder {
             .expect("History could not be written to")
     }
 
-    pub fn clear(mut self) -> Self {
+    pub const fn clear(mut self) -> Self {
         self.bitboards = piece_bitboards::builder::Builder::new();
         self
     }
@@ -180,7 +180,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().piece(Square::from("a1"), PieceKind::WhiteKing);
     /// ```
     #[allow(dead_code)]
-    pub fn piece(mut self, square: Square, kind: PieceKind) -> Self {
+    pub const fn piece(mut self, square: Square, kind: PieceKind) -> Self {
         self.bitboards.add_piece(square, kind);
         self
     }

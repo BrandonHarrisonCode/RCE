@@ -33,10 +33,10 @@ impl Precomputed for Knight {
         let mut attacks = [Bitboard::new(0); 64];
         for (idx, attacks_at_square) in attacks.iter_mut().enumerate() {
             let origin = Bitboard::new(1 << idx);
-            *attacks_at_square = ((origin << 15 | origin >> 17) & !(File::H as u64)) // Left by 1 square, up or down by 2
-                | ((origin << 17 | origin >> 15) & !(File::A as u64)) // Right by 1 square, up or down by 2
-                | ((origin << 10 | origin >> 6) & !(File::A as u64 | File::B as u64 )) // Right by 2 squares, up or down by 1
-                | ((origin << 6 | origin >> 10) & !(File::G as u64 | File::H as u64));
+            *attacks_at_square = (((origin << 15) | (origin >> 17)) & !(File::H as u64)) // Left by 1 square, up or down by 2
+                | (((origin << 17) | (origin >> 15)) & !(File::A as u64)) // Right by 1 square, up or down by 2
+                | (((origin << 10) | (origin >> 6)) & !(File::A as u64 | File::B as u64 )) // Right by 2 squares, up or down by 1
+                | (((origin << 6) | (origin >> 10)) & !(File::G as u64 | File::H as u64));
             // Left by 2 squares, up or down by 1
         }
 
