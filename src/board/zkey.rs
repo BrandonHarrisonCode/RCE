@@ -11,7 +11,7 @@ use super::Board;
 
 const SEED: u64 = 0xBEEF_CAFE;
 
-/// A Zobrist hash table with random numbers for each entry.
+/// A Zobrist hash table with random numbers for unique identities.
 pub struct ZTable {
     pieces: [[[u64; 64]; 6]; 2], // 64 squares, 6 pieces, 2 colors
     castling: [u64; 4],
@@ -190,5 +190,39 @@ mod tests {
             true,
             "Duplicate hash in ZTable!"
         );
+    }
+
+    #[test]
+    fn test_ztable_new() {
+        let table = ZTable::new();
+
+        for square in 0..64usize {
+            for piece in 0..6usize {
+                assert_eq!(table.pieces[Color::White as usize][piece][square], 0);
+                assert_eq!(table.pieces[Color::Black as usize][piece][square], 0);
+            }
+        }
+
+        for i in 0..4usize {
+            assert_eq!(table.castling[i], 0);
+        }
+
+        for i in 0..8usize {
+            assert_eq!(table.en_passant[i], 0);
+        }
+
+        assert_eq!(table.white_turn, 0);
+    }
+
+    #[test]
+    fn test_zkey_new() {
+        let zkey = ZKey::new();
+
+        assert_eq!(zkey.key, 0);
+        assert_eq!(zkey.white_kingside, CastlingStatus::Unavailiable);
+        assert_eq!(zkey.white_queenside, CastlingStatus::Unavailiable);
+        assert_eq!(zkey.black_kingside, CastlingStatus::Unavailiable);
+        assert_eq!(zkey.black_queenside, CastlingStatus::Unavailiable);
+        assert!(zkey.en_passant.is_none());
     }
 }
