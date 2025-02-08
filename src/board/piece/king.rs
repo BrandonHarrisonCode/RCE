@@ -29,7 +29,7 @@ impl Piece for King {
             if board
                 .castling_ability(CastlingKind::WhiteKingside)
                 .expect("Tried to castle for the wrong side!")
-                == CastlingStatus::Availiable
+                == CastlingStatus::Available
             {
                 moveset.push(
                     Ply::builder(square, Square::from("g1"))
@@ -40,7 +40,7 @@ impl Piece for King {
             if board
                 .castling_ability(CastlingKind::WhiteQueenside)
                 .expect("Tried to castle for the wrong side!")
-                == CastlingStatus::Availiable
+                == CastlingStatus::Available
             {
                 moveset.push(
                     Ply::builder(square, Square::from("c1"))
@@ -54,7 +54,7 @@ impl Piece for King {
             if board
                 .castling_ability(CastlingKind::BlackKingside)
                 .expect("Tried to castle for the wrong side!")
-                == CastlingStatus::Availiable
+                == CastlingStatus::Available
             {
                 moveset.push(
                     Ply::builder(square, Square::from("g8"))
@@ -65,7 +65,7 @@ impl Piece for King {
             if board
                 .castling_ability(CastlingKind::BlackQueenside)
                 .expect("Tried to castle for the wrong side!")
-                == CastlingStatus::Availiable
+                == CastlingStatus::Available
             {
                 moveset.push(
                     Ply::builder(square, Square::from("c8"))

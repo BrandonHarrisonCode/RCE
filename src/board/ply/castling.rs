@@ -2,8 +2,8 @@
 #[allow(clippy::module_name_repetitions)]
 pub enum CastlingStatus {
     #[default]
-    Availiable,
-    Unavailiable,
+    Available,
+    Unavailable,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -13,6 +13,17 @@ pub enum CastlingKind {
     WhiteQueenside,
     BlackKingside,
     BlackQueenside,
+}
+
+impl From<CastlingKind> for usize {
+    fn from(kind: CastlingKind) -> usize {
+        match kind {
+            CastlingKind::WhiteKingside => 0,
+            CastlingKind::WhiteQueenside => 1,
+            CastlingKind::BlackKingside => 2,
+            CastlingKind::BlackQueenside => 3,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -27,10 +38,10 @@ pub struct CastlingRights {
 impl Default for CastlingRights {
     fn default() -> Self {
         Self {
-            white_kingside: CastlingStatus::Availiable,
-            white_queenside: CastlingStatus::Availiable,
-            black_kingside: CastlingStatus::Availiable,
-            black_queenside: CastlingStatus::Availiable,
+            white_kingside: CastlingStatus::Available,
+            white_queenside: CastlingStatus::Available,
+            black_kingside: CastlingStatus::Available,
+            black_queenside: CastlingStatus::Available,
         }
     }
 }
@@ -38,10 +49,10 @@ impl Default for CastlingRights {
 impl CastlingRights {
     pub const fn new() -> Self {
         Self {
-            white_kingside: CastlingStatus::Availiable,
-            white_queenside: CastlingStatus::Availiable,
-            black_kingside: CastlingStatus::Availiable,
-            black_queenside: CastlingStatus::Availiable,
+            white_kingside: CastlingStatus::Available,
+            white_queenside: CastlingStatus::Available,
+            black_kingside: CastlingStatus::Available,
+            black_queenside: CastlingStatus::Available,
         }
     }
 }

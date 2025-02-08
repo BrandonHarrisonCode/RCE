@@ -74,17 +74,17 @@ fn current_turn(builder: BoardBuilder, str: &str) -> BoardBuilder {
 
 fn castling_rights(mut builder: BoardBuilder, str: &str) -> BoardBuilder {
     builder = builder
-        .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
-        .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
-        .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
-        .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable);
+        .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailable)
+        .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailable)
+        .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailable)
+        .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailable);
 
     for chr in str.chars() {
         builder = match chr {
-            'K' => builder.castling(CastlingKind::WhiteKingside, CastlingStatus::Availiable),
-            'k' => builder.castling(CastlingKind::BlackKingside, CastlingStatus::Availiable),
-            'Q' => builder.castling(CastlingKind::WhiteQueenside, CastlingStatus::Availiable),
-            'q' => builder.castling(CastlingKind::BlackQueenside, CastlingStatus::Availiable),
+            'K' => builder.castling(CastlingKind::WhiteKingside, CastlingStatus::Available),
+            'k' => builder.castling(CastlingKind::BlackKingside, CastlingStatus::Available),
+            'Q' => builder.castling(CastlingKind::WhiteQueenside, CastlingStatus::Available),
+            'q' => builder.castling(CastlingKind::BlackQueenside, CastlingStatus::Available),
             '-' => builder,
             _ => panic!("Unknown FEN castling notation: {chr}"),
         };
@@ -195,10 +195,10 @@ mod tests {
             .bishops(Color::Black, 0)
             .knights(Color::White, 17179869184)
             .knights(Color::Black, 32)
-            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
-            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
-            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
-            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailable)
+            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailable)
+            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailable)
+            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailable)
             .build();
 
         assert_eq!(Board::from_fen(fen), correct);
@@ -223,10 +223,10 @@ mod tests {
             .bishops(Color::Black, 2305843009213693952)
             .knights(Color::White, 2251799813685248)
             .knights(Color::Black, 8830452760576)
-            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
-            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
-            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
-            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailable)
+            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailable)
+            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailable)
+            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailable)
             .build();
 
         let from_fen = Board::from_fen(fen);

@@ -5,8 +5,9 @@ use rand_chacha::ChaCha8Rng;
 
 use crate::board::Color;
 
-use super::bitboard::File;
+use super::ply::castling::CastlingKind;
 use super::ply::castling::CastlingStatus;
+use super::square::Square;
 use super::Board;
 
 const SEED: u64 = 0xBEEF_CAFE;
@@ -89,7 +90,7 @@ pub struct ZKey {
     white_queenside: CastlingStatus,
     black_kingside: CastlingStatus,
     black_queenside: CastlingStatus,
-    en_passant: Option<File>,
+    en_passant: Option<u8>,
 }
 
 impl From<Board> for ZKey {
@@ -112,7 +113,46 @@ impl From<Board> for ZKey {
     /// let zkey = ZKey::from(board);
     /// ```
     fn from(board: Board) -> Self {
-        unimplemented!()
+        let mut key = ZKey::new();
+
+        for square in 0..64u8 {
+            if let Some(piece) = board.get_piece(Square::from(square)) {
+                key.key ^= TABLE.get_or_init(ZTable::init).pieces[usize::from(piece.get_color())]
+                    [usize::from(piece)][usize::from(square)];
+            }
+        }
+
+        if board.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
+            key.key ^=
+                TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::WhiteKingside)];
+            key.white_kingside = CastlingStatus::Available;
+        }
+        if board.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
+            key.key ^=
+                TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::WhiteQueenside)];
+            key.white_queenside = CastlingStatus::Available;
+        }
+        if board.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
+            key.key ^=
+                TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::BlackKingside)];
+            key.black_kingside = CastlingStatus::Available;
+        }
+        if board.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
+            key.key ^=
+                TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::BlackQueenside)];
+            key.black_queenside = CastlingStatus::Available;
+        }
+
+        if let Some(file) = board.en_passant_file {
+            key.key ^= TABLE.get_or_init(ZTable::init).en_passant[usize::from(file)];
+            key.en_passant = Some(file);
+        }
+
+        if board.current_turn == Color::White {
+            key.key ^= TABLE.get_or_init(ZTable::init).white_turn;
+        }
+
+        key
     }
 }
 
@@ -132,10 +172,10 @@ impl ZKey {
     pub const fn new() -> ZKey {
         ZKey {
             key: 0,
-            white_kingside: CastlingStatus::Unavailiable,
-            white_queenside: CastlingStatus::Unavailiable,
-            black_kingside: CastlingStatus::Unavailiable,
-            black_queenside: CastlingStatus::Unavailiable,
+            white_kingside: CastlingStatus::Unavailable,
+            white_queenside: CastlingStatus::Unavailable,
+            black_kingside: CastlingStatus::Unavailable,
+            black_queenside: CastlingStatus::Unavailable,
             en_passant: None,
         }
     }
@@ -219,10 +259,23 @@ mod tests {
         let zkey = ZKey::new();
 
         assert_eq!(zkey.key, 0);
-        assert_eq!(zkey.white_kingside, CastlingStatus::Unavailiable);
-        assert_eq!(zkey.white_queenside, CastlingStatus::Unavailiable);
-        assert_eq!(zkey.black_kingside, CastlingStatus::Unavailiable);
-        assert_eq!(zkey.black_queenside, CastlingStatus::Unavailiable);
+        assert_eq!(zkey.white_kingside, CastlingStatus::Unavailable);
+        assert_eq!(zkey.white_queenside, CastlingStatus::Unavailable);
+        assert_eq!(zkey.black_kingside, CastlingStatus::Unavailable);
+        assert_eq!(zkey.black_queenside, CastlingStatus::Unavailable);
+        assert!(zkey.en_passant.is_none());
+    }
+
+    #[test]
+    fn test_zkey_from_board_startpos() {
+        let zkey = ZKey::from(Board::default());
+        const START_POS_KEY: u64 = 8891004743231992090; // Current start position Zobrist key using the random seed
+
+        assert_eq!(zkey.key, START_POS_KEY);
+        assert_eq!(zkey.white_kingside, CastlingStatus::Available);
+        assert_eq!(zkey.white_queenside, CastlingStatus::Available);
+        assert_eq!(zkey.black_kingside, CastlingStatus::Available);
+        assert_eq!(zkey.black_queenside, CastlingStatus::Available);
         assert!(zkey.en_passant.is_none());
     }
 }

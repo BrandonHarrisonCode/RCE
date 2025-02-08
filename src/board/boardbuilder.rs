@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn board_builder_white_kingside_castling() {
         let board = BoardBuilder::default()
-            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteKingside, CastlingStatus::Unavailable)
             .build();
 
         assert_eq!(
@@ -506,14 +506,14 @@ mod tests {
                 .expect("No history")
                 .castling_rights
                 .white_kingside,
-            CastlingStatus::Unavailiable
+            CastlingStatus::Unavailable
         )
     }
 
     #[test]
     fn board_builder_black_kingside_castling() {
         let board = BoardBuilder::default()
-            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailable)
             .build();
 
         assert_eq!(
@@ -523,14 +523,14 @@ mod tests {
                 .expect("No history")
                 .castling_rights
                 .black_kingside,
-            CastlingStatus::Unavailiable
+            CastlingStatus::Unavailable
         )
     }
 
     #[test]
     fn board_builder_white_queenside_castling() {
         let board = BoardBuilder::default()
-            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailable)
             .build();
 
         assert_eq!(
@@ -540,14 +540,14 @@ mod tests {
                 .expect("No history")
                 .castling_rights
                 .white_queenside,
-            CastlingStatus::Unavailiable
+            CastlingStatus::Unavailable
         )
     }
 
     #[test]
     fn board_builder_black_queenside_castling() {
         let board = BoardBuilder::default()
-            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailiable)
+            .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailable)
             .build();
 
         assert_eq!(
@@ -557,7 +557,7 @@ mod tests {
                 .expect("No history")
                 .castling_rights
                 .black_queenside,
-            CastlingStatus::Unavailiable
+            CastlingStatus::Unavailable
         )
     }
 

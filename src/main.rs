@@ -18,5 +18,6 @@ mod uci;
 mod utils;
 
 fn main() {
+    board::zkey::ZTable::init();
     uci::start();
 }

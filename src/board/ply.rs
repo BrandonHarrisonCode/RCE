@@ -51,10 +51,10 @@ impl Default for Ply {
 
             halfmove_clock: 0,
             castling_rights: CastlingRights {
-                white_kingside: CastlingStatus::Availiable,
-                white_queenside: CastlingStatus::Availiable,
-                black_kingside: CastlingStatus::Availiable,
-                black_queenside: CastlingStatus::Availiable,
+                white_kingside: CastlingStatus::Available,
+                white_queenside: CastlingStatus::Available,
+                black_kingside: CastlingStatus::Available,
+                black_queenside: CastlingStatus::Available,
             },
         }
     }
@@ -74,10 +74,10 @@ impl Ply {
 
             halfmove_clock: 0,
             castling_rights: CastlingRights {
-                white_kingside: CastlingStatus::Availiable,
-                white_queenside: CastlingStatus::Availiable,
-                black_kingside: CastlingStatus::Availiable,
-                black_queenside: CastlingStatus::Availiable,
+                white_kingside: CastlingStatus::Available,
+                white_queenside: CastlingStatus::Available,
+                black_kingside: CastlingStatus::Available,
+                black_queenside: CastlingStatus::Available,
             },
         }
     }

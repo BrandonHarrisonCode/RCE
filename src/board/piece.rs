@@ -27,6 +27,15 @@ pub enum Color {
     Black,
 }
 
+impl From<Color> for usize {
+    fn from(color: Color) -> usize {
+        match color {
+            Color::White => 0,
+            Color::Black => 1,
+        }
+    }
+}
+
 impl Color {
     pub const fn default() -> Self {
         Self::White
@@ -48,6 +57,19 @@ pub enum Kind {
     Rook(Color),
     Bishop(Color),
     Knight(Color),
+}
+
+impl From<Kind> for usize {
+    fn from(kind: Kind) -> usize {
+        match kind {
+            Kind::Pawn(_) => 0,
+            Kind::King(_) => 1,
+            Kind::Queen(_) => 2,
+            Kind::Rook(_) => 3,
+            Kind::Bishop(_) => 4,
+            Kind::Knight(_) => 5,
+        }
+    }
 }
 
 impl Eq for Kind {}
