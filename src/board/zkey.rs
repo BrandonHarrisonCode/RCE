@@ -84,6 +84,7 @@ impl ZTable {
 }
 
 /// A Zobrist key for a board position.
+#[derive(Debug, Clone, Copy)]
 pub struct ZKey {
     key: u64,
     white_kingside: CastlingStatus,
@@ -155,6 +156,14 @@ impl From<Board> for ZKey {
         key
     }
 }
+
+impl PartialEq for ZKey {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+    }
+}
+
+impl Eq for ZKey {}
 
 impl ZKey {
     /// Creates a new Zobrist key.
@@ -277,5 +286,33 @@ mod tests {
         assert_eq!(zkey.black_kingside, CastlingStatus::Available);
         assert_eq!(zkey.black_queenside, CastlingStatus::Available);
         assert!(zkey.en_passant.is_none());
+    }
+
+    #[test]
+    fn test_zkey_eq_empty() {
+        let zkey = ZKey::new();
+        let other = ZKey::new();
+
+        assert_eq!(zkey, other);
+    }
+
+    #[test]
+    fn test_zkey_eq_check_key_only() {
+        let zkey = ZKey {
+            key: 123,
+            ..ZKey::new()
+        };
+        let same = ZKey {
+            key: 123,
+            white_kingside: CastlingStatus::Available,
+            ..ZKey::new()
+        };
+        let different = ZKey {
+            key: 321,
+            ..ZKey::new()
+        };
+
+        assert_eq!(zkey, same);
+        assert_ne!(zkey, different);
     }
 }
