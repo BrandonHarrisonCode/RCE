@@ -6,6 +6,7 @@ mod piece_bitboards;
 pub mod ply;
 pub mod serialize;
 pub mod square;
+pub mod zkey;
 
 use bitboard::Bitboard;
 #[allow(clippy::module_name_repetitions)]
@@ -81,7 +82,7 @@ impl Board {
     /// # Examples
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
-    /// assert_eq!(board.castle_status(CastlingKind::WhiteKingsid), Castling::Availiable);
+    /// assert_eq!(board.castle_status(CastlingKind::WhiteKingside), Castling::Availiable);
     /// ```
     #[allow(clippy::missing_const_for_fn)]
     pub fn castle_status(&self, kind: CastlingKind) -> CastlingStatus {
