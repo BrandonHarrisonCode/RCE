@@ -289,6 +289,20 @@ mod tests {
     }
 
     #[test]
+    fn test_zkey_different_fen_different_hash() {
+        let zkey0 = ZKey::from(Board::from_fen(
+            "2rq1rk1/1b2bp2/p3pn1Q/1p2N3/3P4/2NB4/PP3PPP/R5K1 w - - 1 20",
+        ));
+        let zkey1 = ZKey::from(Board::from_fen(
+            "rnbq1rk1/1p2bppp/p3pn2/4N3/3P4/2NB4/PP3PPP/R1BQK2R b KQ - 1 10",
+        ));
+
+        assert_ne!(zkey0.key, 0);
+        assert_ne!(zkey1.key, 0);
+        assert_ne!(zkey0, zkey1);
+    }
+
+    #[test]
     fn test_zkey_eq_empty() {
         let zkey = ZKey::new();
         let other = ZKey::new();
