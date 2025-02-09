@@ -1,3 +1,4 @@
+use std::hash::Hash;
 use std::sync::OnceLock;
 
 use rand_chacha::rand_core::{RngCore, SeedableRng};
@@ -35,8 +36,8 @@ impl ZTable {
     ///
     /// let table = ZTable::new();
     /// ```
-    pub fn new() -> ZTable {
-        ZTable {
+    pub const fn new() -> Self {
+        Self {
             pieces: [[[0; 64]; 6]; 2],
             castling: [0; 4],
             en_passant: [0; 8],
@@ -56,9 +57,9 @@ impl ZTable {
     ///
     /// let table = ZTable::init();
     /// ```
-    pub fn init() -> ZTable {
+    pub fn init() -> Self {
         assert!(TABLE.get().is_none());
-        let mut table = ZTable::new();
+        let mut table = Self::new();
 
         let mut rng = ChaCha8Rng::seed_from_u64(SEED);
 
@@ -94,6 +95,14 @@ pub struct ZKey {
     en_passant: Option<u8>,
 }
 
+impl Hash for ZKey {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        state.write_u64(self.key);
+    }
+}
+
+impl nohash_hasher::IsEnabled for ZKey {}
+
 impl From<Board> for ZKey {
     /// Converts a board position to a Zobrist key.
     ///
@@ -114,7 +123,7 @@ impl From<Board> for ZKey {
     /// let zkey = ZKey::from(board);
     /// ```
     fn from(board: Board) -> Self {
-        let mut key = ZKey::new();
+        let mut key = Self::new();
 
         for square in 0..64u8 {
             if let Some(piece) = board.get_piece(Square::from(square)) {
@@ -157,6 +166,7 @@ impl From<Board> for ZKey {
     }
 }
 
+/// Compares two Zobrist keys for equality, only considering the final key value.
 impl PartialEq for ZKey {
     fn eq(&self, other: &Self) -> bool {
         self.key == other.key
@@ -178,8 +188,8 @@ impl ZKey {
     ///
     /// let zkey = ZKey::new();
     /// ```
-    pub const fn new() -> ZKey {
-        ZKey {
+    pub const fn new() -> Self {
+        Self {
             key: 0,
             white_kingside: CastlingStatus::Unavailable,
             white_queenside: CastlingStatus::Unavailable,

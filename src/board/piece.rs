@@ -28,7 +28,7 @@ pub enum Color {
 }
 
 impl From<Color> for usize {
-    fn from(color: Color) -> usize {
+    fn from(color: Color) -> Self {
         match color {
             Color::White => 0,
             Color::Black => 1,
@@ -60,7 +60,7 @@ pub enum Kind {
 }
 
 impl From<Kind> for usize {
-    fn from(kind: Kind) -> usize {
+    fn from(kind: Kind) -> Self {
         match kind {
             Kind::Pawn(_) => 0,
             Kind::King(_) => 1,

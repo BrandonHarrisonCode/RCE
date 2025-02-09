@@ -16,7 +16,7 @@ pub enum CastlingKind {
 }
 
 impl From<CastlingKind> for usize {
-    fn from(kind: CastlingKind) -> usize {
+    fn from(kind: CastlingKind) -> Self {
         match kind {
             CastlingKind::WhiteKingside => 0,
             CastlingKind::WhiteQueenside => 1,
