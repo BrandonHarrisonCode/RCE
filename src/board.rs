@@ -6,6 +6,7 @@ mod piece_bitboards;
 pub mod ply;
 pub mod serialize;
 pub mod square;
+pub mod transposition_table;
 pub mod zkey;
 
 use bitboard::Bitboard;
