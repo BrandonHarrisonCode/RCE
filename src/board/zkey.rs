@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_ztable_unique() {
-        let table = ZTable::init();
+        let table = TABLE.get_or_init(ZTable::init);
         let mut map = HashSet::new();
 
         for square in 0..64usize {

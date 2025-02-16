@@ -7,23 +7,26 @@ use super::{zkey::ZKey, Ply};
 extern crate nohash_hasher;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+#[allow(dead_code)]
 enum Bounds {
-    EXACT,
-    LOWER,
-    UPPER,
+    Exact,
+    Lower,
+    Upper,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-struct TTEntry {
+pub struct TTEntry {
     score: i64,
     depth: u16,
     bound: Bounds,
     bestmove: Ply,
 }
 
-/// A hashmap that does no hashing to the ZKey.
+/// A hashmap that does no hashing to the `ZKey`.
+#[allow(dead_code)]
 pub type TranspositionTable = IntMap<ZKey, TTEntry>;
 
+#[allow(dead_code)]
 static TABLE: OnceLock<TranspositionTable> = OnceLock::new();
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -40,7 +43,7 @@ mod tests {
         let entry = TTEntry {
             score: 1,
             depth: 2,
-            bound: Bounds::EXACT,
+            bound: Bounds::Exact,
             bestmove: Ply::default(),
         };
 
@@ -57,13 +60,13 @@ mod tests {
         let entry0 = TTEntry {
             score: 1,
             depth: 2,
-            bound: Bounds::EXACT,
+            bound: Bounds::Exact,
             bestmove: Ply::default(),
         };
         let entry1 = TTEntry {
             score: 3,
             depth: 4,
-            bound: Bounds::LOWER,
+            bound: Bounds::Lower,
             bestmove: Ply::default(),
         };
 
