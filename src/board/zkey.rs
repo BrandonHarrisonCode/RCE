@@ -103,7 +103,7 @@ impl Hash for ZKey {
 
 impl nohash_hasher::IsEnabled for ZKey {}
 
-impl From<Board> for ZKey {
+impl From<&Board> for ZKey {
     /// Converts a board position to a Zobrist key.
     ///
     /// # Arguments
@@ -122,7 +122,7 @@ impl From<Board> for ZKey {
     /// let board = Board::start_pos();
     /// let zkey = ZKey::from(board);
     /// ```
-    fn from(board: Board) -> Self {
+    fn from(board: &Board) -> Self {
         let mut key = Self::new();
 
         for square in 0..64u8 {
@@ -287,7 +287,7 @@ mod tests {
 
     #[test]
     fn test_zkey_from_board_startpos() {
-        let zkey = ZKey::from(Board::default());
+        let zkey = ZKey::from(&Board::default());
         const START_POS_KEY: u64 = 8891004743231992090; // Current start position Zobrist key using the random seed
 
         assert_eq!(zkey.key, START_POS_KEY);
@@ -300,10 +300,10 @@ mod tests {
 
     #[test]
     fn test_zkey_different_fen_different_hash() {
-        let zkey0 = ZKey::from(Board::from_fen(
+        let zkey0 = ZKey::from(&Board::from_fen(
             "2rq1rk1/1b2bp2/p3pn1Q/1p2N3/3P4/2NB4/PP3PPP/R5K1 w - - 1 20",
         ));
-        let zkey1 = ZKey::from(Board::from_fen(
+        let zkey1 = ZKey::from(&Board::from_fen(
             "rnbq1rk1/1p2bppp/p3pn2/4N3/3P4/2NB4/PP3PPP/R1BQK2R b KQ - 1 10",
         ));
 

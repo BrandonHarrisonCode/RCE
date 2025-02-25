@@ -1,5 +1,7 @@
 use crate::board::piece::Color;
+use crate::board::transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE};
 
+use super::board::zkey::ZKey;
 use super::board::{Board, Ply};
 use super::evaluate::Evaluator;
 use logger::Logger;
@@ -299,6 +301,21 @@ impl<T: Evaluator> Search<T> {
         let time_elapsed_in_ms = duration.as_millis();
         self.log_uci_info(depth, time_elapsed_in_ms, best_value, best_ply);
 
+        TRANSPOSITION_TABLE
+            .write()
+            .expect("Transposition table is poisoned! Unable to write new entry.")
+            .insert(
+                ZKey::from(&self.board),
+                TTEntry {
+                    score: best_value,
+                    depth: depth as u16,
+                    bound: Bounds::Exact,
+                    bestmove: best_ply,
+                },
+            );
+
+        println!("Transposition table: {:?}", TRANSPOSITION_TABLE);
+
         best_ply
     }
 
@@ -321,13 +338,42 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let score = search.alpha_beta(i64::MIN, i64::MAX, 3);
     /// ```
-    fn alpha_beta(&mut self, mut alpha: i64, beta: i64, depthleft: usize, start: Instant) -> i64 {
+    fn alpha_beta(
+        &mut self,
+        alpha_start: i64,
+        beta_start: i64,
+        depthleft: usize,
+        start: Instant,
+    ) -> i64 {
         if depthleft == 0
             || !self.check_running()
             || self.limits_exceeded()
             || self.time_limits_exceeded(start)
         {
             return self.evaluator.evaluate(&mut self.board);
+        }
+
+        let zkey = ZKey::from(&self.board);
+        let mut alpha = alpha_start;
+        let mut beta = beta_start;
+
+        // Check if we have more information in the TTable than we have already reached in this search
+        if let Some(entry) = TRANSPOSITION_TABLE
+            .read()
+            .expect("Transposition table is poisoned! Unable to read entry.")
+            .get(&zkey)
+        {
+            if entry.depth >= depthleft as u16 {
+                match entry.bound {
+                    Bounds::Exact => return entry.score,
+                    Bounds::Lower => alpha = alpha.max(entry.score),
+                    Bounds::Upper => beta = beta.min(entry.score),
+                }
+
+                if alpha >= beta {
+                    return entry.score;
+                }
+            }
         }
 
         let moves = self.board.get_legal_moves();
@@ -338,6 +384,8 @@ impl<T: Evaluator> Search<T> {
             return 0; // Stalemate
         }
 
+        // TODO: put moves into a MoveOrdering struct and pull next move from that instead
+        let mut bestmove = moves[0];
         for mv in moves {
             self.board.make_move(mv);
             let score = self
@@ -350,13 +398,46 @@ impl<T: Evaluator> Search<T> {
                 .saturating_neg();
             self.board.unmake_move();
 
+            // Move is too good, opponent will not allow the game to reach this position
             if score >= beta {
+                TRANSPOSITION_TABLE
+                    .write()
+                    .expect("Transposition table is poisoned! Unable to write new entry.")
+                    .insert(
+                        ZKey::from(&self.board),
+                        TTEntry {
+                            score,
+                            depth: depthleft as u16,
+                            bound: Bounds::Lower,
+                            bestmove: mv,
+                        },
+                    );
                 return beta;
             }
+
+            // New best move
             if score > alpha {
                 alpha = score;
+                bestmove = mv;
             }
         }
+
+        TRANSPOSITION_TABLE
+            .write()
+            .expect("Transposition table is poisoned! Unable to write new entry.")
+            .insert(
+                ZKey::from(&self.board),
+                TTEntry {
+                    score: alpha,
+                    depth: depthleft as u16,
+                    bound: if alpha <= alpha_start {
+                        Bounds::Upper
+                    } else {
+                        Bounds::Exact
+                    },
+                    bestmove: bestmove,
+                },
+            );
 
         alpha
     }

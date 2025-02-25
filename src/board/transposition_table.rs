@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::sync::RwLock;
 
 use nohash_hasher::IntMap;
 
@@ -7,8 +7,7 @@ use super::{zkey::ZKey, Ply};
 extern crate nohash_hasher;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-#[allow(dead_code)]
-enum Bounds {
+pub enum Bounds {
     Exact,
     Lower,
     Upper,
@@ -16,18 +15,18 @@ enum Bounds {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct TTEntry {
-    score: i64,
-    depth: u16,
-    bound: Bounds,
-    bestmove: Ply,
+    pub score: i64,
+    pub depth: u16,
+    pub bound: Bounds,
+    pub bestmove: Ply,
 }
 
 /// A hashmap that does no hashing to the `ZKey`.
-#[allow(dead_code)]
 pub type TranspositionTable = IntMap<ZKey, TTEntry>;
 
-#[allow(dead_code)]
-static TABLE: OnceLock<TranspositionTable> = OnceLock::new();
+pub static TRANSPOSITION_TABLE: RwLock<TranspositionTable> = RwLock::new(
+    TranspositionTable::with_hasher(nohash_hasher::BuildNoHashHasher::new()),
+);
 
 ////////////////////////////////////////////////////////////////////////////////
 
