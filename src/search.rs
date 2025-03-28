@@ -65,7 +65,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
     /// ```
-    fn log_uci_info(&self, depth: usize, time_elapsed_in_ms: u128, best_value: i64, best_ply: Ply) {
+    fn log_uci_info(&self, depth: u16, time_elapsed_in_ms: u128, best_value: i64, best_ply: Ply) {
         let score = match best_value {
             i64::MIN | NEGMAX => String::from("mate -1"),
             i64::MAX => String::from("mate 1"),
@@ -211,7 +211,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let best_move = search.search(Some(3));
     /// ```
-    pub fn search(&mut self, max_depth: Option<usize>) {
+    pub fn search(&mut self, max_depth: Option<u16>) {
         self.iter_deep(max_depth);
     }
 
@@ -229,7 +229,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// search.iter_deep(Some(3));
     /// ```
-    fn iter_deep(&mut self, max_depth: Option<usize>) {
+    fn iter_deep(&mut self, max_depth: Option<u16>) {
         let start = Instant::now();
         // Uses a heuristic to determine the maximum time to spend on a move
         self.limits.time_management_timer = match self.board.current_turn {
@@ -245,7 +245,7 @@ impl<T: Evaluator> Search<T> {
             .into(),
         };
 
-        for depth in 1..max_depth.unwrap_or(usize::MAX) {
+        for depth in 1..max_depth.unwrap_or(u16::MAX) {
             let current_best_move = self.alpha_beta_start(depth, start);
 
             if !self.check_running() {
@@ -278,7 +278,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let best_move = search.alpha_beta_start(3);
     /// ```
-    fn alpha_beta_start(&mut self, depth: usize, start: Instant) -> Ply {
+    fn alpha_beta_start(&mut self, depth: u16, start: Instant) -> Ply {
         let mut best_value = i64::MIN;
         let moves = self.board.get_legal_moves();
 
@@ -308,13 +308,13 @@ impl<T: Evaluator> Search<T> {
                 ZKey::from(&self.board),
                 TTEntry {
                     score: best_value,
-                    depth: depth as u16,
+                    depth,
                     bound: Bounds::Exact,
                     bestmove: best_ply,
                 },
             );
 
-        println!("Transposition table: {:?}", TRANSPOSITION_TABLE);
+        println!("Transposition table: {TRANSPOSITION_TABLE:?}");
 
         best_ply
     }
@@ -342,7 +342,7 @@ impl<T: Evaluator> Search<T> {
         &mut self,
         alpha_start: i64,
         beta_start: i64,
-        depthleft: usize,
+        depthleft: u16,
         start: Instant,
     ) -> i64 {
         if depthleft == 0
@@ -363,7 +363,7 @@ impl<T: Evaluator> Search<T> {
             .expect("Transposition table is poisoned! Unable to read entry.")
             .get(&zkey)
         {
-            if entry.depth >= depthleft as u16 {
+            if entry.depth >= depthleft {
                 match entry.bound {
                     Bounds::Exact => return entry.score,
                     Bounds::Lower => alpha = alpha.max(entry.score),
@@ -407,7 +407,7 @@ impl<T: Evaluator> Search<T> {
                         ZKey::from(&self.board),
                         TTEntry {
                             score,
-                            depth: depthleft as u16,
+                            depth: depthleft,
                             bound: Bounds::Lower,
                             bestmove: mv,
                         },
@@ -429,13 +429,13 @@ impl<T: Evaluator> Search<T> {
                 ZKey::from(&self.board),
                 TTEntry {
                     score: alpha,
-                    depth: depthleft as u16,
+                    depth: depthleft,
                     bound: if alpha <= alpha_start {
                         Bounds::Upper
                     } else {
                         Bounds::Exact
                     },
-                    bestmove: bestmove,
+                    bestmove,
                 },
             );
 

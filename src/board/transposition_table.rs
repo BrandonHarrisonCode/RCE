@@ -6,14 +6,14 @@ use super::{zkey::ZKey, Ply};
 
 extern crate nohash_hasher;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Bounds {
     Exact,
     Lower,
     Upper,
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct TTEntry {
     pub score: i64,
     pub depth: u16,
