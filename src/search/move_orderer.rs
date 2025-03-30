@@ -1,10 +1,34 @@
+use std::sync::OnceLock;
+
+use crate::board::piece::Color;
+use crate::board::piece::Kind;
 use crate::board::transposition_table::TRANSPOSITION_TABLE;
 use crate::board::zkey::ZKey;
 use crate::board::Ply;
 
 mod scored_ply;
-
 use scored_ply::ScoredPly;
+
+// Colors don't matter here, but we have to pick one
+const VICTIMS_VALUE_ASCENDING: [Kind; 5] = [
+    Kind::Pawn(Color::White),
+    Kind::Knight(Color::White),
+    Kind::Bishop(Color::White),
+    Kind::Rook(Color::White),
+    Kind::Queen(Color::White),
+];
+const ATTACKERS_VALUE_DESCENDING: [Kind; 6] = [
+    Kind::King(Color::White),
+    Kind::Queen(Color::White),
+    Kind::Rook(Color::White),
+    Kind::Bishop(Color::White),
+    Kind::Knight(Color::White),
+    Kind::Pawn(Color::White),
+];
+// Most valuable victim, least valuable attacker
+static MVV_LVA_TABLE: OnceLock<
+    [[MoveScore; VICTIMS_VALUE_ASCENDING.len()]; ATTACKERS_VALUE_DESCENDING.len()],
+> = OnceLock::new();
 
 #[non_exhaustive]
 struct ScoreBonus;
@@ -15,6 +39,7 @@ impl ScoreBonus {
 }
 
 type MoveScore = u64;
+
 pub struct MoveOrderer {
     scored_moves: Vec<ScoredPly>,
     index: usize,
@@ -42,12 +67,40 @@ fn score_move(ply: Ply, best_ply: Option<Ply>) -> MoveScore {
         return MoveScore::MAX;
     }
     if ply.is_capture() {
-        score += ScoreBonus::CAPTURE;
+        score += ScoreBonus::CAPTURE
+            + MVV_LVA_TABLE.get_or_init(init_mvv_lva)[ATTACKERS_VALUE_DESCENDING
+                .iter()
+                .position(|&attacker| attacker == ply.piece)
+                .unwrap_or(0)][VICTIMS_VALUE_ASCENDING
+                .iter()
+                .position(|&victim| {
+                    victim
+                        == ply
+                            .captured_piece
+                            .expect("Captured piece without setting a captured piece!")
+                })
+                .unwrap_or(0)];
     }
     if ply.is_promotion() {
         score += ScoreBonus::PROMOTION;
     }
     score
+}
+
+fn init_mvv_lva() -> [[MoveScore; VICTIMS_VALUE_ASCENDING.len()]; ATTACKERS_VALUE_DESCENDING.len()]
+{
+    let mut table =
+        [[MoveScore::MIN; VICTIMS_VALUE_ASCENDING.len()]; ATTACKERS_VALUE_DESCENDING.len()];
+    let mut score = 0;
+
+    for (victim, _) in VICTIMS_VALUE_ASCENDING.iter().enumerate() {
+        for (attacker, _) in ATTACKERS_VALUE_DESCENDING.iter().enumerate() {
+            table[attacker][victim] = score;
+            score += 1;
+        }
+    }
+
+    table
 }
 
 impl MoveOrderer {

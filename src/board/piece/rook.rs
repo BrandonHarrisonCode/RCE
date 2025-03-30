@@ -1,5 +1,5 @@
 use super::super::bitboard::{Bitboard, File, Rank};
-use super::{Color, Magic, Piece, Ply, Square};
+use super::{Color, Kind, Magic, Piece, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
 use crate::board::Board;
@@ -27,7 +27,10 @@ impl Piece for Rook {
         let move_mask = Self::get_attacks(square, board.bitboards.all_pieces) & !same_pieces;
         let squares: Vec<Square> = move_mask.into();
 
-        squares.into_iter().map(|s| Ply::new(square, s)).collect()
+        squares
+            .into_iter()
+            .map(|s| Ply::new(square, s, Kind::Rook(color)))
+            .collect()
     }
 }
 
@@ -282,20 +285,20 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a1")),
-            Ply::new(start_square, Square::from("c1")),
-            Ply::new(start_square, Square::from("d1")),
-            Ply::new(start_square, Square::from("e1")),
-            Ply::new(start_square, Square::from("f1")),
-            Ply::new(start_square, Square::from("g1")),
-            Ply::new(start_square, Square::from("h1")),
-            Ply::new(start_square, Square::from("b2")),
-            Ply::new(start_square, Square::from("b3")),
-            Ply::new(start_square, Square::from("b4")),
-            Ply::new(start_square, Square::from("b5")),
-            Ply::new(start_square, Square::from("b6")),
-            Ply::new(start_square, Square::from("b7")),
-            Ply::new(start_square, Square::from("b8")),
+            Ply::new(start_square, Square::from("a1"), piece),
+            Ply::new(start_square, Square::from("c1"), piece),
+            Ply::new(start_square, Square::from("d1"), piece),
+            Ply::new(start_square, Square::from("e1"), piece),
+            Ply::new(start_square, Square::from("f1"), piece),
+            Ply::new(start_square, Square::from("g1"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
+            Ply::new(start_square, Square::from("b2"), piece),
+            Ply::new(start_square, Square::from("b3"), piece),
+            Ply::new(start_square, Square::from("b4"), piece),
+            Ply::new(start_square, Square::from("b5"), piece),
+            Ply::new(start_square, Square::from("b6"), piece),
+            Ply::new(start_square, Square::from("b7"), piece),
+            Ply::new(start_square, Square::from("b8"), piece),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -311,20 +314,20 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a4")),
-            Ply::new(start_square, Square::from("b4")),
-            Ply::new(start_square, Square::from("c4")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("f4")),
-            Ply::new(start_square, Square::from("g4")),
-            Ply::new(start_square, Square::from("h4")),
-            Ply::new(start_square, Square::from("d1")),
-            Ply::new(start_square, Square::from("d2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("d6")),
-            Ply::new(start_square, Square::from("d7")),
-            Ply::new(start_square, Square::from("d8")),
+            Ply::new(start_square, Square::from("a4"), piece),
+            Ply::new(start_square, Square::from("b4"), piece),
+            Ply::new(start_square, Square::from("c4"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("f4"), piece),
+            Ply::new(start_square, Square::from("g4"), piece),
+            Ply::new(start_square, Square::from("h4"), piece),
+            Ply::new(start_square, Square::from("d1"), piece),
+            Ply::new(start_square, Square::from("d2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("d5"), piece),
+            Ply::new(start_square, Square::from("d6"), piece),
+            Ply::new(start_square, Square::from("d7"), piece),
+            Ply::new(start_square, Square::from("d8"), piece),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -340,20 +343,20 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a6")),
-            Ply::new(start_square, Square::from("b6")),
-            Ply::new(start_square, Square::from("c6")),
-            Ply::new(start_square, Square::from("d6")),
-            Ply::new(start_square, Square::from("e6")),
-            Ply::new(start_square, Square::from("f6")),
-            Ply::new(start_square, Square::from("g6")),
-            Ply::new(start_square, Square::from("h1")),
-            Ply::new(start_square, Square::from("h2")),
-            Ply::new(start_square, Square::from("h3")),
-            Ply::new(start_square, Square::from("h4")),
-            Ply::new(start_square, Square::from("h5")),
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("h8")),
+            Ply::new(start_square, Square::from("a6"), piece),
+            Ply::new(start_square, Square::from("b6"), piece),
+            Ply::new(start_square, Square::from("c6"), piece),
+            Ply::new(start_square, Square::from("d6"), piece),
+            Ply::new(start_square, Square::from("e6"), piece),
+            Ply::new(start_square, Square::from("f6"), piece),
+            Ply::new(start_square, Square::from("g6"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
+            Ply::new(start_square, Square::from("h2"), piece),
+            Ply::new(start_square, Square::from("h3"), piece),
+            Ply::new(start_square, Square::from("h4"), piece),
+            Ply::new(start_square, Square::from("h5"), piece),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("h8"), piece),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -369,20 +372,20 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a1")),
-            Ply::new(start_square, Square::from("c1")),
-            Ply::new(start_square, Square::from("d1")),
-            Ply::new(start_square, Square::from("e1")),
-            Ply::new(start_square, Square::from("f1")),
-            Ply::new(start_square, Square::from("g1")),
-            Ply::new(start_square, Square::from("h1")),
-            Ply::new(start_square, Square::from("b2")),
-            Ply::new(start_square, Square::from("b3")),
-            Ply::new(start_square, Square::from("b4")),
-            Ply::new(start_square, Square::from("b5")),
-            Ply::new(start_square, Square::from("b6")),
-            Ply::new(start_square, Square::from("b7")),
-            Ply::new(start_square, Square::from("b8")),
+            Ply::new(start_square, Square::from("a1"), piece),
+            Ply::new(start_square, Square::from("c1"), piece),
+            Ply::new(start_square, Square::from("d1"), piece),
+            Ply::new(start_square, Square::from("e1"), piece),
+            Ply::new(start_square, Square::from("f1"), piece),
+            Ply::new(start_square, Square::from("g1"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
+            Ply::new(start_square, Square::from("b2"), piece),
+            Ply::new(start_square, Square::from("b3"), piece),
+            Ply::new(start_square, Square::from("b4"), piece),
+            Ply::new(start_square, Square::from("b5"), piece),
+            Ply::new(start_square, Square::from("b6"), piece),
+            Ply::new(start_square, Square::from("b7"), piece),
+            Ply::new(start_square, Square::from("b8"), piece),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -398,20 +401,20 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a4")),
-            Ply::new(start_square, Square::from("b4")),
-            Ply::new(start_square, Square::from("c4")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("f4")),
-            Ply::new(start_square, Square::from("g4")),
-            Ply::new(start_square, Square::from("h4")),
-            Ply::new(start_square, Square::from("d1")),
-            Ply::new(start_square, Square::from("d2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("d6")),
-            Ply::new(start_square, Square::from("d7")),
-            Ply::new(start_square, Square::from("d8")),
+            Ply::new(start_square, Square::from("a4"), piece),
+            Ply::new(start_square, Square::from("b4"), piece),
+            Ply::new(start_square, Square::from("c4"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("f4"), piece),
+            Ply::new(start_square, Square::from("g4"), piece),
+            Ply::new(start_square, Square::from("h4"), piece),
+            Ply::new(start_square, Square::from("d1"), piece),
+            Ply::new(start_square, Square::from("d2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("d5"), piece),
+            Ply::new(start_square, Square::from("d6"), piece),
+            Ply::new(start_square, Square::from("d7"), piece),
+            Ply::new(start_square, Square::from("d8"), piece),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -427,20 +430,20 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a6")),
-            Ply::new(start_square, Square::from("b6")),
-            Ply::new(start_square, Square::from("c6")),
-            Ply::new(start_square, Square::from("d6")),
-            Ply::new(start_square, Square::from("e6")),
-            Ply::new(start_square, Square::from("f6")),
-            Ply::new(start_square, Square::from("g6")),
-            Ply::new(start_square, Square::from("h1")),
-            Ply::new(start_square, Square::from("h2")),
-            Ply::new(start_square, Square::from("h3")),
-            Ply::new(start_square, Square::from("h4")),
-            Ply::new(start_square, Square::from("h5")),
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("h8")),
+            Ply::new(start_square, Square::from("a6"), piece),
+            Ply::new(start_square, Square::from("b6"), piece),
+            Ply::new(start_square, Square::from("c6"), piece),
+            Ply::new(start_square, Square::from("d6"), piece),
+            Ply::new(start_square, Square::from("e6"), piece),
+            Ply::new(start_square, Square::from("f6"), piece),
+            Ply::new(start_square, Square::from("g6"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
+            Ply::new(start_square, Square::from("h2"), piece),
+            Ply::new(start_square, Square::from("h3"), piece),
+            Ply::new(start_square, Square::from("h4"), piece),
+            Ply::new(start_square, Square::from("h5"), piece),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("h8"), piece),
         ];
 
         let result_set: HashSet<Ply> = result.into_iter().collect();
@@ -457,15 +460,15 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a2")),
-            Ply::new(start_square, Square::from("a3")),
-            Ply::new(start_square, Square::from("b1")),
-            Ply::new(start_square, Square::from("c1")),
-            Ply::new(start_square, Square::from("d1")),
-            Ply::new(start_square, Square::from("e1")),
-            Ply::new(start_square, Square::from("f1")),
-            Ply::new(start_square, Square::from("g1")),
-            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("a2"), piece),
+            Ply::new(start_square, Square::from("a3"), piece),
+            Ply::new(start_square, Square::from("b1"), piece),
+            Ply::new(start_square, Square::from("c1"), piece),
+            Ply::new(start_square, Square::from("d1"), piece),
+            Ply::new(start_square, Square::from("e1"), piece),
+            Ply::new(start_square, Square::from("f1"), piece),
+            Ply::new(start_square, Square::from("g1"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
         ];
 
         check_unique_equality(result, correct);
@@ -480,14 +483,14 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a2")),
-            Ply::new(start_square, Square::from("b1")),
-            Ply::new(start_square, Square::from("c1")),
-            Ply::new(start_square, Square::from("d1")),
-            Ply::new(start_square, Square::from("e1")),
-            Ply::new(start_square, Square::from("f1")),
-            Ply::new(start_square, Square::from("g1")),
-            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("a2"), piece),
+            Ply::new(start_square, Square::from("b1"), piece),
+            Ply::new(start_square, Square::from("c1"), piece),
+            Ply::new(start_square, Square::from("d1"), piece),
+            Ply::new(start_square, Square::from("e1"), piece),
+            Ply::new(start_square, Square::from("f1"), piece),
+            Ply::new(start_square, Square::from("g1"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
         ];
 
         check_unique_equality(result, correct);
@@ -506,15 +509,15 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("d2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("b4")),
-            Ply::new(start_square, Square::from("c4")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("f4")),
-            Ply::new(start_square, Square::from("g4")),
-            Ply::new(start_square, Square::from("h4")),
+            Ply::new(start_square, Square::from("d2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("d5"), piece),
+            Ply::new(start_square, Square::from("b4"), piece),
+            Ply::new(start_square, Square::from("c4"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("f4"), piece),
+            Ply::new(start_square, Square::from("g4"), piece),
+            Ply::new(start_square, Square::from("h4"), piece),
         ];
 
         check_unique_equality(result, correct);
@@ -533,15 +536,15 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("d2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("b4")),
-            Ply::new(start_square, Square::from("c4")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("f4")),
-            Ply::new(start_square, Square::from("g4")),
-            Ply::new(start_square, Square::from("h4")),
+            Ply::new(start_square, Square::from("d2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("d5"), piece),
+            Ply::new(start_square, Square::from("b4"), piece),
+            Ply::new(start_square, Square::from("c4"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("f4"), piece),
+            Ply::new(start_square, Square::from("g4"), piece),
+            Ply::new(start_square, Square::from("h4"), piece),
         ];
 
         check_unique_equality(result, correct);

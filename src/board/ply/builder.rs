@@ -7,6 +7,7 @@ use crate::board::square::Square;
 pub struct Builder {
     start: Square,
     dest: Square,
+    piece: Kind,
     captured_piece: Option<Kind>,
     promoted_to: Option<Kind>,
 
@@ -19,10 +20,11 @@ pub struct Builder {
 }
 
 impl Builder {
-    pub const fn new(start: Square, dest: Square) -> Self {
+    pub const fn new(start: Square, dest: Square, piece: Kind) -> Self {
         Self {
             start,
             dest,
+            piece,
             captured_piece: None,
             promoted_to: None,
 
@@ -108,6 +110,7 @@ impl Builder {
         Ply {
             start: self.start,
             dest: self.dest,
+            piece: self.piece,
             captured_piece: self.captured_piece,
             promoted_to: self.promoted_to,
 

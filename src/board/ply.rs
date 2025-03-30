@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::{piece::Kind, square::Square, CastlingStatus};
+use super::{piece::Kind, square::Square, CastlingStatus, Color};
 
 mod builder;
 pub mod castling;
@@ -8,10 +8,11 @@ pub mod castling;
 use builder::Builder;
 use castling::CastlingRights;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub struct Ply {
     pub start: Square,
     pub dest: Square,
+    pub piece: Kind,
     pub captured_piece: Option<Kind>,
     pub promoted_to: Option<Kind>,
 
@@ -42,6 +43,7 @@ impl Default for Ply {
         Self {
             start: Square::from("a1"),
             dest: Square::from("a1"),
+            piece: Kind::Pawn(Color::White),
             captured_piece: None,
             promoted_to: None,
 
@@ -61,10 +63,11 @@ impl Default for Ply {
 }
 
 impl Ply {
-    pub const fn new(start: Square, dest: Square) -> Self {
+    pub const fn new(start: Square, dest: Square, piece: Kind) -> Self {
         Self {
             start,
             dest,
+            piece,
             captured_piece: None,
             promoted_to: None,
 
@@ -83,8 +86,8 @@ impl Ply {
     }
 
     #[allow(dead_code)]
-    pub const fn builder(start: Square, dest: Square) -> Builder {
-        Builder::new(start, dest)
+    pub const fn builder(start: Square, dest: Square, piece: Kind) -> Builder {
+        Builder::new(start, dest, piece)
     }
 
     pub const fn is_capture(&self) -> bool {
@@ -126,24 +129,6 @@ impl fmt::Display for Ply {
     }
 }
 
-impl fmt::Debug for Ply {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} -> {}", self.start, self.dest,)?;
-        if let Some(captured_piece) = self.captured_piece {
-            write!(f, " (captured: {captured_piece})")?;
-        }
-
-        if let Some(promoted_to) = self.promoted_to {
-            write!(f, " (promoted to: {promoted_to})")?;
-        }
-
-        if self.is_castles {
-            write!(f, " (castles)")?;
-        }
-
-        Ok(())
-    }
-}
 ////////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
@@ -156,7 +141,7 @@ mod tests {
     fn test_derived_traits() {
         let start = Square::from("f4");
         let dest = Square::from("d6");
-        let ply = Ply::new(start, dest);
+        let ply = Ply::new(start, dest, Kind::Pawn(Color::White));
         dbg!(&ply);
 
         assert_eq!(ply, ply.clone());
@@ -166,7 +151,7 @@ mod tests {
     fn test_display() {
         let start = Square::from("f4");
         let dest = Square::from("d6");
-        let ply = Ply::new(start, dest);
+        let ply = Ply::new(start, dest, Kind::Pawn(Color::White));
 
         let result = ply.to_string();
         let correct = format!("{start}{dest}");
@@ -178,7 +163,7 @@ mod tests {
     fn test_builder() {
         let start = Square::from("f4");
         let dest = Square::from("d6");
-        let ply = Ply::builder(start, dest).build();
+        let ply = Ply::builder(start, dest, Kind::Pawn(Color::White)).build();
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
@@ -191,7 +176,9 @@ mod tests {
         let start = Square::from("f4");
         let dest = Square::from("d6");
         let captured_piece = Kind::Rook(Color::Black);
-        let ply = Ply::builder(start, dest).captured(captured_piece).build();
+        let ply = Ply::builder(start, dest, Kind::Queen(Color::White))
+            .captured(captured_piece)
+            .build();
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
@@ -204,7 +191,9 @@ mod tests {
         let start = Square::from("f7");
         let dest = Square::from("f8");
         let promoted_to = Kind::Rook(Color::Black);
-        let ply = Ply::builder(start, dest).promoted_to(promoted_to).build();
+        let ply = Ply::builder(start, dest, Kind::Queen(Color::White))
+            .promoted_to(promoted_to)
+            .build();
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
@@ -218,7 +207,7 @@ mod tests {
         let dest = Square::from("f8");
         let captured_piece = Kind::Queen(Color::White);
         let promoted_to = Kind::Rook(Color::Black);
-        let ply = Ply::builder(start, dest)
+        let ply = Ply::builder(start, dest, Kind::Pawn(Color::Black))
             .captured(captured_piece)
             .promoted_to(promoted_to)
             .build();
@@ -233,7 +222,9 @@ mod tests {
     fn test_builder_castles() {
         let start = Square::from("e1");
         let dest = Square::from("g1");
-        let ply = Ply::builder(start, dest).castles(true).build();
+        let ply = Ply::builder(start, dest, Kind::King(Color::White))
+            .castles(true)
+            .build();
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);
@@ -244,7 +235,9 @@ mod tests {
     fn test_builder_en_passant() {
         let start = Square::from("e6");
         let dest = Square::from("d7");
-        let ply = Ply::builder(start, dest).en_passant(true).build();
+        let ply = Ply::builder(start, dest, Kind::Pawn(Color::Black))
+            .en_passant(true)
+            .build();
 
         assert_eq!(ply.start, start);
         assert_eq!(ply.dest, dest);

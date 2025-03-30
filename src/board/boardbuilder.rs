@@ -335,7 +335,9 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().history(Vec::new());
     /// ```
     pub fn history(mut self, history: &[Ply]) -> Self {
+        let previous_last_history_castling_rights = self.get_last_history().castling_rights;
         self.history = history.to_vec();
+        self.get_last_history().castling_rights = previous_last_history_castling_rights;
         self
     }
 
@@ -458,6 +460,7 @@ impl BoardBuilder {
 #[cfg(test)]
 mod tests {
     use super::super::bitboard::Bitboard;
+    use super::super::piece::{Color, Kind};
     use super::super::piece_bitboards::PieceBitboards;
     use super::super::square::Square;
     use super::*;
@@ -688,7 +691,11 @@ mod tests {
 
     #[test]
     fn board_builder_history() {
-        let history = vec![Ply::new(Square::from("a1"), Square::from("a2"))];
+        let history = vec![Ply::new(
+            Square::from("a1"),
+            Square::from("a2"),
+            Kind::Pawn(Color::White),
+        )];
         let board = BoardBuilder::default().history(&history).build();
         let correct = Board {
             history,

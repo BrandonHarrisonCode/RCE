@@ -1,5 +1,5 @@
 use super::super::bitboard::Bitboard;
-use super::{Color, Magic, Piece, Ply, Square};
+use super::{Color, Kind, Magic, Piece, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
 use crate::board::Board;
@@ -27,7 +27,10 @@ impl Piece for Bishop {
         let move_mask = Self::get_attacks(square, board.bitboards.all_pieces) & !same_pieces;
         let squares: Vec<Square> = move_mask.into();
 
-        squares.into_iter().map(|s| Ply::new(square, s)).collect()
+        squares
+            .into_iter()
+            .map(|s| Ply::new(square, s, Kind::Bishop(color)))
+            .collect()
     }
 }
 
@@ -280,13 +283,13 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("b2")),
-            Ply::new(start_square, Square::from("c3")),
-            Ply::new(start_square, Square::from("d4")),
-            Ply::new(start_square, Square::from("e5")),
-            Ply::new(start_square, Square::from("f6")),
-            Ply::new(start_square, Square::from("g7")),
-            Ply::new(start_square, Square::from("h8")),
+            Ply::new(start_square, Square::from("b2"), piece),
+            Ply::new(start_square, Square::from("c3"), piece),
+            Ply::new(start_square, Square::from("d4"), piece),
+            Ply::new(start_square, Square::from("e5"), piece),
+            Ply::new(start_square, Square::from("f6"), piece),
+            Ply::new(start_square, Square::from("g7"), piece),
+            Ply::new(start_square, Square::from("h8"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -300,13 +303,13 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("c2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("f5")),
-            Ply::new(start_square, Square::from("g6")),
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("a2")),
+            Ply::new(start_square, Square::from("c2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("f5"), piece),
+            Ply::new(start_square, Square::from("g6"), piece),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("a2"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -320,19 +323,19 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("f5")),
-            Ply::new(start_square, Square::from("g6")),
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("c6")),
-            Ply::new(start_square, Square::from("b7")),
-            Ply::new(start_square, Square::from("a8")),
-            Ply::new(start_square, Square::from("b1")),
-            Ply::new(start_square, Square::from("c2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("f3")),
-            Ply::new(start_square, Square::from("g2")),
-            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("f5"), piece),
+            Ply::new(start_square, Square::from("g6"), piece),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("d5"), piece),
+            Ply::new(start_square, Square::from("c6"), piece),
+            Ply::new(start_square, Square::from("b7"), piece),
+            Ply::new(start_square, Square::from("a8"), piece),
+            Ply::new(start_square, Square::from("b1"), piece),
+            Ply::new(start_square, Square::from("c2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("f3"), piece),
+            Ply::new(start_square, Square::from("g2"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -346,19 +349,19 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("e5")),
-            Ply::new(start_square, Square::from("f6")),
-            Ply::new(start_square, Square::from("g7")),
-            Ply::new(start_square, Square::from("h8")),
-            Ply::new(start_square, Square::from("c5")),
-            Ply::new(start_square, Square::from("b6")),
-            Ply::new(start_square, Square::from("a7")),
-            Ply::new(start_square, Square::from("a1")),
-            Ply::new(start_square, Square::from("b2")),
-            Ply::new(start_square, Square::from("c3")),
-            Ply::new(start_square, Square::from("e3")),
-            Ply::new(start_square, Square::from("f2")),
-            Ply::new(start_square, Square::from("g1")),
+            Ply::new(start_square, Square::from("e5"), piece),
+            Ply::new(start_square, Square::from("f6"), piece),
+            Ply::new(start_square, Square::from("g7"), piece),
+            Ply::new(start_square, Square::from("h8"), piece),
+            Ply::new(start_square, Square::from("c5"), piece),
+            Ply::new(start_square, Square::from("b6"), piece),
+            Ply::new(start_square, Square::from("a7"), piece),
+            Ply::new(start_square, Square::from("a1"), piece),
+            Ply::new(start_square, Square::from("b2"), piece),
+            Ply::new(start_square, Square::from("c3"), piece),
+            Ply::new(start_square, Square::from("e3"), piece),
+            Ply::new(start_square, Square::from("f2"), piece),
+            Ply::new(start_square, Square::from("g1"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -372,15 +375,15 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("h5")),
-            Ply::new(start_square, Square::from("f7")),
-            Ply::new(start_square, Square::from("e8")),
-            Ply::new(start_square, Square::from("f5")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("c2")),
-            Ply::new(start_square, Square::from("b1")),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("h5"), piece),
+            Ply::new(start_square, Square::from("f7"), piece),
+            Ply::new(start_square, Square::from("e8"), piece),
+            Ply::new(start_square, Square::from("f5"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("c2"), piece),
+            Ply::new(start_square, Square::from("b1"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -394,13 +397,13 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("g7")),
-            Ply::new(start_square, Square::from("f8")),
-            Ply::new(start_square, Square::from("g5")),
-            Ply::new(start_square, Square::from("f4")),
-            Ply::new(start_square, Square::from("e3")),
-            Ply::new(start_square, Square::from("d2")),
-            Ply::new(start_square, Square::from("c1")),
+            Ply::new(start_square, Square::from("g7"), piece),
+            Ply::new(start_square, Square::from("f8"), piece),
+            Ply::new(start_square, Square::from("g5"), piece),
+            Ply::new(start_square, Square::from("f4"), piece),
+            Ply::new(start_square, Square::from("e3"), piece),
+            Ply::new(start_square, Square::from("d2"), piece),
+            Ply::new(start_square, Square::from("c1"), piece),
         ];
         check_unique_equality(result, correct)
     }
@@ -413,13 +416,13 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("b2")),
-            Ply::new(start_square, Square::from("c3")),
-            Ply::new(start_square, Square::from("d4")),
-            Ply::new(start_square, Square::from("e5")),
-            Ply::new(start_square, Square::from("f6")),
-            Ply::new(start_square, Square::from("g7")),
-            Ply::new(start_square, Square::from("h8")),
+            Ply::new(start_square, Square::from("b2"), piece),
+            Ply::new(start_square, Square::from("c3"), piece),
+            Ply::new(start_square, Square::from("d4"), piece),
+            Ply::new(start_square, Square::from("e5"), piece),
+            Ply::new(start_square, Square::from("f6"), piece),
+            Ply::new(start_square, Square::from("g7"), piece),
+            Ply::new(start_square, Square::from("h8"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -433,13 +436,13 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("c2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("f5")),
-            Ply::new(start_square, Square::from("g6")),
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("a2")),
+            Ply::new(start_square, Square::from("c2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("f5"), piece),
+            Ply::new(start_square, Square::from("g6"), piece),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("a2"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -453,19 +456,19 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("f5")),
-            Ply::new(start_square, Square::from("g6")),
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("d5")),
-            Ply::new(start_square, Square::from("c6")),
-            Ply::new(start_square, Square::from("b7")),
-            Ply::new(start_square, Square::from("a8")),
-            Ply::new(start_square, Square::from("b1")),
-            Ply::new(start_square, Square::from("c2")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("f3")),
-            Ply::new(start_square, Square::from("g2")),
-            Ply::new(start_square, Square::from("h1")),
+            Ply::new(start_square, Square::from("f5"), piece),
+            Ply::new(start_square, Square::from("g6"), piece),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("d5"), piece),
+            Ply::new(start_square, Square::from("c6"), piece),
+            Ply::new(start_square, Square::from("b7"), piece),
+            Ply::new(start_square, Square::from("a8"), piece),
+            Ply::new(start_square, Square::from("b1"), piece),
+            Ply::new(start_square, Square::from("c2"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("f3"), piece),
+            Ply::new(start_square, Square::from("g2"), piece),
+            Ply::new(start_square, Square::from("h1"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -479,19 +482,19 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("e5")),
-            Ply::new(start_square, Square::from("f6")),
-            Ply::new(start_square, Square::from("g7")),
-            Ply::new(start_square, Square::from("h8")),
-            Ply::new(start_square, Square::from("c5")),
-            Ply::new(start_square, Square::from("b6")),
-            Ply::new(start_square, Square::from("a7")),
-            Ply::new(start_square, Square::from("a1")),
-            Ply::new(start_square, Square::from("b2")),
-            Ply::new(start_square, Square::from("c3")),
-            Ply::new(start_square, Square::from("e3")),
-            Ply::new(start_square, Square::from("f2")),
-            Ply::new(start_square, Square::from("g1")),
+            Ply::new(start_square, Square::from("e5"), piece),
+            Ply::new(start_square, Square::from("f6"), piece),
+            Ply::new(start_square, Square::from("g7"), piece),
+            Ply::new(start_square, Square::from("h8"), piece),
+            Ply::new(start_square, Square::from("c5"), piece),
+            Ply::new(start_square, Square::from("b6"), piece),
+            Ply::new(start_square, Square::from("a7"), piece),
+            Ply::new(start_square, Square::from("a1"), piece),
+            Ply::new(start_square, Square::from("b2"), piece),
+            Ply::new(start_square, Square::from("c3"), piece),
+            Ply::new(start_square, Square::from("e3"), piece),
+            Ply::new(start_square, Square::from("f2"), piece),
+            Ply::new(start_square, Square::from("g1"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -505,15 +508,15 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("h7")),
-            Ply::new(start_square, Square::from("h5")),
-            Ply::new(start_square, Square::from("f7")),
-            Ply::new(start_square, Square::from("e8")),
-            Ply::new(start_square, Square::from("f5")),
-            Ply::new(start_square, Square::from("e4")),
-            Ply::new(start_square, Square::from("d3")),
-            Ply::new(start_square, Square::from("c2")),
-            Ply::new(start_square, Square::from("b1")),
+            Ply::new(start_square, Square::from("h7"), piece),
+            Ply::new(start_square, Square::from("h5"), piece),
+            Ply::new(start_square, Square::from("f7"), piece),
+            Ply::new(start_square, Square::from("e8"), piece),
+            Ply::new(start_square, Square::from("f5"), piece),
+            Ply::new(start_square, Square::from("e4"), piece),
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::new(start_square, Square::from("c2"), piece),
+            Ply::new(start_square, Square::from("b1"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -527,13 +530,13 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("g7")),
-            Ply::new(start_square, Square::from("f8")),
-            Ply::new(start_square, Square::from("g5")),
-            Ply::new(start_square, Square::from("f4")),
-            Ply::new(start_square, Square::from("e3")),
-            Ply::new(start_square, Square::from("d2")),
-            Ply::new(start_square, Square::from("c1")),
+            Ply::new(start_square, Square::from("g7"), piece),
+            Ply::new(start_square, Square::from("f8"), piece),
+            Ply::new(start_square, Square::from("g5"), piece),
+            Ply::new(start_square, Square::from("f4"), piece),
+            Ply::new(start_square, Square::from("e3"), piece),
+            Ply::new(start_square, Square::from("d2"), piece),
+            Ply::new(start_square, Square::from("c1"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -547,13 +550,13 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a4")),
-            Ply::new(start_square, Square::from("b5")),
-            Ply::new(start_square, Square::from("c6")),
-            Ply::new(start_square, Square::from("d7")),
-            Ply::new(start_square, Square::from("f7")),
-            Ply::new(start_square, Square::from("g6")),
-            Ply::new(start_square, Square::from("h5")),
+            Ply::new(start_square, Square::from("a4"), piece),
+            Ply::new(start_square, Square::from("b5"), piece),
+            Ply::new(start_square, Square::from("c6"), piece),
+            Ply::new(start_square, Square::from("d7"), piece),
+            Ply::new(start_square, Square::from("f7"), piece),
+            Ply::new(start_square, Square::from("g6"), piece),
+            Ply::new(start_square, Square::from("h5"), piece),
         ];
 
         check_unique_equality(result, correct)

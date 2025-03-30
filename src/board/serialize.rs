@@ -1,4 +1,4 @@
-use super::{Board, BoardBuilder, CastlingKind, CastlingStatus, Color, Ply, Square};
+use super::{Board, BoardBuilder, CastlingKind, CastlingStatus, Color, Kind, Ply, Square};
 
 pub enum FENInstruction<'a> {
     Bitboard(&'a mut u64),
@@ -107,22 +107,34 @@ fn history(mut builder: BoardBuilder) -> BoardBuilder {
     let mut history = Vec::new();
 
     if let Some(file) = builder.en_passant_file {
-        let (start, dest) = match builder.current_turn {
-            Color::White => (Square { rank: 1, file }, Square { rank: 3, file }),
-            Color::Black => (Square { rank: 6, file }, Square { rank: 4, file }),
+        let (start, dest, kind) = match builder.current_turn {
+            Color::White => (
+                Square { rank: 1, file },
+                Square { rank: 3, file },
+                Kind::Pawn(Color::White),
+            ),
+            Color::Black => (
+                Square { rank: 6, file },
+                Square { rank: 4, file },
+                Kind::Pawn(Color::Black),
+            ),
         };
 
-        let ply = Ply::builder(start, dest)
+        let ply = Ply::builder(start, dest, kind)
             .double_pawn_push(true)
             .castling_rights(rights)
             .halfmove_clock(builder.halfmove_clock)
             .build();
         history.push(ply);
     } else {
-        let ply = Ply::builder(Square::from("a1"), Square::from("a1"))
-            .castling_rights(rights)
-            .halfmove_clock(builder.halfmove_clock)
-            .build();
+        let ply = Ply::builder(
+            Square::from("a1"),
+            Square::from("a1"),
+            Kind::Pawn(builder.current_turn),
+        )
+        .castling_rights(rights)
+        .halfmove_clock(builder.halfmove_clock)
+        .build();
         history.push(ply);
     }
 
@@ -227,6 +239,12 @@ mod tests {
             .castling(CastlingKind::BlackKingside, CastlingStatus::Unavailable)
             .castling(CastlingKind::WhiteQueenside, CastlingStatus::Unavailable)
             .castling(CastlingKind::BlackQueenside, CastlingStatus::Unavailable)
+            .history(&[Ply::builder(
+                Square::from("a1"),
+                Square::from("a1"),
+                Kind::Pawn(Color::Black),
+            )
+            .build()])
             .build();
 
         let from_fen = Board::from_fen(fen);

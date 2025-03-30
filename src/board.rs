@@ -1448,7 +1448,7 @@ mod tests {
         let mut board = BoardBuilder::construct_starting_board().build();
         let start = Square::from("a2");
         let dest = Square::from("a3");
-        let ply = Ply::new(start, dest);
+        let ply = Ply::new(start, dest, Kind::Pawn(Color::Black));
 
         assert_eq!(board.current_turn, Color::White);
 
@@ -1470,8 +1470,16 @@ mod tests {
     fn test_make_unmake_move_double() {
         // Make and unmake two moves in a row
         let mut board = BoardBuilder::construct_starting_board().build();
-        let ply1 = Ply::new(Square::from("e2"), Square::from("e4"));
-        let ply2 = Ply::new(Square::from("e7"), Square::from("e5"));
+        let ply1 = Ply::new(
+            Square::from("e2"),
+            Square::from("e4"),
+            Kind::Pawn(Color::White),
+        );
+        let ply2 = Ply::new(
+            Square::from("e7"),
+            Square::from("e5"),
+            Kind::Pawn(Color::Black),
+        );
 
         assert_eq!(board.current_turn, Color::White);
 
@@ -1519,7 +1527,7 @@ mod tests {
         let mut board = BoardBuilder::construct_starting_board().build();
         let start = Square::from("a2"); // White Pawn
         let dest = Square::from("a7"); // Black Pawn
-        let ply = Ply::builder(start, dest)
+        let ply = Ply::builder(start, dest, Kind::Pawn(Color::White))
             .captured(Kind::Pawn(Color::Black))
             .build();
         assert_eq!(board.current_turn, Color::White);
@@ -1542,18 +1550,34 @@ mod tests {
         let mut board =
             Board::from_fen("r3k2r/pppppppp/1N4N1/8/8/1n4n1/PPPPPPPP/R3K2R w KQkq - 0 1");
 
-        let ply_capture_black_kingside_rook = Ply::builder(Square::from("g6"), Square::from("h8"))
-            .captured(Kind::Rook(Color::Black))
-            .build();
-        let ply_capture_black_queenside_rook = Ply::builder(Square::from("b6"), Square::from("a8"))
-            .captured(Kind::Rook(Color::Black))
-            .build();
-        let ply_capture_white_kingside_rook = Ply::builder(Square::from("g3"), Square::from("h1"))
-            .captured(Kind::Rook(Color::White))
-            .build();
-        let ply_capture_white_queenside_rook = Ply::builder(Square::from("b3"), Square::from("a1"))
-            .captured(Kind::Rook(Color::White))
-            .build();
+        let ply_capture_black_kingside_rook = Ply::builder(
+            Square::from("g6"),
+            Square::from("h8"),
+            Kind::Rook(Color::White),
+        )
+        .captured(Kind::Rook(Color::Black))
+        .build();
+        let ply_capture_black_queenside_rook = Ply::builder(
+            Square::from("b6"),
+            Square::from("a8"),
+            Kind::Rook(Color::White),
+        )
+        .captured(Kind::Rook(Color::Black))
+        .build();
+        let ply_capture_white_kingside_rook = Ply::builder(
+            Square::from("g3"),
+            Square::from("h1"),
+            Kind::Rook(Color::Black),
+        )
+        .captured(Kind::Rook(Color::White))
+        .build();
+        let ply_capture_white_queenside_rook = Ply::builder(
+            Square::from("b3"),
+            Square::from("a1"),
+            Kind::Rook(Color::Black),
+        )
+        .captured(Kind::Rook(Color::White))
+        .build();
 
         board.make_move(ply_capture_black_kingside_rook);
         assert_eq!(
@@ -1655,7 +1679,11 @@ mod tests {
     fn test_castling_move_rook() {
         let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
 
-        let ply_h1 = Ply::new(Square::from("h1"), Square::from("h2"));
+        let ply_h1 = Ply::new(
+            Square::from("h1"),
+            Square::from("h2"),
+            Kind::Rook(Color::White),
+        );
         board.make_move(ply_h1);
         assert_eq!(
             board.castle_status(CastlingKind::WhiteKingside),
@@ -1674,7 +1702,11 @@ mod tests {
             CastlingStatus::Available
         );
 
-        let ply_h8 = Ply::new(Square::from("h8"), Square::from("h7"));
+        let ply_h8 = Ply::new(
+            Square::from("h8"),
+            Square::from("h7"),
+            Kind::Rook(Color::Black),
+        );
         board.make_move(ply_h8);
         assert_eq!(
             board.castle_status(CastlingKind::WhiteKingside),
@@ -1695,7 +1727,11 @@ mod tests {
         board.unmake_move();
         board.unmake_move();
 
-        let ply_a1 = Ply::new(Square::from("a1"), Square::from("a2"));
+        let ply_a1 = Ply::new(
+            Square::from("a1"),
+            Square::from("a2"),
+            Kind::Rook(Color::White),
+        );
         board.make_move(ply_a1);
         assert_eq!(
             board.castle_status(CastlingKind::WhiteQueenside),
@@ -1714,7 +1750,11 @@ mod tests {
             CastlingStatus::Available
         );
 
-        let ply_a8 = Ply::new(Square::from("a8"), Square::from("a7"));
+        let ply_a8 = Ply::new(
+            Square::from("a8"),
+            Square::from("a7"),
+            Kind::Rook(Color::Black),
+        );
         board.make_move(ply_a8);
         assert_eq!(
             board.castle_status(CastlingKind::WhiteQueenside),
@@ -1740,7 +1780,11 @@ mod tests {
     fn test_castling_move_king() {
         let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
 
-        let ply_e1 = Ply::new(Square::from("e1"), Square::from("e2"));
+        let ply_e1 = Ply::new(
+            Square::from("e1"),
+            Square::from("e2"),
+            Kind::King(Color::White),
+        );
         board.make_move(ply_e1);
         assert_eq!(
             board.castle_status(CastlingKind::WhiteKingside),
@@ -1759,7 +1803,11 @@ mod tests {
             CastlingStatus::Available
         );
 
-        let ply_e8 = Ply::new(Square::from("e8"), Square::from("e7"));
+        let ply_e8 = Ply::new(
+            Square::from("e8"),
+            Square::from("e7"),
+            Kind::King(Color::Black),
+        );
         board.make_move(ply_e8);
         assert_eq!(
             board.castle_status(CastlingKind::WhiteKingside),
@@ -1801,9 +1849,9 @@ mod tests {
     #[test]
     fn test_make_unmake_move_promotion() {
         let mut board = Board::from_fen("8/5P2/2k5/8/4K3/8/8/8 w - - 0 1");
-        let start = Square::from("f7"); // White Pawn
+        let start = Square::from("f7");
         let dest = Square::from("f8");
-        let ply = Ply::builder(start, dest)
+        let ply = Ply::builder(start, dest, Kind::Pawn(Color::White))
             .promoted_to(Kind::Queen(Color::White))
             .build();
 
@@ -1828,7 +1876,7 @@ mod tests {
         let mut board = Board::from_fen("6n1/5P2/2k5/8/4K3/8/8/8 w - - 0 1");
         let start = Square::from("f7"); // White Pawn
         let dest = Square::from("g8"); // Black Knight
-        let ply = Ply::builder(start, dest)
+        let ply = Ply::builder(start, dest, Kind::Pawn(Color::White))
             .captured(Kind::Knight(Color::Black))
             .promoted_to(Kind::Queen(Color::White))
             .build();

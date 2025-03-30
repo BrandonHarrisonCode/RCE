@@ -14,16 +14,16 @@ impl Pawn {
     fn explode_promotion(ply: Ply, color: Color, back_rank: u8) -> Vec<Ply> {
         if ply.dest.rank == back_rank {
             vec![
-                Ply::builder(ply.start, ply.dest)
+                Ply::builder(ply.start, ply.dest, ply.piece)
                     .promoted_to(Kind::Queen(color))
                     .build(),
-                Ply::builder(ply.start, ply.dest)
+                Ply::builder(ply.start, ply.dest, ply.piece)
                     .promoted_to(Kind::Rook(color))
                     .build(),
-                Ply::builder(ply.start, ply.dest)
+                Ply::builder(ply.start, ply.dest, ply.piece)
                     .promoted_to(Kind::Knight(color))
                     .build(),
-                Ply::builder(ply.start, ply.dest)
+                Ply::builder(ply.start, ply.dest, ply.piece)
                     .promoted_to(Kind::Bishop(color))
                     .build(),
             ]
@@ -55,7 +55,10 @@ impl Piece for Pawn {
         let move_mask = Self::get_attacks(square, color) & enemy_pieces;
         let squares: Vec<Square> = move_mask.into();
 
-        let mut moveset: Vec<Ply> = squares.into_iter().map(|s| Ply::new(square, s)).collect();
+        let mut moveset: Vec<Ply> = squares
+            .into_iter()
+            .map(|s| Ply::new(square, s, Kind::Pawn(color)))
+            .collect();
 
         #[allow(clippy::cast_possible_truncation)]
         let next_square_mask = match color {
@@ -77,7 +80,7 @@ impl Piece for Pawn {
 
         // Single pawn push
         if next_square_mask.is_empty() {
-            moveset.push(Ply::new(square, square + direction));
+            moveset.push(Ply::new(square, square + direction, Kind::Pawn(color)));
         }
 
         // Double pawn push
@@ -86,7 +89,7 @@ impl Piece for Pawn {
             && double_next_square_mask.is_empty()
         {
             moveset.push(
-                Ply::builder(square, square + direction + direction)
+                Ply::builder(square, square + direction + direction, Kind::Pawn(color))
                     .double_pawn_push(true)
                     .build(),
             );
@@ -100,7 +103,7 @@ impl Piece for Pawn {
                 .is_some_and(|file| file == dest_east.file)
             {
                 moveset.push(
-                    Ply::builder(square, dest_east)
+                    Ply::builder(square, dest_east, Kind::Pawn(color))
                         .en_passant(true)
                         .captured(Kind::Pawn(color.opposite()))
                         .build(),
@@ -113,7 +116,7 @@ impl Piece for Pawn {
                 .is_some_and(|file| file == dest_west.file)
             {
                 moveset.push(
-                    Ply::builder(square, dest_west)
+                    Ply::builder(square, dest_west, Kind::Pawn(color))
                         .en_passant(true)
                         .captured(Kind::Pawn(color.opposite()))
                         .build(),
@@ -232,8 +235,8 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a3")),
-            Ply::builder(start_square, Square::from("a4"))
+            Ply::new(start_square, Square::from("a3"), piece),
+            Ply::builder(start_square, Square::from("a4"), piece)
                 .double_pawn_push(true)
                 .build(),
         ];
@@ -249,8 +252,8 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("d3")),
-            Ply::builder(start_square, Square::from("d4"))
+            Ply::new(start_square, Square::from("d3"), piece),
+            Ply::builder(start_square, Square::from("d4"), piece)
                 .double_pawn_push(true)
                 .build(),
         ];
@@ -265,7 +268,7 @@ mod tests {
         let start_square = Square::from("h6");
 
         let result = piece.get_moveset(start_square, &board);
-        let correct = vec![Ply::new(start_square, Square::from("g7"))];
+        let correct = vec![Ply::new(start_square, Square::from("g7"), piece)];
 
         check_unique_equality(result, correct)
     }
@@ -278,8 +281,8 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("a2")),
-            Ply::new(start_square, Square::from("b2")),
+            Ply::new(start_square, Square::from("a2"), piece),
+            Ply::new(start_square, Square::from("b2"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -293,8 +296,8 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("d4")),
-            Ply::new(start_square, Square::from("c4")),
+            Ply::new(start_square, Square::from("d4"), piece),
+            Ply::new(start_square, Square::from("c4"), piece),
         ];
 
         check_unique_equality(result, correct)
@@ -308,8 +311,8 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::new(start_square, Square::from("h6")),
-            Ply::builder(start_square, Square::from("h5"))
+            Ply::new(start_square, Square::from("h6"), piece),
+            Ply::builder(start_square, Square::from("h5"), piece)
                 .double_pawn_push(true)
                 .build(),
         ];
@@ -325,28 +328,28 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("g8"))
+            Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("g8"))
+            Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("g8"))
+            Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("g8"))
+            Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
         ];
@@ -362,16 +365,16 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("h8"))
+            Ply::builder(start_square, Square::from("h8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
         ];
@@ -387,28 +390,28 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("g1"))
+            Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("g1"))
+            Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("g1"))
+            Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("g1"))
+            Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
         ];
@@ -424,16 +427,16 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("h1"))
+            Ply::builder(start_square, Square::from("h1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
         ];
@@ -449,40 +452,40 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::builder(start_square, Square::from("d8"))
+            Ply::builder(start_square, Square::from("d8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("d8"))
+            Ply::builder(start_square, Square::from("d8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("d8"))
+            Ply::builder(start_square, Square::from("d8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("d8"))
+            Ply::builder(start_square, Square::from("d8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("e8"))
+            Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("e8"))
+            Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("e8"))
+            Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("e8"))
+            Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("c8"))
+            Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("c8"))
+            Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("c8"))
+            Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
                 .build(),
-            Ply::builder(start_square, Square::from("c8"))
+            Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
                 .build(),
         ];
@@ -498,40 +501,40 @@ mod tests {
 
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
-            Ply::builder(start_square, Square::from("d1"))
+            Ply::builder(start_square, Square::from("d1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("d1"))
+            Ply::builder(start_square, Square::from("d1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("d1"))
+            Ply::builder(start_square, Square::from("d1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("d1"))
+            Ply::builder(start_square, Square::from("d1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("e1"))
+            Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("e1"))
+            Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("e1"))
+            Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("e1"))
+            Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("c1"))
+            Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("c1"))
+            Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("c1"))
+            Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
                 .build(),
-            Ply::builder(start_square, Square::from("c1"))
+            Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
                 .build(),
         ];

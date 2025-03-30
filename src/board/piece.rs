@@ -59,6 +59,12 @@ pub enum Kind {
     Knight(Color),
 }
 
+impl Default for Kind {
+    fn default() -> Self {
+        Self::Pawn(Color::White)
+    }
+}
+
 impl From<Kind> for usize {
     fn from(kind: Kind) -> Self {
         match kind {
