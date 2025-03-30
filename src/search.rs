@@ -11,8 +11,10 @@ use std::time::Instant;
 
 pub mod limits;
 mod logger;
+mod move_orderer;
 
 use limits::SearchLimits;
+use move_orderer::MoveOrderer;
 
 const NEGMAX: i64 = -i64::MAX;
 #[allow(dead_code)]
@@ -258,7 +260,7 @@ impl<T: Evaluator> Search<T> {
             self.best_move = Some(current_best_move);
         }
 
-        self.log(format!("bestmove {}", self.best_move.unwrap()).as_str());
+        self.log(format!("best_ply {}", self.best_move.unwrap()).as_str());
     }
 
     /// Initializes the alpha-beta search and returns the best move found
@@ -284,7 +286,7 @@ impl<T: Evaluator> Search<T> {
 
         let mut best_ply = moves[0];
 
-        for mv in moves {
+        for mv in MoveOrderer::new(self.board.get_legal_moves(), ZKey::from(&self.board)) {
             self.board.make_move(mv);
 
             let value = self
@@ -310,7 +312,7 @@ impl<T: Evaluator> Search<T> {
                     score: best_value,
                     depth,
                     bound: Bounds::Exact,
-                    bestmove: best_ply,
+                    best_ply,
                 },
             );
 
@@ -384,9 +386,8 @@ impl<T: Evaluator> Search<T> {
             return 0; // Stalemate
         }
 
-        // TODO: put moves into a MoveOrdering struct and pull next move from that instead
-        let mut bestmove = moves[0];
-        for mv in moves {
+        let mut best_ply = moves[0];
+        for mv in MoveOrderer::new(self.board.get_legal_moves(), ZKey::from(&self.board)) {
             self.board.make_move(mv);
             let score = self
                 .alpha_beta(
@@ -409,7 +410,7 @@ impl<T: Evaluator> Search<T> {
                             score,
                             depth: depthleft,
                             bound: Bounds::Lower,
-                            bestmove: mv,
+                            best_ply: mv,
                         },
                     );
                 return beta;
@@ -418,7 +419,7 @@ impl<T: Evaluator> Search<T> {
             // New best move
             if score > alpha {
                 alpha = score;
-                bestmove = mv;
+                best_ply = mv;
             }
         }
 
@@ -435,7 +436,7 @@ impl<T: Evaluator> Search<T> {
                     } else {
                         Bounds::Exact
                     },
-                    bestmove,
+                    best_ply,
                 },
             );
 
