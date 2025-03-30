@@ -316,8 +316,6 @@ impl<T: Evaluator> Search<T> {
                 },
             );
 
-        println!("Transposition table: {TRANSPOSITION_TABLE:?}");
-
         best_ply
     }
 
