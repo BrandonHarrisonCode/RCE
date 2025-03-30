@@ -260,7 +260,7 @@ impl<T: Evaluator> Search<T> {
             self.best_move = Some(current_best_move);
         }
 
-        self.log(format!("best_ply {}", self.best_move.unwrap()).as_str());
+        self.log(format!("bestmove {}", self.best_move.unwrap()).as_str());
     }
 
     /// Initializes the alpha-beta search and returns the best move found
