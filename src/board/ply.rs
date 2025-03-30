@@ -87,6 +87,22 @@ impl Ply {
         Builder::new(start, dest)
     }
 
+    pub const fn is_capture(&self) -> bool {
+        self.captured_piece.is_some()
+    }
+
+    pub const fn is_promotion(&self) -> bool {
+        self.promoted_to.is_some()
+    }
+
+    pub const fn is_en_passant(&self) -> bool {
+        self.en_passant
+    }
+
+    pub const fn is_castles(&self) -> bool {
+        self.is_castles
+    }
+
     pub fn to_notation(self) -> String {
         let mut notation = format!("{}{}", self.start, self.dest);
 

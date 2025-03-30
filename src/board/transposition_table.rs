@@ -18,7 +18,7 @@ pub struct TTEntry {
     pub score: i64,
     pub depth: u16,
     pub bound: Bounds,
-    pub bestmove: Ply,
+    pub best_ply: Ply,
 }
 
 /// A hashmap that does no hashing to the `ZKey`.
@@ -43,7 +43,7 @@ mod tests {
             score: 1,
             depth: 2,
             bound: Bounds::Exact,
-            bestmove: Ply::default(),
+            best_ply: Ply::default(),
         };
 
         assert!(ttable.is_empty());
@@ -60,13 +60,13 @@ mod tests {
             score: 1,
             depth: 2,
             bound: Bounds::Exact,
-            bestmove: Ply::default(),
+            best_ply: Ply::default(),
         };
         let entry1 = TTEntry {
             score: 3,
             depth: 4,
             bound: Bounds::Lower,
-            bestmove: Ply::default(),
+            best_ply: Ply::default(),
         };
 
         assert!(ttable.is_empty());
