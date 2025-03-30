@@ -528,4 +528,20 @@ mod tests {
         let mut search = Search::new(&board, &evaluator, None);
         bencher.iter(|| search.search(Some(4)));
     }
+
+    #[bench]
+    fn bench_search_depth_5(bencher: &mut Bencher) {
+        let board = BoardBuilder::construct_starting_board().build();
+        let evaluator = SimpleEvaluator::new();
+        let mut search = Search::new(&board, &evaluator, None);
+        bencher.iter(|| search.search(Some(5)));
+    }
+
+    #[bench]
+    fn bench_search_depth_6(bencher: &mut Bencher) {
+        let board = BoardBuilder::construct_starting_board().build();
+        let evaluator = SimpleEvaluator::new();
+        let mut search = Search::new(&board, &evaluator, None);
+        bencher.iter(|| search.search(Some(6)));
+    }
 }
