@@ -25,7 +25,7 @@ pub struct Search<T: Evaluator> {
     best_move: Option<Ply>,
     running: Arc<AtomicBool>,
 
-    depth: u64,
+    depth: u16,
     nodes: u64,
     movetime: u128,
 }
@@ -385,7 +385,7 @@ impl<T: Evaluator> Search<T> {
         }
 
         let mut best_ply = moves[0];
-        for mv in MoveOrderer::new(self.board.get_legal_moves(), ZKey::from(&self.board)) {
+        for mv in MoveOrderer::new(moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
             let score = self
                 .alpha_beta(
