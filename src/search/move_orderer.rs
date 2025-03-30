@@ -16,7 +16,6 @@ impl ScoreBonus {
 
 type MoveScore = u64;
 pub struct MoveOrderer {
-    moves: Vec<Ply>,
     scored_moves: Vec<ScoredPly>,
     index: usize,
 }
@@ -52,11 +51,10 @@ fn score_move(ply: Ply, best_ply: Option<Ply>) -> MoveScore {
 }
 
 impl MoveOrderer {
-    pub fn new(moves: Vec<Ply>, zkey: ZKey) -> Self {
+    pub fn new(moves: &[Ply], zkey: ZKey) -> Self {
         let scored_moves = score_moves(&zkey, &moves);
 
         Self {
-            moves,
             scored_moves,
             index: 0,
         }
@@ -68,7 +66,7 @@ impl Iterator for MoveOrderer {
 
     /// Use selection sort instead of a faster sort because most entries will be beyond the cuttoff and will never be examined
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index == self.moves.len() {
+        if self.index == self.scored_moves.len() {
             return None;
         }
 

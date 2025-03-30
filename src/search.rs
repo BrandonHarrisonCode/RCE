@@ -286,7 +286,7 @@ impl<T: Evaluator> Search<T> {
 
         let mut best_ply = moves[0];
 
-        for mv in MoveOrderer::new(self.board.get_legal_moves(), ZKey::from(&self.board)) {
+        for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
 
             let value = self
@@ -385,7 +385,7 @@ impl<T: Evaluator> Search<T> {
         }
 
         let mut best_ply = moves[0];
-        for mv in MoveOrderer::new(moves, ZKey::from(&self.board)) {
+        for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
             let score = self
                 .alpha_beta(
