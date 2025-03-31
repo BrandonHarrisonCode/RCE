@@ -75,6 +75,7 @@ fn print_engine_info() {
     // Print options here
     println!("option name Threads type spin default 1 min 1 max 1");
     println!("option name Hash type spin default 1 min 1 max 1");
+    println!("option name Move Overhead type spin default 10 min 0 max 5000");
     println!("uciok");
 }
 
