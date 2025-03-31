@@ -85,11 +85,7 @@ impl<T: Evaluator> Search<T> {
             i64::MAX => String::from("mate 1"),
             _ => format!("cp {best_value}"),
         };
-        let nps: u64 = if time_elapsed_in_ms > 0 {
-            (nodes as f64 / (time_elapsed_in_ms as f64 / 1000f64)) as u64
-        } else {
-            0
-        };
+        let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
         self.log(
             format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {best_ply}")
                 .as_str(),
@@ -113,6 +109,10 @@ impl<T: Evaluator> Search<T> {
     /// ```
     pub const fn get_best_move(&self) -> Option<Ply> {
         self.best_move
+    }
+
+    pub const fn get_nodes(&self) -> u64 {
+        self.nodes
     }
 
     /// Returns the `AtomicBool` that is used to determine if the search should continue
@@ -249,8 +249,6 @@ impl<T: Evaluator> Search<T> {
     /// search.iter_deep(Some(3));
     /// ```
     fn iter_deep(&mut self, max_depth: Option<u16>) {
-        self.nodes = 0;
-        self.movetime = 0;
         let start = Instant::now();
         // Uses a heuristic to determine the maximum time to spend on a move
         self.limits.time_management_timer = match self.board.current_turn {
@@ -307,6 +305,7 @@ impl<T: Evaluator> Search<T> {
 
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
+            self.nodes += 1;
 
             let value = self
                 .alpha_beta(i64::MIN, i64::MAX, depth - 1, start)
@@ -369,7 +368,6 @@ impl<T: Evaluator> Search<T> {
             || self.limits_exceeded()
             || self.time_limits_exceeded(start)
         {
-            self.nodes += 1;
             return self.evaluator.evaluate(&mut self.board);
         }
 
@@ -407,6 +405,7 @@ impl<T: Evaluator> Search<T> {
         let mut best_ply = moves[0];
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
+            self.nodes += 1;
             let score = self
                 .alpha_beta(
                     beta.saturating_neg(),

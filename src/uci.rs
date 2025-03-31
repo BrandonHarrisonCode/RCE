@@ -5,6 +5,7 @@ use std::thread::{self, JoinHandle};
 
 use crate::board::{Board, BoardBuilder};
 
+use crate::bench;
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
 use crate::search::limits::SearchLimits;
 use crate::search::Search;
@@ -34,6 +35,7 @@ pub fn start() {
         match token {
             "uci" => print_engine_info(),
             "isready" => println!("readyok"),
+            "bench" => bench::bench(),
             "ucinewgame" => board = BoardBuilder::construct_starting_board().build(),
             "position" => {
                 board = load_position(&fields)
