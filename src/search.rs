@@ -78,7 +78,7 @@ impl<T: Evaluator> Search<T> {
         nodes: u64,
         time_elapsed_in_ms: u128,
         best_value: i64,
-        best_ply: Ply,
+        pv: &[Ply],
     ) {
         let score = match best_value {
             i64::MIN | NEGMAX => String::from("mate -1"),
@@ -86,10 +86,32 @@ impl<T: Evaluator> Search<T> {
             _ => format!("cp {best_value}"),
         };
         let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
+        let pv_notation: Vec<String> = pv.iter().map(std::string::ToString::to_string).collect();
+        let pv_string = pv_notation.join(" ");
         self.log(
-            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {best_ply}")
+            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {pv_string}")
                 .as_str(),
         );
+    }
+
+    fn get_pv(&self, length: u16) -> Vec<Ply> {
+        let mut plys = Vec::new();
+        let mut iter_board = self.board.clone();
+
+        for _ in 0..length {
+            if let Some(entry) = TRANSPOSITION_TABLE
+                .read()
+                .expect("Transposition table is poisoned! Unable to read entry.")
+                .get(&ZKey::from(&iter_board))
+            {
+                plys.push(entry.best_ply);
+                iter_board.make_move(entry.best_ply);
+            } else {
+                break;
+            }
+        }
+
+        plys
     }
 
     #[allow(dead_code)]
@@ -315,7 +337,7 @@ impl<T: Evaluator> Search<T> {
                 self.nodes,
                 time_elapsed_in_ms,
                 entry.score,
-                entry.best_ply,
+                &self.get_pv(entry.depth),
             );
             if entry.depth >= depth {
                 match entry.bound {
@@ -350,7 +372,13 @@ impl<T: Evaluator> Search<T> {
 
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        self.log_uci_info(depth, self.nodes, time_elapsed_in_ms, best_value, best_ply);
+        self.log_uci_info(
+            depth,
+            self.nodes,
+            time_elapsed_in_ms,
+            best_value,
+            &self.get_pv(depth),
+        );
 
         TRANSPOSITION_TABLE
             .write()
@@ -519,7 +547,7 @@ mod tests {
         let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
         let search = Search::new(&board, &evaluator, None);
-        search.log_uci_info(3, 20000, 1500, 10, Ply::default());
+        search.log_uci_info(3, 20000, 1500, 10, &[Ply::default()]);
     }
 
     #[test]
