@@ -289,18 +289,6 @@ impl<T: Evaluator> Search<T> {
         for depth in 1..max_depth.unwrap_or(u16::MAX) {
             let current_best_move = self.alpha_beta_start(depth, start);
 
-            if let Some(entry) = TRANSPOSITION_TABLE
-                .read()
-                .expect("Transposition table is poisoned! Unable to read entry.")
-                .get(&ZKey::from(&self.board))
-            {
-                if entry.depth >= depth
-                    && (entry.score == i64::MIN || entry.score == NEGMAX || entry.score == i64::MAX)
-                {
-                    break;
-                }
-            }
-
             if !self.check_running() {
                 break;
             }
