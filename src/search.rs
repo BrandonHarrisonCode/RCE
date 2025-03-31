@@ -81,8 +81,8 @@ impl<T: Evaluator> Search<T> {
         pv: &[Ply],
     ) {
         let score = match best_value {
-            i64::MIN | NEGMAX => String::from("mate -1"),
-            i64::MAX => String::from("mate 1"),
+            i64::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
+            i64::MAX => format!("mate {}", pv.len().div_ceil(2)),
             _ => format!("cp {best_value}"),
         };
         let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
@@ -288,6 +288,16 @@ impl<T: Evaluator> Search<T> {
 
         for depth in 1..max_depth.unwrap_or(u16::MAX) {
             let current_best_move = self.alpha_beta_start(depth, start);
+
+            if let Some(entry) = TRANSPOSITION_TABLE
+                .read()
+                .expect("Transposition table is poisoned! Unable to read entry.")
+                .get(&ZKey::from(&self.board))
+            {
+                if entry.score == i64::MIN || entry.score == NEGMAX || entry.score == i64::MAX {
+                    break;
+                }
+            }
 
             if !self.check_running() {
                 break;
