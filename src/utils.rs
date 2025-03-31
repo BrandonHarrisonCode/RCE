@@ -5,6 +5,7 @@ pub mod tests {
     use crate::board::boardbuilder::BoardBuilder;
     use crate::board::Board;
     use pretty_assertions::assert_eq;
+    use std::time::Instant;
     use test::Bencher;
 
     fn sort_and_dedup<T, U>(mut lhs: Vec<T>, mut rhs: Vec<U>) -> (Vec<T>, Vec<U>)
@@ -52,7 +53,17 @@ pub mod tests {
     /// * `board` - The board to analyze.
     /// * `depth` - The depth to search.
     pub fn perft(board: &mut Board, depth: u32) -> u64 {
-        perft_helper(board, depth, depth)
+        let start = Instant::now();
+        let total_nodes = perft_helper(board, depth, depth);
+        let time_elapsed = start.elapsed().as_secs();
+        let time_elapsed_in_ms = start.elapsed().as_millis();
+
+        println!("==========================");
+        println!("Total time (ms) : {time_elapsed_in_ms}");
+        println!("Nodes searched  : {total_nodes}");
+        println!("Nodes / second  : {}", total_nodes / time_elapsed);
+
+        total_nodes
     }
 
     /// Runs perft and summarize the first level of moves.
