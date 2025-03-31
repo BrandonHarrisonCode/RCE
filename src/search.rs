@@ -299,6 +299,28 @@ impl<T: Evaluator> Search<T> {
     /// ```
     fn alpha_beta_start(&mut self, depth: u16, start: Instant) -> Ply {
         let mut best_value = i64::MIN;
+        let mut alpha = i64::MIN;
+        let mut beta = i64::MAX;
+
+        // Check if we have more information in the TTable than we have already reached in this search
+        if let Some(entry) = TRANSPOSITION_TABLE
+            .read()
+            .expect("Transposition table is poisoned! Unable to read entry.")
+            .get(&ZKey::from(&self.board))
+        {
+            if entry.depth >= depth {
+                match entry.bound {
+                    Bounds::Exact => return entry.best_ply,
+                    Bounds::Lower => alpha = alpha.max(entry.score),
+                    Bounds::Upper => beta = beta.min(entry.score),
+                }
+
+                if alpha >= beta {
+                    return entry.best_ply;
+                }
+            }
+        }
+
         let moves = self.board.get_legal_moves();
 
         let mut best_ply = moves[0];
@@ -308,7 +330,7 @@ impl<T: Evaluator> Search<T> {
             self.nodes += 1;
 
             let value = self
-                .alpha_beta(i64::MIN, i64::MAX, depth - 1, start)
+                .alpha_beta(alpha, beta, depth - 1, start)
                 .saturating_neg();
             if value > best_value {
                 best_value = value;
@@ -534,33 +556,79 @@ mod tests {
 
     #[bench]
     fn bench_search_depth_3(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(3)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(3))
+        });
     }
 
     #[bench]
     fn bench_search_depth_4(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(4)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(4))
+        });
     }
 
     #[bench]
     fn bench_search_depth_5(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(5)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(5))
+        });
     }
 
     #[bench]
     fn bench_search_depth_6(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(6)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(6))
+        });
+    }
+
+    #[bench]
+    fn bench_search_depth_7(bencher: &mut Bencher) {
+        let evaluator = SimpleEvaluator::new();
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(7))
+        });
+    }
+
+    #[bench]
+    fn bench_search_depth_8(bencher: &mut Bencher) {
+        let evaluator = SimpleEvaluator::new();
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(8))
+        });
     }
 }
