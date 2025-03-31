@@ -563,7 +563,11 @@ mod tests {
                 &evaluator,
                 None,
             )
-            .search(Some(3))
+            .search(Some(3));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
         });
     }
 
@@ -576,7 +580,11 @@ mod tests {
                 &evaluator,
                 None,
             )
-            .search(Some(4))
+            .search(Some(4));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
         });
     }
 
@@ -589,7 +597,11 @@ mod tests {
                 &evaluator,
                 None,
             )
-            .search(Some(5))
+            .search(Some(5));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
         });
     }
 
@@ -602,33 +614,11 @@ mod tests {
                 &evaluator,
                 None,
             )
-            .search(Some(6))
-        });
-    }
-
-    #[bench]
-    fn bench_search_depth_7(bencher: &mut Bencher) {
-        let evaluator = SimpleEvaluator::new();
-        bencher.iter(|| {
-            Search::new(
-                &BoardBuilder::construct_starting_board().build(),
-                &evaluator,
-                None,
-            )
-            .search(Some(7))
-        });
-    }
-
-    #[bench]
-    fn bench_search_depth_8(bencher: &mut Bencher) {
-        let evaluator = SimpleEvaluator::new();
-        bencher.iter(|| {
-            Search::new(
-                &BoardBuilder::construct_starting_board().build(),
-                &evaluator,
-                None,
-            )
-            .search(Some(8))
+            .search(Some(6));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
         });
     }
 }
