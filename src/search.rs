@@ -308,6 +308,15 @@ impl<T: Evaluator> Search<T> {
             .expect("Transposition table is poisoned! Unable to read entry.")
             .get(&ZKey::from(&self.board))
         {
+            let duration = start.elapsed();
+            let time_elapsed_in_ms = duration.as_millis();
+            self.log_uci_info(
+                entry.depth,
+                self.nodes,
+                time_elapsed_in_ms,
+                entry.score,
+                entry.best_ply,
+            );
             if entry.depth >= depth {
                 match entry.bound {
                     Bounds::Exact => return entry.best_ply,
