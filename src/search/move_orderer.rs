@@ -105,7 +105,7 @@ fn init_mvv_lva() -> [[MoveScore; VICTIMS_VALUE_ASCENDING.len()]; ATTACKERS_VALU
 
 impl MoveOrderer {
     pub fn new(moves: &[Ply], zkey: ZKey) -> Self {
-        let scored_moves = score_moves(&zkey, &moves);
+        let scored_moves = score_moves(&zkey, moves);
 
         Self {
             scored_moves,

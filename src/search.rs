@@ -67,6 +67,11 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
     /// ```
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     fn log_uci_info(
         &self,
         depth: u16,
@@ -245,7 +250,6 @@ impl<T: Evaluator> Search<T> {
     /// ```
     fn iter_deep(&mut self, max_depth: Option<u16>) {
         self.nodes = 0;
-        self.depth = 0;
         self.movetime = 0;
         let start = Instant::now();
         // Uses a heuristic to determine the maximum time to spend on a move

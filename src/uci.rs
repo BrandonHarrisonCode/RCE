@@ -60,7 +60,7 @@ pub fn start() {
                 }
             }
             "quit" => break,
-            "setoption" => continue, // Currently changing options is not supported
+            "setoption" => {} // Currently changing options is not supported
             "debug" => println!("Not supported"),
             _ => println!("Invalid command!"),
         }
@@ -160,10 +160,11 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
         idx += 1;
     }
 
+    let max_depth: Option<u16> = limits.depth.map(|d| u16::try_from(d).unwrap_or(u16::MAX));
     let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
     let is_running = search.get_running();
     let join_handle = thread::spawn(move || {
-        search.search(None);
+        search.search(max_depth);
     });
 
     Ok((is_running, join_handle))
