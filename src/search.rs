@@ -294,7 +294,9 @@ impl<T: Evaluator> Search<T> {
                 .expect("Transposition table is poisoned! Unable to read entry.")
                 .get(&ZKey::from(&self.board))
             {
-                if entry.score == i64::MIN || entry.score == NEGMAX || entry.score == i64::MAX {
+                if entry.depth >= depth
+                    && (entry.score == i64::MIN || entry.score == NEGMAX || entry.score == i64::MAX)
+                {
                     break;
                 }
             }
