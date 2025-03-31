@@ -60,7 +60,7 @@ pub fn start() {
                 }
             }
             "quit" => break,
-            "setoption" => println!("Not supported"),
+            "setoption" => continue, // Currently changing options is not supported
             "debug" => println!("Not supported"),
             _ => println!("Invalid command!"),
         }
@@ -70,6 +70,9 @@ pub fn start() {
 fn print_engine_info() {
     println!("id name {TITLE} {VERSION}");
     println!("id author {AUTHOR}");
+    // Print options here
+    println!("option name Threads type spin default 1 min 1 max 1");
+    println!("option name Hash type spin default 1 min 1 max 1");
     println!("uciok");
 }
 
