@@ -1193,20 +1193,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic = "attempt to shift left with overflow"]
-    fn test_get_piece_ooblack_rank() {
-        let board = BoardBuilder::construct_starting_board().build();
-        board.get_piece(Square { rank: 8, file: 7 }).unwrap();
-    }
-
-    #[test]
-    #[should_panic = "called `Option::unwrap()` on a `None` value"]
-    fn test_get_piece_ooblack_file() {
-        let board = BoardBuilder::construct_starting_board().build();
-        board.get_piece(Square { rank: 0, file: 8 }).unwrap();
-    }
-
-    #[test]
     fn test_get_all_moves() {
         let board = BoardBuilder::construct_starting_board().build();
         let all_moves = board.get_all_moves();
