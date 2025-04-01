@@ -11,6 +11,7 @@
 extern crate strum_macros;
 extern crate derive_more;
 
+mod bench;
 mod board;
 mod evaluate;
 mod search;

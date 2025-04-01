@@ -55,13 +55,15 @@ pub mod tests {
     pub fn perft(board: &mut Board, depth: u32) -> u64 {
         let start = Instant::now();
         let total_nodes = perft_helper(board, depth, depth);
-        let time_elapsed = start.elapsed().as_secs();
+        let time_elapsed = start.elapsed().as_secs_f64();
         let time_elapsed_in_ms = start.elapsed().as_millis();
+
+        assert!(time_elapsed > 0.0, "Zero time elapsed during perft!");
 
         println!("==========================");
         println!("Total time (ms) : {time_elapsed_in_ms}");
         println!("Nodes searched  : {total_nodes}");
-        println!("Nodes / second  : {}", total_nodes / time_elapsed);
+        println!("Nodes / second  : {}", total_nodes as f64 / time_elapsed);
 
         total_nodes
     }

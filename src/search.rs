@@ -67,28 +67,51 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
     /// ```
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
     fn log_uci_info(
         &self,
         depth: u16,
         nodes: u64,
         time_elapsed_in_ms: u128,
         best_value: i64,
-        best_ply: Ply,
+        pv: &[Ply],
     ) {
         let score = match best_value {
-            i64::MIN | NEGMAX => String::from("mate -1"),
-            i64::MAX => String::from("mate 1"),
+            i64::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
+            i64::MAX => format!("mate {}", pv.len().div_ceil(2)),
             _ => format!("cp {best_value}"),
         };
-        let nps: u64 = if time_elapsed_in_ms > 0 {
-            (nodes as f64 / (time_elapsed_in_ms as f64 / 1000f64)) as u64
-        } else {
-            0
-        };
+        let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
+        let pv_notation: Vec<String> = pv.iter().map(std::string::ToString::to_string).collect();
+        let pv_string = pv_notation.join(" ");
         self.log(
-            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {best_ply}")
+            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {pv_string}")
                 .as_str(),
         );
+    }
+
+    fn get_pv(&self, length: u16) -> Vec<Ply> {
+        let mut plys = Vec::new();
+        let mut iter_board = self.board.clone();
+
+        for _ in 0..length {
+            if let Some(entry) = TRANSPOSITION_TABLE
+                .read()
+                .expect("Transposition table is poisoned! Unable to read entry.")
+                .get(&ZKey::from(&iter_board))
+            {
+                plys.push(entry.best_ply);
+                iter_board.make_move(entry.best_ply);
+            } else {
+                break;
+            }
+        }
+
+        plys
     }
 
     #[allow(dead_code)]
@@ -108,6 +131,10 @@ impl<T: Evaluator> Search<T> {
     /// ```
     pub const fn get_best_move(&self) -> Option<Ply> {
         self.best_move
+    }
+
+    pub const fn get_nodes(&self) -> u64 {
+        self.nodes
     }
 
     /// Returns the `AtomicBool` that is used to determine if the search should continue
@@ -244,9 +271,6 @@ impl<T: Evaluator> Search<T> {
     /// search.iter_deep(Some(3));
     /// ```
     fn iter_deep(&mut self, max_depth: Option<u16>) {
-        self.nodes = 0;
-        self.depth = 0;
-        self.movetime = 0;
         let start = Instant::now();
         // Uses a heuristic to determine the maximum time to spend on a move
         self.limits.time_management_timer = match self.board.current_turn {
@@ -297,15 +321,47 @@ impl<T: Evaluator> Search<T> {
     /// ```
     fn alpha_beta_start(&mut self, depth: u16, start: Instant) -> Ply {
         let mut best_value = i64::MIN;
+        let mut alpha = i64::MIN;
+        let mut beta = i64::MAX;
+
+        // Check if we have more information in the TTable than we have already reached in this search
+        if let Some(entry) = TRANSPOSITION_TABLE
+            .read()
+            .expect("Transposition table is poisoned! Unable to read entry.")
+            .get(&ZKey::from(&self.board))
+        {
+            let duration = start.elapsed();
+            let time_elapsed_in_ms = duration.as_millis();
+            self.log_uci_info(
+                entry.depth,
+                self.nodes,
+                time_elapsed_in_ms,
+                entry.score,
+                &self.get_pv(entry.depth),
+            );
+            if entry.depth >= depth {
+                match entry.bound {
+                    Bounds::Exact => return entry.best_ply,
+                    Bounds::Lower => alpha = alpha.max(entry.score),
+                    Bounds::Upper => beta = beta.min(entry.score),
+                }
+
+                if alpha >= beta {
+                    return entry.best_ply;
+                }
+            }
+        }
+
         let moves = self.board.get_legal_moves();
 
         let mut best_ply = moves[0];
 
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
+            self.nodes += 1;
 
             let value = self
-                .alpha_beta(i64::MIN, i64::MAX, depth - 1, start)
+                .alpha_beta(alpha, beta, depth - 1, start)
                 .saturating_neg();
             if value > best_value {
                 best_value = value;
@@ -316,7 +372,13 @@ impl<T: Evaluator> Search<T> {
 
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        self.log_uci_info(depth, self.nodes, time_elapsed_in_ms, best_value, best_ply);
+        self.log_uci_info(
+            depth,
+            self.nodes,
+            time_elapsed_in_ms,
+            best_value,
+            &self.get_pv(depth),
+        );
 
         TRANSPOSITION_TABLE
             .write()
@@ -365,7 +427,6 @@ impl<T: Evaluator> Search<T> {
             || self.limits_exceeded()
             || self.time_limits_exceeded(start)
         {
-            self.nodes += 1;
             return self.evaluator.evaluate(&mut self.board);
         }
 
@@ -403,6 +464,7 @@ impl<T: Evaluator> Search<T> {
         let mut best_ply = moves[0];
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
+            self.nodes += 1;
             let score = self
                 .alpha_beta(
                     beta.saturating_neg(),
@@ -485,7 +547,7 @@ mod tests {
         let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
         let search = Search::new(&board, &evaluator, None);
-        search.log_uci_info(3, 20000, 1500, 10, Ply::default());
+        search.log_uci_info(3, 20000, 1500, 10, &[Ply::default()]);
     }
 
     #[test]
@@ -531,33 +593,69 @@ mod tests {
 
     #[bench]
     fn bench_search_depth_3(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(3)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(3));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
+        });
     }
 
     #[bench]
     fn bench_search_depth_4(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(4)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(4));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
+        });
     }
 
     #[bench]
     fn bench_search_depth_5(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(5)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(5));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
+        });
     }
 
     #[bench]
     fn bench_search_depth_6(bencher: &mut Bencher) {
-        let board = BoardBuilder::construct_starting_board().build();
         let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        bencher.iter(|| search.search(Some(6)));
+        bencher.iter(|| {
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                &evaluator,
+                None,
+            )
+            .search(Some(6));
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .clear();
+        });
     }
 }

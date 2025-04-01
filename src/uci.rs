@@ -5,6 +5,7 @@ use std::thread::{self, JoinHandle};
 
 use crate::board::{Board, BoardBuilder};
 
+use crate::bench;
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
 use crate::search::limits::SearchLimits;
 use crate::search::Search;
@@ -34,6 +35,7 @@ pub fn start() {
         match token {
             "uci" => print_engine_info(),
             "isready" => println!("readyok"),
+            "bench" => bench::bench(),
             "ucinewgame" => board = BoardBuilder::construct_starting_board().build(),
             "position" => {
                 board = load_position(&fields)
@@ -60,7 +62,7 @@ pub fn start() {
                 }
             }
             "quit" => break,
-            "setoption" => continue, // Currently changing options is not supported
+            "setoption" => {} // Currently changing options is not supported
             "debug" => println!("Not supported"),
             _ => println!("Invalid command!"),
         }
@@ -73,6 +75,7 @@ fn print_engine_info() {
     // Print options here
     println!("option name Threads type spin default 1 min 1 max 1");
     println!("option name Hash type spin default 1 min 1 max 1");
+    println!("option name Move Overhead type spin default 10 min 0 max 5000");
     println!("uciok");
 }
 
@@ -160,10 +163,11 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
         idx += 1;
     }
 
+    let max_depth: Option<u16> = limits.depth.map(|d| u16::try_from(d).unwrap_or(u16::MAX));
     let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
     let is_running = search.get_running();
     let join_handle = thread::spawn(move || {
-        search.search(None);
+        search.search(max_depth);
     });
 
     Ok((is_running, join_handle))
