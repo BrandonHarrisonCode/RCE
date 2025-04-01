@@ -71,6 +71,9 @@ const FENS: [&str; 62] = [
 ];
 
 #[allow(clippy::cast_possible_truncation)]
+/// Benchmarks the engine by running a set of FEN strings.
+/// It measures the time taken and the number of nodes searched.
+/// This is primarily called from the command line with `./rce bench` for `OpenBench`.
 pub fn bench() {
     let mut total_nodes = 0;
     let mut total_ms = 0;
