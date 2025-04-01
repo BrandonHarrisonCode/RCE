@@ -90,8 +90,7 @@ pub fn bench() {
             .clear();
     }
 
-    println!(
-        "Bench: {total_ms} ms {total_nodes} nodes {} nps",
-        total_nodes / (total_ms as u64 / 1000).max(1)
-    );
+    println!("Bench: {total_ms} ms",);
+    println!("{total_nodes} nodes");
+    println!("{} nps", total_nodes / (total_ms as u64 / 1000).max(1));
 }
