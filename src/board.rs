@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::HashSet, fmt};
 pub mod bitboard;
 pub mod boardbuilder;
 pub mod piece;
@@ -17,6 +17,7 @@ use piece_bitboards::PieceBitboards;
 use ply::castling::{CastlingKind, CastlingStatus};
 pub use ply::Ply;
 use square::Square;
+use zkey::ZKey;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 pub enum GameState {
@@ -43,6 +44,7 @@ pub struct Board {
     pub bitboards: PieceBitboards,
 
     history: Vec<Ply>,
+    position_history: HashSet<ZKey>,
 }
 
 impl Default for Board {
@@ -63,6 +65,7 @@ impl Default for Board {
             en_passant_file: None,
 
             history: vec![Ply::default()],
+            position_history: HashSet::new(),
         }
     }
 }
@@ -337,6 +340,15 @@ impl Board {
             .halfmove_clock
     }
 
+    /// Returns if the position provided by the key has been reached
+    ///
+    /// # Arguments
+    ///
+    /// * `position` - The ZKey to check for
+    pub fn position_reached(&self, position: &ZKey) -> bool {
+        self.position_history.contains(position)
+    }
+
     /// Returns a boolean representing whether or not the current side is in check
     ///
     /// # Examples
@@ -521,6 +533,7 @@ impl Board {
     /// ```
     #[allow(clippy::too_many_lines)]
     pub fn make_move(&mut self, mut new_move: Ply) {
+        self.position_history.insert(ZKey::from(&*self));
         let previous_move: Ply = self.history.last().copied().unwrap_or_default();
         new_move.halfmove_clock = previous_move.halfmove_clock + 1;
         new_move.castling_rights = previous_move.castling_rights;
@@ -712,6 +725,8 @@ impl Board {
         self.game_state = GameState::InProgress;
 
         self.switch_turn();
+
+        self.position_history.remove(&ZKey::from(&*self));
     }
 }
 

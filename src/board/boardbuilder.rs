@@ -1,7 +1,10 @@
+use std::collections::HashSet;
+
 use super::piece::Color;
 use super::piece::Kind as PieceKind;
 use super::ply::castling::CastlingKind;
 use super::ply::Ply;
+use super::zkey::ZKey;
 use super::Board;
 use super::CastlingStatus;
 use super::GameState;
@@ -22,6 +25,7 @@ pub struct BoardBuilder {
     pub bitboards: PieceBitboardsBuilder,
 
     pub history: Vec<Ply>,
+    pub position_history: Vec<ZKey>,
 }
 
 impl BoardBuilder {
@@ -59,6 +63,7 @@ impl BoardBuilder {
             bitboards: PieceBitboardsBuilder::default(),
 
             history: vec![Ply::default()],
+            position_history: vec![],
         }
     }
 
@@ -75,6 +80,7 @@ impl BoardBuilder {
             bitboards: PieceBitboardsBuilder::new(),
 
             history: vec![Ply::default()],
+            position_history: vec![],
         }
     }
 
@@ -341,6 +347,28 @@ impl BoardBuilder {
         self
     }
 
+    /// Set the history of the different positions of the board
+    ///
+    /// # Arguments
+    ///
+    /// * `position_history` - The position history of the board
+    ///
+    /// # Returns
+    ///
+    /// * `Self` - The current builder
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::board::{BoardBuilder, Color, Castling};
+    ///
+    /// let builder = BoardBuilder::default().position_history(Vec::new());
+    /// ```
+    pub fn position_history(mut self, position_history: &[ZKey]) -> Self {
+        self.position_history = position_history.iter().copied().collect();
+        self
+    }
+
     /// Set the en passant capture file
     ///
     /// # Arguments
@@ -451,6 +479,7 @@ impl BoardBuilder {
 
             history: self.history.clone(),
             bitboards: self.bitboards.build(),
+            position_history: HashSet::new(),
         }
     }
 }

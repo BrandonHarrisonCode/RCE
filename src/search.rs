@@ -461,6 +461,10 @@ impl<T: Evaluator> Search<T> {
             return 0; // Stalemate
         }
 
+        if self.board.position_reached(&ZKey::from(&self.board)) {
+            return 0; // Avoid threefold repetition at first repeitition
+        }
+
         let mut best_ply = moves[0];
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
