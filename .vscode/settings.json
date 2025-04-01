@@ -20,5 +20,6 @@
         "uciok",
         "winc",
         "wtime"
-    ]
+    ],
+    "makefile.configureOnOpen": false
 }
