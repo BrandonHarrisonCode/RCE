@@ -751,7 +751,7 @@ impl fmt::Display for Board {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::tests::check_unique_equality;
+    use crate::testing_utils::tests::check_unique_equality;
     use boardbuilder::BoardBuilder;
 
     use super::*;

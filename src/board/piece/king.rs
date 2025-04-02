@@ -108,7 +108,7 @@ mod tests {
     use super::{Color, King, Piece, Ply, Square};
     use crate::board::boardbuilder::BoardBuilder;
     use crate::board::Kind;
-    use crate::utils::tests::check_unique_equality;
+    use crate::testing_utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]

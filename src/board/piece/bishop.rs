@@ -207,7 +207,7 @@ impl Bishop {
 mod tests {
     use super::{Bishop, Color, Piece, Ply, Square};
     use crate::board::Kind;
-    use crate::{board::boardbuilder::BoardBuilder, utils::tests::check_unique_equality};
+    use crate::{board::boardbuilder::BoardBuilder, testing_utils::tests::check_unique_equality};
     use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]

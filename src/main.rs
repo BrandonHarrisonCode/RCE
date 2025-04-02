@@ -15,8 +15,8 @@ mod bench;
 mod board;
 mod evaluate;
 mod search;
+mod testing_utils;
 mod uci;
-mod utils;
 
 use std::env;
 
