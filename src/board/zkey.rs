@@ -85,7 +85,7 @@ impl ZTable {
 }
 
 /// A Zobrist key for a board position.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct ZKey {
     key: u64,
     white_kingside: CastlingStatus,

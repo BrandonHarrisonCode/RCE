@@ -3,12 +3,10 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 
-use crate::board::{Board, BoardBuilder};
-
 use crate::bench;
+use crate::board::{Board, BoardBuilder};
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
-use crate::search::limits::SearchLimits;
-use crate::search::Search;
+use crate::search::{limits::SearchLimits, Search};
 
 const TITLE: &str = "Rust Chess Engine";
 const AUTHOR: &str = "Brandon Harrison";

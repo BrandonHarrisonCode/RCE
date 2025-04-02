@@ -344,7 +344,7 @@ impl Board {
     ///
     /// # Arguments
     ///
-    /// * `position` - The ZKey to check for
+    /// * `position` - The `ZKey` to check for
     pub fn position_reached(&self, position: &ZKey) -> bool {
         self.position_history.contains(position)
     }

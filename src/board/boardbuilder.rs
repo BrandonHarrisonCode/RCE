@@ -365,7 +365,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().position_history(Vec::new());
     /// ```
     pub fn position_history(mut self, position_history: &[ZKey]) -> Self {
-        self.position_history = position_history.iter().copied().collect();
+        self.position_history = position_history.to_vec();
         self
     }
 
