@@ -20,7 +20,7 @@ use pawn::Pawn;
 use queen::Queen;
 use rook::Rook;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Display, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Display, Debug, Default, PartialOrd, Ord)]
 pub enum Color {
     #[default]
     White,
@@ -49,7 +49,7 @@ impl Color {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Hash, Debug, PartialOrd, Ord)]
 pub enum Kind {
     Pawn(Color),
     King(Color),

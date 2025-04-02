@@ -471,7 +471,7 @@ mod tests {
             Ply::new(start_square, Square::from("h1"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 
     #[test]
@@ -493,7 +493,7 @@ mod tests {
             Ply::new(start_square, Square::from("h1"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 
     #[test]
@@ -520,7 +520,7 @@ mod tests {
             Ply::new(start_square, Square::from("h4"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 
     #[test]
@@ -547,6 +547,6 @@ mod tests {
             Ply::new(start_square, Square::from("h4"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 }

@@ -3,22 +3,37 @@ pub mod tests {
     extern crate test;
 
     use crate::board::boardbuilder::BoardBuilder;
-    use crate::board::Board;
+    use crate::board::piece::{Color, Kind};
+    use crate::board::square::Square;
+    use crate::board::{Board, Ply};
     use pretty_assertions::assert_eq;
     use std::time::Instant;
     use test::Bencher;
 
-    fn sort_and_dedup<T, U>(mut lhs: Vec<T>, mut rhs: Vec<U>) -> (Vec<T>, Vec<U>)
+    /// Sorts and deduplicates a vector of elements.
+    ///
+    /// # Arguments
+    ///
+    /// * `list` - The vector to sort and deduplicate.
+    ///
+    /// # Returns
+    ///
+    /// A new vector without the duplicates.
+    ///
+    /// # Example
+    /// ```
+    /// use crate::utils::tests::sort_and_dedup;
+    ///
+    /// let list = vec![3, 1, 2, 3, 4, 2];
+    /// let sorted_deduped = sort_and_dedup(list);
+    /// assert_eq!(sorted_deduped, vec![1, 2, 3, 4]);
+    /// ```
+    fn sort_and_dedup<T>(list: &mut Vec<T>)
     where
         T: Ord,
-        U: Ord,
     {
-        lhs.sort();
-        lhs.dedup();
-        rhs.sort();
-        rhs.dedup();
-
-        (lhs, rhs)
+        list.sort_unstable();
+        list.dedup();
     }
 
     #[allow(dead_code)]
@@ -41,8 +56,11 @@ pub mod tests {
     /// let rhs = vec![5, 4, 3, 2, 1];
     /// check_unique_equality(lhs, rhs);
     /// ```
-    pub fn check_unique_equality<T: Ord + std::fmt::Debug>(mut lhs: Vec<T>, mut rhs: Vec<T>) {
-        (lhs, rhs) = sort_and_dedup(lhs, rhs);
+    pub fn check_unique_equality<T: Clone + Ord + std::fmt::Debug>(lhs: &Vec<T>, rhs: &Vec<T>) {
+        let mut lhs = lhs.to_vec();
+        let mut rhs = rhs.to_vec();
+        sort_and_dedup(&mut lhs);
+        sort_and_dedup(&mut rhs);
         assert_eq!(lhs, rhs);
     }
 
@@ -102,6 +120,73 @@ pub mod tests {
         }
 
         nodes
+    }
+
+    #[test]
+    fn test_sort_and_dedup_1() {
+        let mut list = vec![3, 1, 2, 3, 4, 2];
+        sort_and_dedup(&mut list);
+        assert_eq!(list, vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn test_sort_and_dedup_2() {
+        let mut list: Vec<i32> = vec![];
+        sort_and_dedup(&mut list);
+        assert_eq!(list, vec![]);
+    }
+
+    #[test]
+    fn test_sort_and_dedup_3() {
+        let ply1 = Ply::new(
+            Square::from("a1"),
+            Square::from("a1"),
+            Kind::Pawn(Color::White),
+        );
+        let ply2 = Ply::new(
+            Square::from("a1"),
+            Square::from("a1"),
+            Kind::Pawn(Color::Black),
+        );
+        let ply3 = ply1.clone();
+        let mut list = vec![ply1, ply2, ply3];
+        sort_and_dedup(&mut list);
+        let correct: Vec<Ply> = vec![ply1, ply2];
+
+        assert_eq!(list, correct);
+    }
+
+    #[test]
+    fn test_unique_equality_1() {
+        let lhs = vec![1, 2, 3, 4, 5];
+        let rhs = vec![5, 4, 3, 2, 1];
+        check_unique_equality(&lhs, &rhs);
+    }
+
+    #[test]
+    fn test_unique_equality_2() {
+        let lhs = vec![1, 2, 3, 4, 5, 4, 3, 2, 1];
+        let rhs = vec![5, 4, 3, 2, 1, 2, 3, 4, 5];
+        check_unique_equality(&lhs, &rhs);
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion failed")]
+    fn test_unique_equality_3() {
+        let ply1 = Ply::new(
+            Square::from("a1"),
+            Square::from("a1"),
+            Kind::Pawn(Color::White),
+        );
+        let ply2 = Ply::new(
+            Square::from("a1"),
+            Square::from("a1"),
+            Kind::Pawn(Color::Black),
+        );
+        let list1 = vec![ply1, ply2];
+        let list2 = vec![ply1];
+
+        check_unique_equality(&list1, &list2);
     }
 
     #[test]

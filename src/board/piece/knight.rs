@@ -140,7 +140,7 @@ mod tests {
             Ply::new(start_square, Square::from("d2"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
             Ply::new(start_square, Square::from("d2"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 
     #[test]

@@ -1401,7 +1401,7 @@ mod tests {
 
         board.unmake_move();
         let moves_3 = board.get_legal_moves();
-        check_unique_equality(moves_2.clone(), moves_3.clone());
+        check_unique_equality(&moves_2, &moves_3);
         let black_queenside_castle_move = moves_3
             .into_iter()
             .find(|mv| mv.is_castles && mv.dest.file == 2);
@@ -1421,11 +1421,11 @@ mod tests {
         );
 
         board.unmake_move();
-        check_unique_equality(moves_2, board.get_legal_moves());
+        check_unique_equality(&moves_2, &board.get_legal_moves());
         board.unmake_move();
 
         let moves_4 = board.get_legal_moves();
-        check_unique_equality(moves_1.clone(), moves_4.clone());
+        check_unique_equality(&moves_1.clone(), &moves_4.clone());
         let white_pawn_move = moves_4
             .clone()
             .into_iter()
@@ -1441,7 +1441,7 @@ mod tests {
         );
 
         board.unmake_move();
-        check_unique_equality(moves_1, board.get_legal_moves());
+        check_unique_equality(&moves_1, &board.get_legal_moves());
     }
 
     #[test]
