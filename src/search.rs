@@ -137,6 +137,27 @@ impl<T: Evaluator> Search<T> {
         );
     }
 
+    /// Returns the principal variation (PV) of the search.
+    /// The principal variation is the best line of play found by the search.
+    /// The PV is generated out to the maximum length sepcified, or earlier if the transposition table does not hold any more records
+    ///
+    /// # Arguments
+    ///
+    /// * `length` - The maximum length of the PV to return.
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<Ply>` - A vector of `Ply` representing the best line of play found by the search.
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.search(Some(3));
+    /// let pv = search.get_pv(3);
+    /// assert_eq!(pv.len(), 3);
+    /// ```
     fn get_pv(&self, length: Depth) -> Vec<Ply> {
         let mut plys = Vec::new();
         let mut iter_board = self.board.clone();
@@ -323,7 +344,7 @@ impl<T: Evaluator> Search<T> {
             .into(),
         };
 
-        for depth in 1..max_depth.unwrap_or(Depth::MAX) {
+        for depth in 1..=max_depth.unwrap_or(Depth::MAX) {
             let current_best_move = self.alpha_beta_start(depth, start);
 
             if !self.check_running() {
@@ -589,6 +610,30 @@ mod tests {
         let evaluator = SimpleEvaluator::new();
         let search = Search::new(&board, &evaluator, None);
         search.log_uci_info(3, 20000, 1500, 10, &[Ply::default()]);
+    }
+
+    #[test]
+    fn test_get_pv_1() {
+        let board = BoardBuilder::construct_starting_board().build();
+        let original_board = board.clone();
+        let evaluator = SimpleEvaluator::new();
+        let search = Search::new(&board, &evaluator, None);
+        assert_eq!(search.get_pv(1).len(), 0);
+        assert_eq!(board, original_board);
+    }
+
+    #[test]
+    fn test_get_pv_2() {
+        let board = BoardBuilder::construct_starting_board().build();
+        let original_board = board.clone();
+        let evaluator = SimpleEvaluator::new();
+        let mut search = Search::new(&board, &evaluator, None);
+        search.search(Some(2));
+
+        assert_eq!(search.get_pv(1).len(), 1);
+        assert_eq!(search.get_pv(2).len(), 2);
+        assert_eq!(search.get_pv(3).len(), 2);
+        assert_eq!(board, original_board);
     }
 
     #[test]
