@@ -1,3 +1,4 @@
+mod info;
 pub mod limits;
 mod logger;
 mod move_orderer;
@@ -10,6 +11,7 @@ use crate::board::{
     Board, Ply,
 };
 
+use info::Info;
 use limits::SearchLimits;
 use logger::Logger;
 use move_orderer::MoveOrderer;
@@ -54,14 +56,12 @@ pub struct Search<T: Evaluator> {
     board: Board,
     evaluator: T,
     limits: SearchLimits,
-    best_move: Option<Ply>,
     running: Arc<AtomicBool>,
 
-    depth: Depth,
-    nodes: u64,
-    movetime: u128,
+    info: Info,
 }
 
+/// Logs messages to stdout
 impl<T: Evaluator> Logger for Search<T> {
     fn log(&self, message: &str) {
         println!("{message}");
@@ -69,17 +69,32 @@ impl<T: Evaluator> Logger for Search<T> {
 }
 
 impl<T: Evaluator> Search<T> {
+    /// Creates a new `Search` instance with the given board and evaluator.
+    ///
+    /// # Arguments
+    ///
+    /// * `board` - The current board state.
+    /// * `evaluator` - The evaluator used to evaluate the board.
+    /// * `limits` - The search limits.
+    ///
+    /// # Returns
+    ///
+    /// * `Search` - A new `Search` instance.
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let search = Search::new(&board, &evaluator, None);
+    /// ```
     pub fn new(board: &Board, evaluator: &T, limits: Option<SearchLimits>) -> Self {
         Self {
             board: board.clone(),
             evaluator: evaluator.clone(),
             limits: limits.unwrap_or_default(),
-            best_move: None,
             running: Arc::new(AtomicBool::new(true)),
 
-            depth: 0,
-            nodes: 0,
-            movetime: 0,
+            info: Info::new(),
         }
     }
 
@@ -99,11 +114,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
     /// ```
-    #[allow(
-        clippy::cast_possible_truncation,
-        clippy::cast_sign_loss,
-        clippy::cast_precision_loss
-    )]
+    #[allow(clippy::cast_possible_truncation)]
     fn log_uci_info(
         &self,
         depth: Depth,
@@ -162,11 +173,11 @@ impl<T: Evaluator> Search<T> {
     /// let best_move = search.get_best_move();
     /// ```
     pub const fn get_best_move(&self) -> Option<Ply> {
-        self.best_move
+        self.info.best_move
     }
 
     pub const fn get_nodes(&self) -> u64 {
-        self.nodes
+        self.info.nodes
     }
 
     /// Returns the `AtomicBool` that is used to determine if the search should continue
@@ -217,20 +228,14 @@ impl<T: Evaluator> Search<T> {
     /// let limits_exceeded = search.check_limits();
     /// ```
     fn limits_exceeded(&self) -> bool {
-        if let Some(depth) = self.limits.depth {
-            if self.depth >= depth {
-                self.running.store(false, Ordering::Relaxed);
-                return true;
-            }
-        }
         if let Some(nodes) = self.limits.nodes {
-            if u128::from(self.nodes) >= nodes {
+            if u128::from(self.info.nodes) >= nodes {
                 self.running.store(false, Ordering::Relaxed);
                 return true;
             }
         }
         if let Some(movetime) = self.limits.movetime {
-            if self.movetime >= movetime {
+            if self.info.movetime >= movetime {
                 self.running.store(false, Ordering::Relaxed);
                 return true;
             }
@@ -328,10 +333,10 @@ impl<T: Evaluator> Search<T> {
             if self.time_limits_exceeded(start) {
                 break;
             }
-            self.best_move = Some(current_best_move);
+            self.info.best_move = Some(current_best_move);
         }
 
-        self.log(format!("bestmove {}", self.best_move.unwrap()).as_str());
+        self.log(format!("bestmove {}", self.info.best_move.unwrap()).as_str());
     }
 
     /// Initializes the alpha-beta search and returns the best move found
@@ -366,7 +371,7 @@ impl<T: Evaluator> Search<T> {
             let time_elapsed_in_ms = duration.as_millis();
             self.log_uci_info(
                 entry.depth,
-                self.nodes,
+                self.info.nodes,
                 time_elapsed_in_ms,
                 entry.score,
                 &self.get_pv(entry.depth),
@@ -390,7 +395,7 @@ impl<T: Evaluator> Search<T> {
 
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
-            self.nodes += 1;
+            self.info.nodes += 1;
 
             let value = self
                 .alpha_beta(alpha, beta, depth - 1, start)
@@ -406,7 +411,7 @@ impl<T: Evaluator> Search<T> {
         let time_elapsed_in_ms = duration.as_millis();
         self.log_uci_info(
             depth,
-            self.nodes,
+            self.info.nodes,
             time_elapsed_in_ms,
             best_value,
             &self.get_pv(depth),
@@ -500,7 +505,7 @@ impl<T: Evaluator> Search<T> {
         let mut best_ply = moves[0];
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
-            self.nodes += 1;
+            self.info.nodes += 1;
             let score = self
                 .alpha_beta(
                     beta.saturating_neg(),
@@ -602,19 +607,14 @@ mod tests {
         let evaluator = SimpleEvaluator::new();
         let mut search = Search::new(&board, &evaluator, None);
         assert!(!search.limits_exceeded());
-        search.limits.depth = Some(3);
-        assert!(!search.limits_exceeded());
-        search.depth = 3;
-        assert!(search.limits_exceeded());
-        search.limits.depth = None;
         search.limits.nodes = Some(100);
         assert!(!search.limits_exceeded());
-        search.nodes = 100;
+        search.info.nodes = 100;
         assert!(search.limits_exceeded());
         search.limits.nodes = None;
         search.limits.movetime = Some(1000);
         assert!(!search.limits_exceeded());
-        search.movetime = 1000;
+        search.info.movetime = 1000;
         assert!(search.limits_exceeded());
     }
 
