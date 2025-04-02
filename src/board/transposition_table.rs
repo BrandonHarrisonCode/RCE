@@ -3,6 +3,7 @@ use std::sync::RwLock;
 use nohash_hasher::IntMap;
 
 use super::{zkey::ZKey, Ply};
+use crate::search::Depth;
 
 extern crate nohash_hasher;
 
@@ -16,7 +17,7 @@ pub enum Bounds {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct TTEntry {
     pub score: i64,
-    pub depth: u16,
+    pub depth: Depth,
     pub bound: Bounds,
     pub best_ply: Ply,
 }

@@ -6,7 +6,7 @@ use std::thread::{self, JoinHandle};
 use crate::bench;
 use crate::board::{Board, BoardBuilder};
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
-use crate::search::{limits::SearchLimits, Search};
+use crate::search::{limits::SearchLimits, Depth, Search};
 
 const TITLE: &str = "Rust Chess Engine";
 const AUTHOR: &str = "Brandon Harrison";
@@ -166,7 +166,9 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
         idx += 1;
     }
 
-    let max_depth: Option<u16> = limits.depth.map(|d| u16::try_from(d).unwrap_or(u16::MAX));
+    let max_depth: Option<Depth> = limits
+        .depth
+        .map(|d| Depth::try_from(d).unwrap_or(Depth::MAX));
     let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
     let is_running = search.get_running();
     let join_handle = thread::spawn(move || {

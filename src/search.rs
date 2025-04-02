@@ -1,23 +1,55 @@
-use crate::board::piece::Color;
-use crate::board::transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE};
-
-use super::board::zkey::ZKey;
-use super::board::{Board, Ply};
-use super::evaluate::Evaluator;
-use logger::Logger;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Instant;
-
 pub mod limits;
 mod logger;
 mod move_orderer;
 
+use super::evaluate::Evaluator;
+use crate::board::{
+    piece::Color,
+    transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
+    zkey::ZKey,
+    Board, Ply,
+};
+
 use limits::SearchLimits;
+use logger::Logger;
 use move_orderer::MoveOrderer;
 
-const NEGMAX: i64 = -i64::MAX;
-#[allow(dead_code)]
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
+use std::time::Instant;
+
+pub type Depth = u8;
+
+const NEGMAX: i64 = -i64::MAX; // i64::MIN + 1
+
+/// The `Search` struct is responsible for performing the actual search on a board.
+/// It uses iterdeep with negamax to search the best move for the current player.
+/// It also uses a transposition table to store previously evaluated positions.
+///
+/// # Fields
+///
+/// * `board` - The current board state.
+/// * `evaluator` - The evaluator used to evaluate the board.
+/// * `limits` - The search limits.
+/// * `best_move` - The best move found by the search.
+/// * `running` - A thread-safe boolean that indicates if the search is still running.
+///
+/// * `depth` - The current depth of the search.
+/// * `nodes` - The number of nodes searched.
+/// * `movetime` - The time spent searching.
+///
+/// # Example
+/// ```
+/// let board = BoardBuilder::construct_starting_board().build();
+/// let evaluator = SimpleEvaluator::new();
+/// let mut search = Search::new(&board, &evaluator, None);
+///
+/// search.search(Some(3));
+/// let best_move = search.get_best_move();
+/// assert!(best_move.is_some());
+/// ```
 pub struct Search<T: Evaluator> {
     board: Board,
     evaluator: T,
@@ -25,7 +57,7 @@ pub struct Search<T: Evaluator> {
     best_move: Option<Ply>,
     running: Arc<AtomicBool>,
 
-    depth: u16,
+    depth: Depth,
     nodes: u64,
     movetime: u128,
 }
@@ -74,7 +106,7 @@ impl<T: Evaluator> Search<T> {
     )]
     fn log_uci_info(
         &self,
-        depth: u16,
+        depth: Depth,
         nodes: u64,
         time_elapsed_in_ms: u128,
         best_value: i64,
@@ -94,7 +126,7 @@ impl<T: Evaluator> Search<T> {
         );
     }
 
-    fn get_pv(&self, length: u16) -> Vec<Ply> {
+    fn get_pv(&self, length: Depth) -> Vec<Ply> {
         let mut plys = Vec::new();
         let mut iter_board = self.board.clone();
 
@@ -186,7 +218,7 @@ impl<T: Evaluator> Search<T> {
     /// ```
     fn limits_exceeded(&self) -> bool {
         if let Some(depth) = self.limits.depth {
-            if u128::from(self.depth) >= depth {
+            if self.depth >= depth {
                 self.running.store(false, Ordering::Relaxed);
                 return true;
             }
@@ -252,7 +284,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let best_move = search.search(Some(3));
     /// ```
-    pub fn search(&mut self, max_depth: Option<u16>) {
+    pub fn search(&mut self, max_depth: Option<Depth>) {
         self.iter_deep(max_depth);
     }
 
@@ -270,7 +302,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// search.iter_deep(Some(3));
     /// ```
-    fn iter_deep(&mut self, max_depth: Option<u16>) {
+    fn iter_deep(&mut self, max_depth: Option<Depth>) {
         let start = Instant::now();
         // Uses a heuristic to determine the maximum time to spend on a move
         self.limits.time_management_timer = match self.board.current_turn {
@@ -286,7 +318,7 @@ impl<T: Evaluator> Search<T> {
             .into(),
         };
 
-        for depth in 1..max_depth.unwrap_or(u16::MAX) {
+        for depth in 1..max_depth.unwrap_or(Depth::MAX) {
             let current_best_move = self.alpha_beta_start(depth, start);
 
             if !self.check_running() {
@@ -319,7 +351,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let best_move = search.alpha_beta_start(3);
     /// ```
-    fn alpha_beta_start(&mut self, depth: u16, start: Instant) -> Ply {
+    fn alpha_beta_start(&mut self, depth: Depth, start: Instant) -> Ply {
         let mut best_value = i64::MIN;
         let mut alpha = i64::MIN;
         let mut beta = i64::MAX;
@@ -419,7 +451,7 @@ impl<T: Evaluator> Search<T> {
         &mut self,
         alpha_start: i64,
         beta_start: i64,
-        depthleft: u16,
+        depthleft: Depth,
         start: Instant,
     ) -> i64 {
         if depthleft == 0

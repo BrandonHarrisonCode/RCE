@@ -1,6 +1,7 @@
+use super::Depth;
 #[allow(clippy::module_name_repetitions)]
 pub struct SearchLimits {
-    pub depth: Option<u128>,
+    pub depth: Option<Depth>,
     pub nodes: Option<u128>,
     pub movetime: Option<u128>,
     pub white_time: Option<u128>,
@@ -32,7 +33,7 @@ impl SearchLimits {
         }
     }
 
-    pub const fn depth(mut self, depth: Option<u128>) -> Self {
+    pub const fn depth(mut self, depth: Option<Depth>) -> Self {
         self.depth = depth;
         self
     }
