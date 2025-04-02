@@ -23,6 +23,8 @@ use std::sync::{
 use std::time::Instant;
 
 pub type Depth = u8;
+pub type NodeCount = u64;
+pub type Millisecond = u128;
 
 const NEGMAX: i64 = -i64::MAX; // i64::MIN + 1
 
@@ -118,8 +120,8 @@ impl<T: Evaluator> Search<T> {
     fn log_uci_info(
         &self,
         depth: Depth,
-        nodes: u64,
-        time_elapsed_in_ms: u128,
+        nodes: NodeCount,
+        time_elapsed_in_ms: Millisecond,
         best_value: i64,
         pv: &[Ply],
     ) {
@@ -178,26 +180,20 @@ impl<T: Evaluator> Search<T> {
         plys
     }
 
-    #[allow(dead_code)]
-    /// Returns the best move found by the search so far
+    /// Returns the number of nodes searched.
     ///
     /// # Returns
     ///
-    /// * `Option<Ply>` - The best move found by the search so far, if one has been found
+    /// * `u64` - The number of nodes searched.
     ///
     /// # Example
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let evaluator = SimpleEvaluator::new();
     /// let mut search = Search::new(&board, &evaluator, None);
-    /// search.search(Some(3));
-    /// let best_move = search.get_best_move();
+    /// let nodes = search.get_nodes();
     /// ```
-    pub const fn get_best_move(&self) -> Option<Ply> {
-        self.info.best_move
-    }
-
-    pub const fn get_nodes(&self) -> u64 {
+    pub const fn get_nodes(&self) -> NodeCount {
         self.info.nodes
     }
 
@@ -250,7 +246,7 @@ impl<T: Evaluator> Search<T> {
     /// ```
     fn limits_exceeded(&self) -> bool {
         if let Some(nodes) = self.limits.nodes {
-            if u128::from(self.info.nodes) >= nodes {
+            if self.info.nodes >= nodes {
                 self.running.store(false, Ordering::Relaxed);
                 return true;
             }
@@ -281,7 +277,7 @@ impl<T: Evaluator> Search<T> {
     pub fn time_limits_exceeded(&self, start: Instant) -> bool {
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(u128::MAX)
+        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
             || ([
                 self.limits.white_time,
                 self.limits.white_increment,
@@ -290,7 +286,11 @@ impl<T: Evaluator> Search<T> {
             ]
             .iter()
             .any(Option::is_some)
-                && time_elapsed_in_ms >= self.limits.time_management_timer.unwrap_or(u128::MAX))
+                && time_elapsed_in_ms
+                    >= self
+                        .limits
+                        .time_management_timer
+                        .unwrap_or(Millisecond::MAX))
     }
 
     /// Initializes the search and returns the best move found
@@ -308,7 +308,6 @@ impl<T: Evaluator> Search<T> {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let evaluator = SimpleEvaluator::new();
     /// let mut search = Search::new(&board, &evaluator, None);
-    /// let best_move = search.search(Some(3));
     /// ```
     pub fn search(&mut self, max_depth: Option<Depth>) {
         self.iter_deep(max_depth);
@@ -592,17 +591,6 @@ mod tests {
     use crate::board::BoardBuilder;
     use crate::evaluate::simple_evaluator::SimpleEvaluator;
     use test::Bencher;
-
-    #[test]
-    fn test_get_best_move() {
-        let board = BoardBuilder::construct_starting_board().build();
-        let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        assert!(search.get_best_move().is_none());
-        search.search(Some(3));
-        let best_move = search.get_best_move();
-        assert!(best_move.is_some());
-    }
 
     #[test]
     fn test_log_uci() {
