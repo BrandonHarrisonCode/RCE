@@ -169,10 +169,10 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
     let max_depth: Option<Depth> = limits
         .depth
         .map(|d| Depth::try_from(d).unwrap_or(Depth::MAX));
-    let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
-    let is_running = search.get_running();
+    let mut search = Search::new(board, Some(limits));
+    let is_running = search.running.clone();
     let join_handle = thread::spawn(move || {
-        search.search(max_depth);
+        search.search(SimpleEvaluator, max_depth);
     });
 
     Ok((is_running, join_handle))

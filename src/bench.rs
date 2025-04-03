@@ -79,9 +79,9 @@ pub fn bench() {
     let mut total_ms = 0;
 
     for fen in FENS {
-        let mut search = Search::new(&Board::from_fen(fen), &SimpleEvaluator::new(), None);
+        let mut search = Search::new(&Board::from_fen(fen), None);
         let start = Instant::now();
-        search.search(Some(MAXDEPTH));
+        search.search(SimpleEvaluator, Some(MAXDEPTH));
         total_ms += start.elapsed().as_millis();
         total_nodes += search.get_nodes();
         TRANSPOSITION_TABLE

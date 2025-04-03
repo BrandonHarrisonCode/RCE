@@ -14,10 +14,6 @@ impl SimpleEvaluator {
     const BISHOP_VALUE: i64 = 300;
     const KNIGHT_VALUE: i64 = 300;
     const PAWN_VALUE: i64 = 100;
-
-    pub const fn new() -> Self {
-        Self {}
-    }
 }
 
 impl Evaluator for SimpleEvaluator {

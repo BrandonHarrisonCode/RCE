@@ -29,7 +29,6 @@ use crate::board::Ply;
 pub struct Info {
     pub best_move: Option<Ply>,
     pub nodes: u64,
-    pub movetime: u128,
 }
 
 impl Info {
@@ -38,7 +37,6 @@ impl Info {
         Self {
             best_move: None,
             nodes: 0,
-            movetime: 0,
         }
     }
 }

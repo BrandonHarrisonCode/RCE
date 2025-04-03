@@ -4,11 +4,14 @@ mod logger;
 mod move_orderer;
 
 use super::evaluate::Evaluator;
-use crate::board::{
-    piece::Color,
-    transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
-    zkey::ZKey,
-    Board, Ply,
+use crate::{
+    board::{
+        piece::Color,
+        transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
+        zkey::ZKey,
+        Board, Ply,
+    },
+    evaluate::simple_evaluator::SimpleEvaluator,
 };
 
 use info::Info;
@@ -54,23 +57,22 @@ const NEGMAX: i64 = -i64::MAX; // i64::MIN + 1
 /// let best_move = search.get_best_move();
 /// assert!(best_move.is_some());
 /// ```
-pub struct Search<T: Evaluator> {
+pub struct Search {
+    pub running: Arc<AtomicBool>,
     board: Board,
-    evaluator: T,
     limits: SearchLimits,
-    running: Arc<AtomicBool>,
 
     info: Info,
 }
 
 /// Logs messages to stdout
-impl<T: Evaluator> Logger for Search<T> {
+impl Logger for Search {
     fn log(&self, message: &str) {
         println!("{message}");
     }
 }
 
-impl<T: Evaluator> Search<T> {
+impl Search {
     /// Creates a new `Search` instance with the given board and evaluator.
     ///
     /// # Arguments
@@ -86,13 +88,11 @@ impl<T: Evaluator> Search<T> {
     /// # Example
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let search = Search::new(&board, &evaluator, None);
+    /// let search = Search::new(&board, None);
     /// ```
-    pub fn new(board: &Board, evaluator: &T, limits: Option<SearchLimits>) -> Self {
+    pub fn new(board: &Board, limits: Option<SearchLimits>) -> Self {
         Self {
             board: board.clone(),
-            evaluator: evaluator.clone(),
             limits: limits.unwrap_or_default(),
             running: Arc::new(AtomicBool::new(true)),
 
@@ -197,21 +197,36 @@ impl<T: Evaluator> Search<T> {
         self.info.nodes
     }
 
-    /// Returns the `AtomicBool` that is used to determine if the search should continue
-    ///
-    /// # Returns
-    ///
-    /// * `Arc<AtomicBool>` - The `AtomicBool` that is used to determine if the search should continue
+    /// Sets the `AtomicBool` that is used to determine if the search should continue to true
+    /// Normally called by the search function.
     ///
     /// # Example
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let evaluator = SimpleEvaluator::new();
     /// let mut search = Search::new(&board, &evaluator, None);
-    /// let running = search.get_running();
+    /// search.stop();
+    /// assert_eq!(search.is_running(), false);
+    /// search.start();
+    /// assert_eq!(search.is_running(), true);
     /// ```
-    pub fn get_running(&self) -> Arc<AtomicBool> {
-        self.running.clone()
+    fn start(&self) {
+        self.running.store(true, Ordering::Relaxed);
+    }
+
+    /// Sets the `AtomicBool` that is used to determine if the search should continue to false
+    /// The search will wrap up as soon as possible and stop.
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.stop();
+    /// assert_eq!(search.is_running(), false);
+    /// ```
+    pub fn stop(&self) {
+        self.running.store(false, Ordering::Relaxed);
     }
 
     /// Returns a boolean determining if the search is still running
@@ -227,7 +242,7 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let running = search.check_running();
     /// ```
-    pub fn check_running(&self) -> bool {
+    pub fn is_running(&self) -> bool {
         self.running.load(Ordering::Relaxed)
     }
 
@@ -244,37 +259,14 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let limits_exceeded = search.check_limits();
     /// ```
-    fn limits_exceeded(&self) -> bool {
+    fn limits_exceeded(&self, start: Instant) -> bool {
         if let Some(nodes) = self.limits.nodes {
             if self.info.nodes >= nodes {
                 self.running.store(false, Ordering::Relaxed);
                 return true;
             }
         }
-        if let Some(movetime) = self.limits.movetime {
-            if self.info.movetime >= movetime {
-                self.running.store(false, Ordering::Relaxed);
-                return true;
-            }
-        }
 
-        false
-    }
-
-    /// Checks if the search has exceeded limits related to time restrictions.
-    ///
-    /// # Returns
-    ///
-    /// * `bool` - A boolean determining if the search has exceeded any of the time-related limits
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// let time_limits_exceeded = search.time_limits_exceeded();
-    /// ```
-    pub fn time_limits_exceeded(&self, start: Instant) -> bool {
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
         time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
@@ -309,8 +301,26 @@ impl<T: Evaluator> Search<T> {
     /// let evaluator = SimpleEvaluator::new();
     /// let mut search = Search::new(&board, &evaluator, None);
     /// ```
-    pub fn search(&mut self, max_depth: Option<Depth>) {
-        self.iter_deep(max_depth);
+    pub fn search(&mut self, evaluator: impl Evaluator, max_depth: Option<Depth>) {
+        // Uses a heuristic to determine the maximum time to spend on a move
+        self.start();
+
+        self.limits.time_management_timer = match self.board.current_turn {
+            Color::White => {
+                self.limits.white_time.unwrap_or(0) / 20
+                    + self.limits.white_increment.unwrap_or(0) / 2
+            }
+            .into(),
+            Color::Black => {
+                self.limits.black_time.unwrap_or(0) / 20
+                    + self.limits.black_increment.unwrap_or(0) / 2
+            }
+            .into(),
+        };
+
+        self.iter_deep(&evaluator, max_depth);
+
+        self.stop();
     }
 
     /// Iterates through the search at increasing depths until the search is stopped or the maximum depth is reached
@@ -327,33 +337,18 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// search.iter_deep(Some(3));
     /// ```
-    fn iter_deep(&mut self, max_depth: Option<Depth>) {
+    fn iter_deep(&mut self, evaluator: &impl Evaluator, max_depth: Option<Depth>) {
         let start = Instant::now();
-        // Uses a heuristic to determine the maximum time to spend on a move
-        self.limits.time_management_timer = match self.board.current_turn {
-            Color::White => {
-                self.limits.white_time.unwrap_or(0) / 20
-                    + self.limits.white_increment.unwrap_or(0) / 2
-            }
-            .into(),
-            Color::Black => {
-                self.limits.black_time.unwrap_or(0) / 20
-                    + self.limits.black_increment.unwrap_or(0) / 2
-            }
-            .into(),
-        };
-
         for depth in 1..=max_depth.unwrap_or(Depth::MAX) {
-            let current_best_move = self.alpha_beta_start(depth, start);
+            let current_best_move = self.alpha_beta_start(evaluator, depth, start);
 
-            if !self.check_running() {
+            // TODO: move here
+
+            if !self.is_running() || self.limits_exceeded(start) {
                 break;
             }
 
-            if self.time_limits_exceeded(start) {
-                break;
-            }
-            self.info.best_move = Some(current_best_move);
+            self.info.best_move = Some(current_best_move); // TODO, test if moving this before the break statement produces better results now that we are investigating the pv first
         }
 
         self.log(format!("bestmove {}", self.info.best_move.unwrap()).as_str());
@@ -376,79 +371,63 @@ impl<T: Evaluator> Search<T> {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let best_move = search.alpha_beta_start(3);
     /// ```
-    fn alpha_beta_start(&mut self, depth: Depth, start: Instant) -> Ply {
-        let mut best_value = i64::MIN;
+    fn alpha_beta_start(
+        &mut self,
+        evaluator: &impl Evaluator,
+        depth: Depth,
+        start: Instant,
+    ) -> Ply {
         let mut alpha = i64::MIN;
-        let mut beta = i64::MAX;
-
-        // Check if we have more information in the TTable than we have already reached in this search
-        if let Some(entry) = TRANSPOSITION_TABLE
-            .read()
-            .expect("Transposition table is poisoned! Unable to read entry.")
-            .get(&ZKey::from(&self.board))
-        {
-            let duration = start.elapsed();
-            let time_elapsed_in_ms = duration.as_millis();
-            self.log_uci_info(
-                entry.depth,
-                self.info.nodes,
-                time_elapsed_in_ms,
-                entry.score,
-                &self.get_pv(entry.depth),
-            );
-            if entry.depth >= depth {
-                match entry.bound {
-                    Bounds::Exact => return entry.best_ply,
-                    Bounds::Lower => alpha = alpha.max(entry.score),
-                    Bounds::Upper => beta = beta.min(entry.score),
-                }
-
-                if alpha >= beta {
-                    return entry.best_ply;
-                }
-            }
-        }
+        let beta = i64::MAX;
 
         let moves = self.board.get_legal_moves();
+        if moves.is_empty() {
+            return Ply::default();
+        }
 
         let mut best_ply = moves[0];
-
         for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
             self.board.make_move(mv);
             self.info.nodes += 1;
 
             let value = self
-                .alpha_beta(alpha, beta, depth - 1, start)
+                .alpha_beta(evaluator, alpha, beta, depth - 1, start)
                 .saturating_neg();
-            if value > best_value {
-                best_value = value;
+            if value > alpha {
+                alpha = value;
                 best_ply = mv;
+
+                self.log_uci_info(
+                    depth,
+                    self.info.nodes,
+                    start.elapsed().as_millis(),
+                    alpha,
+                    &self.get_pv(depth),
+                );
+
+                // Checkmate found
+                if alpha == i64::MAX {
+                    break;
+                }
             }
             self.board.unmake_move();
         }
 
-        let duration = start.elapsed();
-        let time_elapsed_in_ms = duration.as_millis();
-        self.log_uci_info(
-            depth,
-            self.info.nodes,
-            time_elapsed_in_ms,
-            best_value,
-            &self.get_pv(depth),
-        );
-
-        TRANSPOSITION_TABLE
-            .write()
-            .expect("Transposition table is poisoned! Unable to write new entry.")
-            .insert(
-                ZKey::from(&self.board),
-                TTEntry {
-                    score: best_value,
-                    depth,
-                    bound: Bounds::Exact,
-                    best_ply,
-                },
-            );
+        // Don't save incomplete searches
+        if self.is_running() && !self.limits_exceeded(start) {
+            TRANSPOSITION_TABLE
+                .write()
+                .expect("Transposition table is poisoned! Unable to write new entry.")
+                .insert(
+                    ZKey::from(&self.board),
+                    TTEntry {
+                        score: alpha,
+                        depth,
+                        bound: Bounds::Exact,
+                        best_ply,
+                    },
+                );
+        }
 
         best_ply
     }
@@ -474,17 +453,14 @@ impl<T: Evaluator> Search<T> {
     /// ```
     fn alpha_beta(
         &mut self,
+        evaluator: &impl Evaluator,
         alpha_start: i64,
         beta_start: i64,
-        depthleft: Depth,
+        depth: Depth,
         start: Instant,
     ) -> i64 {
-        if depthleft == 0
-            || !self.check_running()
-            || self.limits_exceeded()
-            || self.time_limits_exceeded(start)
-        {
-            return self.evaluator.evaluate(&mut self.board);
+        if depth == 0 || !self.is_running() || self.limits_exceeded(start) {
+            return evaluator.evaluate(&mut self.board);
         }
 
         let zkey = ZKey::from(&self.board);
@@ -497,7 +473,7 @@ impl<T: Evaluator> Search<T> {
             .expect("Transposition table is poisoned! Unable to read entry.")
             .get(&zkey)
         {
-            if entry.depth >= depthleft {
+            if entry.depth >= depth {
                 match entry.bound {
                     Bounds::Exact => return entry.score,
                     Bounds::Lower => alpha = alpha.max(entry.score),
@@ -518,6 +494,10 @@ impl<T: Evaluator> Search<T> {
             return 0; // Stalemate
         }
 
+        if self.board.get_halfmove_clock() >= 100 {
+            return 0; // Draw by fifty-move rule
+        }
+
         if self.board.position_reached(&ZKey::from(&self.board)) {
             return 0; // Avoid threefold repetition at first repeitition
         }
@@ -528,9 +508,10 @@ impl<T: Evaluator> Search<T> {
             self.info.nodes += 1;
             let score = self
                 .alpha_beta(
+                    &SimpleEvaluator,
                     beta.saturating_neg(),
                     alpha.saturating_neg(),
-                    depthleft - 1,
+                    depth - 1,
                     start,
                 )
                 .saturating_neg();
@@ -545,7 +526,7 @@ impl<T: Evaluator> Search<T> {
                         ZKey::from(&self.board),
                         TTEntry {
                             score,
-                            depth: depthleft,
+                            depth,
                             bound: Bounds::Lower,
                             best_ply: mv,
                         },
@@ -567,7 +548,7 @@ impl<T: Evaluator> Search<T> {
                 ZKey::from(&self.board),
                 TTEntry {
                     score: alpha,
-                    depth: depthleft,
+                    depth,
                     bound: if alpha <= alpha_start {
                         Bounds::Upper
                     } else {
@@ -595,8 +576,7 @@ mod tests {
     #[test]
     fn test_log_uci() {
         let board = BoardBuilder::construct_starting_board().build();
-        let evaluator = SimpleEvaluator::new();
-        let search = Search::new(&board, &evaluator, None);
+        let search = Search::new(&board, None);
         search.log_uci_info(3, 20000, 1500, 10, &[Ply::default()]);
     }
 
@@ -604,8 +584,7 @@ mod tests {
     fn test_get_pv_1() {
         let board = BoardBuilder::construct_starting_board().build();
         let original_board = board.clone();
-        let evaluator = SimpleEvaluator::new();
-        let search = Search::new(&board, &evaluator, None);
+        let search = Search::new(&board, None);
         assert_eq!(search.get_pv(1).len(), 0);
         assert_eq!(board, original_board);
     }
@@ -614,9 +593,8 @@ mod tests {
     fn test_get_pv_2() {
         let board = BoardBuilder::construct_starting_board().build();
         let original_board = board.clone();
-        let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        search.search(Some(2));
+        let mut search = Search::new(&board, None);
+        search.search(SimpleEvaluator, Some(2));
 
         assert_eq!(search.get_pv(1).len(), 1);
         assert_eq!(search.get_pv(2).len(), 2);
@@ -625,51 +603,41 @@ mod tests {
     }
 
     #[test]
-    fn test_get_running() {
+    fn test_check_limits() {
         let board = BoardBuilder::construct_starting_board().build();
-        let evaluator = SimpleEvaluator::new();
-        let search = Search::new(&board, &evaluator, None);
-        assert!(search.check_running());
-        search.get_running().store(false, Ordering::Relaxed);
-        assert!(!search.check_running());
+        let start = Instant::now();
+        let mut search = Search::new(&board, None);
+        assert!(!search.limits_exceeded(start));
+        search.limits.nodes = Some(100);
+        assert!(!search.limits_exceeded(start));
+        search.info.nodes = 100;
+        assert!(search.limits_exceeded(start));
+        search.limits.nodes = None;
+        search.limits.movetime = Some(1000);
+        assert!(!search.limits_exceeded(start));
     }
 
     #[test]
-    fn test_check_limits() {
-        let board = BoardBuilder::construct_starting_board().build();
-        let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        assert!(!search.limits_exceeded());
-        search.limits.nodes = Some(100);
-        assert!(!search.limits_exceeded());
-        search.info.nodes = 100;
-        assert!(search.limits_exceeded());
-        search.limits.nodes = None;
-        search.limits.movetime = Some(1000);
-        assert!(!search.limits_exceeded());
-        search.info.movetime = 1000;
-        assert!(search.limits_exceeded());
+    fn test_search_no_legal_moves() {
+        let board = Board::from_fen("4r2k/p2q1RQb/1p5p/2ppP3/3P4/2P5/P1P1B1PP/5RK1 b - - 0 22");
+        let mut search = Search::new(&board, None);
+        let best_move = search.alpha_beta_start(&SimpleEvaluator, 5, Instant::now());
+        assert_eq!(best_move, Ply::default());
     }
 
     #[test]
     fn test_alpha_beta() {
         let board = BoardBuilder::construct_starting_board().build();
-        let evaluator = SimpleEvaluator::new();
-        let mut search = Search::new(&board, &evaluator, None);
-        let score = search.alpha_beta(i64::MIN, i64::MAX, 4, Instant::now());
+        let mut search = Search::new(&board, None);
+        let score = search.alpha_beta(&SimpleEvaluator, i64::MIN, i64::MAX, 4, Instant::now());
         assert_eq!(score, 0)
     }
 
     #[bench]
     fn bench_search_depth_3(bencher: &mut Bencher) {
-        let evaluator = SimpleEvaluator::new();
         bencher.iter(|| {
-            Search::new(
-                &BoardBuilder::construct_starting_board().build(),
-                &evaluator,
-                None,
-            )
-            .search(Some(3));
+            Search::new(&BoardBuilder::construct_starting_board().build(), None)
+                .search(SimpleEvaluator, Some(3));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
@@ -679,14 +647,9 @@ mod tests {
 
     #[bench]
     fn bench_search_depth_4(bencher: &mut Bencher) {
-        let evaluator = SimpleEvaluator::new();
         bencher.iter(|| {
-            Search::new(
-                &BoardBuilder::construct_starting_board().build(),
-                &evaluator,
-                None,
-            )
-            .search(Some(4));
+            Search::new(&BoardBuilder::construct_starting_board().build(), None)
+                .search(SimpleEvaluator, Some(4));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
@@ -696,14 +659,9 @@ mod tests {
 
     #[bench]
     fn bench_search_depth_5(bencher: &mut Bencher) {
-        let evaluator = SimpleEvaluator::new();
         bencher.iter(|| {
-            Search::new(
-                &BoardBuilder::construct_starting_board().build(),
-                &evaluator,
-                None,
-            )
-            .search(Some(5));
+            Search::new(&BoardBuilder::construct_starting_board().build(), None)
+                .search(SimpleEvaluator, Some(5));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
@@ -713,14 +671,9 @@ mod tests {
 
     #[bench]
     fn bench_search_depth_6(bencher: &mut Bencher) {
-        let evaluator = SimpleEvaluator::new();
         bencher.iter(|| {
-            Search::new(
-                &BoardBuilder::construct_starting_board().build(),
-                &evaluator,
-                None,
-            )
-            .search(Some(6));
+            Search::new(&BoardBuilder::construct_starting_board().build(), None)
+                .search(SimpleEvaluator, Some(6));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
