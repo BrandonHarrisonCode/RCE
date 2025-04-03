@@ -301,7 +301,7 @@ impl Search {
     /// let evaluator = SimpleEvaluator::new();
     /// let mut search = Search::new(&board, &evaluator, None);
     /// ```
-    pub fn search(&mut self, evaluator: impl Evaluator, max_depth: Option<Depth>) {
+    pub fn search(&mut self, evaluator: &impl Evaluator, max_depth: Option<Depth>) {
         // Uses a heuristic to determine the maximum time to spend on a move
         self.start();
 
@@ -318,7 +318,7 @@ impl Search {
             .into(),
         };
 
-        self.iter_deep(&evaluator, max_depth);
+        self.iter_deep(evaluator, max_depth);
 
         self.stop();
     }
@@ -594,7 +594,7 @@ mod tests {
         let board = BoardBuilder::construct_starting_board().build();
         let original_board = board.clone();
         let mut search = Search::new(&board, None);
-        search.search(SimpleEvaluator, Some(2));
+        search.search(&SimpleEvaluator, Some(2));
 
         assert_eq!(search.get_pv(1).len(), 1);
         assert_eq!(search.get_pv(2).len(), 2);
@@ -637,7 +637,7 @@ mod tests {
     fn bench_search_depth_3(bencher: &mut Bencher) {
         bencher.iter(|| {
             Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(SimpleEvaluator, Some(3));
+                .search(&SimpleEvaluator, Some(3));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
@@ -649,7 +649,7 @@ mod tests {
     fn bench_search_depth_4(bencher: &mut Bencher) {
         bencher.iter(|| {
             Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(SimpleEvaluator, Some(4));
+                .search(&SimpleEvaluator, Some(4));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
@@ -661,7 +661,7 @@ mod tests {
     fn bench_search_depth_5(bencher: &mut Bencher) {
         bencher.iter(|| {
             Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(SimpleEvaluator, Some(5));
+                .search(&SimpleEvaluator, Some(5));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
@@ -673,7 +673,7 @@ mod tests {
     fn bench_search_depth_6(bencher: &mut Bencher) {
         bencher.iter(|| {
             Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(SimpleEvaluator, Some(6));
+                .search(&SimpleEvaluator, Some(6));
             TRANSPOSITION_TABLE
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
