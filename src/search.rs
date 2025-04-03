@@ -100,191 +100,6 @@ impl Search {
         }
     }
 
-    /// Logs the UCI output
-    ///
-    /// # Arguments
-    ///
-    /// * `depth` - The depth of the search
-    /// * `time_elapsed_in_ms` - The time elapsed in milliseconds
-    /// * `best_value` - The best value found by the search
-    /// * `best_ply` - The best move found by the search
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
-    /// ```
-    #[allow(clippy::cast_possible_truncation)]
-    fn log_uci_info(
-        &self,
-        depth: Depth,
-        nodes: NodeCount,
-        time_elapsed_in_ms: Millisecond,
-        best_value: i64,
-        pv: &[Ply],
-    ) {
-        let score = match best_value {
-            i64::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
-            i64::MAX => format!("mate {}", pv.len().div_ceil(2)),
-            _ => format!("cp {best_value}"),
-        };
-        let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
-        let pv_notation: Vec<String> = pv.iter().map(std::string::ToString::to_string).collect();
-        let pv_string = pv_notation.join(" ");
-        self.log(
-            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {pv_string}")
-                .as_str(),
-        );
-    }
-
-    /// Returns the principal variation (PV) of the search.
-    /// The principal variation is the best line of play found by the search.
-    /// The PV is generated out to the maximum length sepcified, or earlier if the transposition table does not hold any more records
-    ///
-    /// # Arguments
-    ///
-    /// * `length` - The maximum length of the PV to return.
-    ///
-    /// # Returns
-    ///
-    /// * `Vec<Ply>` - A vector of `Ply` representing the best line of play found by the search.
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// search.search(Some(3));
-    /// let pv = search.get_pv(3);
-    /// assert_eq!(pv.len(), 3);
-    /// ```
-    fn get_pv(&self, length: Depth) -> Vec<Ply> {
-        let mut plys = Vec::new();
-        let mut iter_board = self.board.clone();
-
-        for _ in 0..length {
-            if let Some(entry) = TRANSPOSITION_TABLE
-                .read()
-                .expect("Transposition table is poisoned! Unable to read entry.")
-                .get(&ZKey::from(&iter_board))
-            {
-                plys.push(entry.best_ply);
-                iter_board.make_move(entry.best_ply);
-            } else {
-                break;
-            }
-        }
-
-        plys
-    }
-
-    /// Returns the number of nodes searched.
-    ///
-    /// # Returns
-    ///
-    /// * `u64` - The number of nodes searched.
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// let nodes = search.get_nodes();
-    /// ```
-    pub const fn get_nodes(&self) -> NodeCount {
-        self.info.nodes
-    }
-
-    /// Sets the `AtomicBool` that is used to determine if the search should continue to true
-    /// Normally called by the search function.
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// search.stop();
-    /// assert_eq!(search.is_running(), false);
-    /// search.start();
-    /// assert_eq!(search.is_running(), true);
-    /// ```
-    fn start(&self) {
-        self.running.store(true, Ordering::Relaxed);
-    }
-
-    /// Sets the `AtomicBool` that is used to determine if the search should continue to false
-    /// The search will wrap up as soon as possible and stop.
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// search.stop();
-    /// assert_eq!(search.is_running(), false);
-    /// ```
-    pub fn stop(&self) {
-        self.running.store(false, Ordering::Relaxed);
-    }
-
-    /// Returns a boolean determining if the search is still running
-    ///
-    /// # Returns
-    ///
-    /// * `bool` - A boolean determining if the search is still running
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// let running = search.check_running();
-    /// ```
-    pub fn is_running(&self) -> bool {
-        self.running.load(Ordering::Relaxed)
-    }
-
-    /// Checks if the search has exceeded any of the limits
-    ///
-    /// # Returns
-    ///
-    /// * `bool` - A boolean determining if the search has exceeded any of the limits
-    ///
-    /// # Example
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let evaluator = SimpleEvaluator::new();
-    /// let mut search = Search::new(&board, &evaluator, None);
-    /// let limits_exceeded = search.check_limits();
-    /// ```
-    fn limits_exceeded(&self, start: Instant) -> bool {
-        if let Some(nodes) = self.limits.nodes {
-            if self.info.nodes >= nodes {
-                self.running.store(false, Ordering::Relaxed);
-                return true;
-            }
-        }
-
-        let duration = start.elapsed();
-        let time_elapsed_in_ms = duration.as_millis();
-        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
-            || ([
-                self.limits.white_time,
-                self.limits.white_increment,
-                self.limits.black_time,
-                self.limits.black_increment,
-            ]
-            .iter()
-            .any(Option::is_some)
-                && time_elapsed_in_ms
-                    >= self
-                        .limits
-                        .time_management_timer
-                        .unwrap_or(Millisecond::MAX))
-    }
-
     /// Initializes the search and returns the best move found
     ///
     /// # Arguments
@@ -559,6 +374,191 @@ impl Search {
             );
 
         alpha
+    }
+
+    /// Checks if the search has exceeded any of the limits
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - A boolean determining if the search has exceeded any of the limits
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// let limits_exceeded = search.check_limits();
+    /// ```
+    fn limits_exceeded(&self, start: Instant) -> bool {
+        if let Some(nodes) = self.limits.nodes {
+            if self.info.nodes >= nodes {
+                self.running.store(false, Ordering::Relaxed);
+                return true;
+            }
+        }
+
+        let duration = start.elapsed();
+        let time_elapsed_in_ms = duration.as_millis();
+        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
+            || ([
+                self.limits.white_time,
+                self.limits.white_increment,
+                self.limits.black_time,
+                self.limits.black_increment,
+            ]
+            .iter()
+            .any(Option::is_some)
+                && time_elapsed_in_ms
+                    >= self
+                        .limits
+                        .time_management_timer
+                        .unwrap_or(Millisecond::MAX))
+    }
+
+    /// Logs the UCI output
+    ///
+    /// # Arguments
+    ///
+    /// * `depth` - The depth of the search
+    /// * `time_elapsed_in_ms` - The time elapsed in milliseconds
+    /// * `best_value` - The best value found by the search
+    /// * `best_ply` - The best move found by the search
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
+    /// ```
+    #[allow(clippy::cast_possible_truncation)]
+    fn log_uci_info(
+        &self,
+        depth: Depth,
+        nodes: NodeCount,
+        time_elapsed_in_ms: Millisecond,
+        best_value: i64,
+        pv: &[Ply],
+    ) {
+        let score = match best_value {
+            i64::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
+            i64::MAX => format!("mate {}", pv.len().div_ceil(2)),
+            _ => format!("cp {best_value}"),
+        };
+        let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
+        let pv_notation: Vec<String> = pv.iter().map(std::string::ToString::to_string).collect();
+        let pv_string = pv_notation.join(" ");
+        self.log(
+            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {pv_string}")
+                .as_str(),
+        );
+    }
+
+    /// Returns the principal variation (PV) of the search.
+    /// The principal variation is the best line of play found by the search.
+    /// The PV is generated out to the maximum length sepcified, or earlier if the transposition table does not hold any more records
+    ///
+    /// # Arguments
+    ///
+    /// * `length` - The maximum length of the PV to return.
+    ///
+    /// # Returns
+    ///
+    /// * `Vec<Ply>` - A vector of `Ply` representing the best line of play found by the search.
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.search(Some(3));
+    /// let pv = search.get_pv(3);
+    /// assert_eq!(pv.len(), 3);
+    /// ```
+    fn get_pv(&self, length: Depth) -> Vec<Ply> {
+        let mut plys = Vec::new();
+        let mut iter_board = self.board.clone();
+
+        for _ in 0..length {
+            if let Some(entry) = TRANSPOSITION_TABLE
+                .read()
+                .expect("Transposition table is poisoned! Unable to read entry.")
+                .get(&ZKey::from(&iter_board))
+            {
+                plys.push(entry.best_ply);
+                iter_board.make_move(entry.best_ply);
+            } else {
+                break;
+            }
+        }
+
+        plys
+    }
+
+    /// Returns the number of nodes searched.
+    ///
+    /// # Returns
+    ///
+    /// * `u64` - The number of nodes searched.
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// let nodes = search.get_nodes();
+    /// ```
+    pub const fn get_nodes(&self) -> NodeCount {
+        self.info.nodes
+    }
+
+    /// Sets the `AtomicBool` that is used to determine if the search should continue to true
+    /// Normally called by the search function.
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.stop();
+    /// assert_eq!(search.is_running(), false);
+    /// search.start();
+    /// assert_eq!(search.is_running(), true);
+    /// ```
+    fn start(&self) {
+        self.running.store(true, Ordering::Relaxed);
+    }
+
+    /// Sets the `AtomicBool` that is used to determine if the search should continue to false
+    /// The search will wrap up as soon as possible and stop.
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// search.stop();
+    /// assert_eq!(search.is_running(), false);
+    /// ```
+    pub fn stop(&self) {
+        self.running.store(false, Ordering::Relaxed);
+    }
+
+    /// Returns a boolean determining if the search is still running
+    ///
+    /// # Returns
+    ///
+    /// * `bool` - A boolean determining if the search is still running
+    ///
+    /// # Example
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// let evaluator = SimpleEvaluator::new();
+    /// let mut search = Search::new(&board, &evaluator, None);
+    /// let running = search.check_running();
+    /// ```
+    pub fn is_running(&self) -> bool {
+        self.running.load(Ordering::Relaxed)
     }
 }
 
