@@ -88,9 +88,6 @@ pub mod tests {
 
     /// Runs perft and summarize the first level of moves.
     fn perft_helper(board: &mut Board, depth: u32, max_depth: u32) -> u64 {
-        if board.is_game_over() {
-            return 0;
-        }
         if depth == 0 {
             return 1;
         }

@@ -7,7 +7,6 @@ use super::ply::Ply;
 use super::zkey::ZKey;
 use super::Board;
 use super::CastlingStatus;
-use super::GameState;
 use super::Square;
 
 use super::piece_bitboards;
@@ -18,7 +17,6 @@ pub struct BoardBuilder {
     pub current_turn: Color,
     pub halfmove_clock: u16,
     pub fullmove_counter: u16,
-    pub game_state: GameState,
 
     pub en_passant_file: Option<u8>,
 
@@ -56,7 +54,6 @@ impl BoardBuilder {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
-            game_state: GameState::Unknown,
 
             en_passant_file: None,
 
@@ -73,7 +70,6 @@ impl BoardBuilder {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
-            game_state: GameState::Unknown,
 
             en_passant_file: None,
 
@@ -82,12 +78,6 @@ impl BoardBuilder {
             history: vec![Ply::default()],
             position_history: vec![],
         }
-    }
-
-    #[allow(dead_code)]
-    pub const fn game_state(mut self, state: GameState) -> Self {
-        self.game_state = state;
-        self
     }
 
     pub fn get_last_history(&mut self) -> &mut Ply {
@@ -473,7 +463,6 @@ impl BoardBuilder {
         Board {
             current_turn: self.current_turn,
             fullmove_counter: self.fullmove_counter,
-            game_state: self.game_state,
 
             en_passant_file: self.en_passant_file,
 

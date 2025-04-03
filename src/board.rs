@@ -19,26 +19,12 @@ pub use ply::Ply;
 use square::Square;
 use zkey::ZKey;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
-pub enum GameState {
-    #[default]
-    Unknown,
-    InProgress,
-    CheckmateWhite,
-    CheckmateBlack,
-    Stalemate,
-    ThreefoldRepetition,
-    FiftyMoveRule,
-}
-
 /// A board object, representing all of the state of the game
 /// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Board {
     pub current_turn: Color,
     pub fullmove_counter: u16,
-    pub game_state: GameState,
-
     en_passant_file: Option<u8>,
 
     pub bitboards: PieceBitboards,
@@ -58,7 +44,6 @@ impl Default for Board {
         Self {
             current_turn: Color::White,
             fullmove_counter: 1,
-            game_state: GameState::InProgress,
 
             bitboards: PieceBitboards::default(),
 
@@ -367,63 +352,6 @@ impl Board {
         !(king_pos & attacks).is_empty()
     }
 
-    #[allow(dead_code)]
-    /// Returns a boolean representing whether or not the current game is over
-    pub fn is_game_over(&mut self) -> bool {
-        self.set_game_state();
-        self.game_state != GameState::InProgress
-    }
-
-    /// Sets the game state by evaluating the board for checkmate, stalemate, threefold repetition, and the fifty move rule
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// board.set_game_state();
-    /// assert_eq!(GameState::InProgress, board.game_state);
-    /// ```
-    fn set_game_state(&mut self) {
-        if self.game_state != GameState::Unknown {
-            return;
-        }
-
-        let is_in_check = self.is_in_check(self.current_turn);
-        let legal_moves_empty = self.get_legal_moves().is_empty();
-        //let threefold_repetition = self.is_threefold_repetition();
-        let threefold_repetition = false;
-
-        match (
-            is_in_check,
-            legal_moves_empty,
-            self.get_halfmove_clock() >= 100,
-            threefold_repetition,
-        ) {
-            (true, true, _, _) => {
-                self.game_state = match self.current_turn {
-                    Color::White => GameState::CheckmateWhite,
-                    Color::Black => GameState::CheckmateBlack,
-                };
-            }
-            (false, true, _, _) => self.game_state = GameState::Stalemate,
-            (_, _, true, _) => self.game_state = GameState::FiftyMoveRule,
-            (_, _, _, true) => self.game_state = GameState::ThreefoldRepetition,
-            (_, false, false, false) => {
-                self.game_state = GameState::InProgress;
-            }
-        }
-    }
-
-    #[allow(dead_code)]
-    /// Returns the winner of the game, if there is one
-    pub fn get_winner(&mut self) -> Option<Color> {
-        self.set_game_state();
-        match self.game_state {
-            GameState::CheckmateWhite => Some(Color::Black),
-            GameState::CheckmateBlack => Some(Color::White),
-            _ => None,
-        }
-    }
-
     /// Returns a `PieceKind` Option of the piece currently occupying `square`
     ///
     /// # Arguments
@@ -549,7 +477,6 @@ impl Board {
 
         self.make_move_castling_checks(&mut new_move);
 
-        self.game_state = GameState::Unknown;
         self.switch_turn();
         if self.current_turn == Color::White {
             self.fullmove_counter += 1;
@@ -721,9 +648,6 @@ impl Board {
             self.fullmove_counter -= 1;
         }
 
-        // Cannot make a move if game is over, so all previous moves are in progress
-        self.game_state = GameState::InProgress;
-
         self.switch_turn();
 
         self.position_history.remove(&ZKey::from(&*self));
@@ -762,7 +686,6 @@ mod tests {
         let board = Board::default();
         assert_eq!(board.current_turn, Color::White);
         assert_eq!(board.en_passant_file, None);
-        assert_eq!(board.game_state, GameState::InProgress);
         assert_eq!(board.history, vec![Ply::default()]);
     }
 
@@ -1916,49 +1839,6 @@ mod tests {
     }
 
     #[test]
-    fn test_set_game_state() {
-        let mut board = BoardBuilder::construct_starting_board().build();
-        assert_eq!(board.game_state, GameState::Unknown);
-        board.set_game_state();
-        assert_eq!(board.game_state, GameState::InProgress);
-
-        board = Board::from_fen("7k/8/7K/4N3/6P1/1B3P2/P7/8 b - - 4 72"); // Stalemate
-        assert_eq!(board.game_state, GameState::Unknown);
-        board.set_game_state();
-        assert_eq!(board.game_state, GameState::Stalemate);
-
-        board = Board::from_fen("7k/8/6KP/8/8/8/8/8 w - - 100 1"); // FiftyMoveRule
-        assert_eq!(board.game_state, GameState::Unknown);
-        board.set_game_state();
-        assert_eq!(board.game_state, GameState::FiftyMoveRule);
-
-        board = Board::from_fen("4r1k1/6b1/p7/1pQ5/8/8/PPP2PPP/3q2K1 w - - 0 34"); // Checkmate, Black wins
-        assert_eq!(board.game_state, GameState::Unknown);
-        board.set_game_state();
-        assert_eq!(board.game_state, GameState::CheckmateWhite);
-
-        board = Board::from_fen("Q7/8/8/3P4/3Q1K2/kP6/P7/8 b - - 3 65"); // Checkmate, White wins
-        assert_eq!(board.game_state, GameState::Unknown);
-        board.set_game_state();
-        assert_eq!(board.game_state, GameState::CheckmateBlack);
-    }
-
-    #[test]
-    fn test_get_winner() {
-        let mut board = Board::from_fen("4r1k1/6b1/p7/1pQ5/8/8/PPP2PPP/3q2K1 w - - 0 34"); // Checkmate, Black wins
-        assert_eq!(board.game_state, GameState::Unknown);
-        board.set_game_state();
-        assert_eq!(board.game_state, GameState::CheckmateWhite);
-        assert_eq!(board.get_winner(), Some(Color::Black));
-
-        board = Board::from_fen("Q7/8/8/3P4/3Q1K2/kP6/P7/8 b - - 3 65"); // Checkmate, White wins
-        assert_eq!(board.game_state, GameState::Unknown);
-        board.set_game_state();
-        assert_eq!(board.game_state, GameState::CheckmateBlack);
-        assert_eq!(board.get_winner(), Some(Color::White));
-    }
-
-    #[test]
     fn test_find_move() {
         let mut board = BoardBuilder::construct_starting_board().build();
 
@@ -1966,26 +1846,6 @@ mod tests {
         let notation_made_up = "a2a5";
         assert!(board.find_move(notation_exists).is_ok());
         assert!(board.find_move(notation_made_up).is_err());
-    }
-
-    #[test]
-    fn test_is_game_over() {
-        let mut board = BoardBuilder::construct_starting_board().build();
-        assert!(!board.is_game_over());
-
-        let tests = [
-            (GameState::InProgress, false),
-            (GameState::CheckmateWhite, true),
-            (GameState::CheckmateBlack, true),
-            (GameState::Stalemate, true),
-            (GameState::FiftyMoveRule, true),
-            (GameState::ThreefoldRepetition, true),
-        ];
-
-        for (state, correct) in tests.iter() {
-            board.game_state = state.clone();
-            assert_eq!(board.is_game_over(), *correct);
-        }
     }
 
     #[test]
