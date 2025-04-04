@@ -31,7 +31,7 @@ pub struct Board {
     position_history: HashSet<ZKey>,
 
     pub bitboards: PieceBitboards,
-    zkey: ZKey,
+    pub zkey: ZKey,
 }
 
 impl Default for Board {

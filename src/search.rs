@@ -8,7 +8,6 @@ use crate::{
     board::{
         piece::Color,
         transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
-        zkey::ZKey,
         Board, Ply,
     },
     evaluate::simple_evaluator::SimpleEvaluator,
@@ -201,7 +200,7 @@ impl Search {
         }
 
         let mut best_ply = moves[0];
-        for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
+        for mv in MoveOrderer::new(&moves, self.board.zkey) {
             self.board.make_move(mv);
             self.info.nodes += 1;
 
@@ -212,12 +211,13 @@ impl Search {
                 alpha = value;
                 best_ply = mv;
 
+                let pv = self.get_pv(depth);
                 self.log_uci_info(
                     depth,
                     self.info.nodes,
                     start.elapsed().as_millis(),
                     alpha,
-                    &self.get_pv(depth),
+                    &pv,
                 );
 
                 // Checkmate found
@@ -234,7 +234,7 @@ impl Search {
                 .write()
                 .expect("Transposition table is poisoned! Unable to write new entry.")
                 .insert(
-                    ZKey::from(&self.board),
+                    self.board.zkey,
                     TTEntry {
                         score: alpha,
                         depth,
@@ -278,7 +278,6 @@ impl Search {
             return evaluator.evaluate(&mut self.board);
         }
 
-        let zkey = ZKey::from(&self.board);
         let mut alpha = alpha_start;
         let mut beta = beta_start;
 
@@ -286,7 +285,7 @@ impl Search {
         if let Some(entry) = TRANSPOSITION_TABLE
             .read()
             .expect("Transposition table is poisoned! Unable to read entry.")
-            .get(&zkey)
+            .get(&self.board.zkey)
         {
             if entry.depth >= depth {
                 match entry.bound {
@@ -313,12 +312,12 @@ impl Search {
             return 0; // Draw by fifty-move rule
         }
 
-        if self.board.position_reached(ZKey::from(&self.board)) {
+        if self.board.position_reached(self.board.zkey) {
             return 0; // Avoid threefold repetition at first repeitition
         }
 
         let mut best_ply = moves[0];
-        for mv in MoveOrderer::new(&moves, ZKey::from(&self.board)) {
+        for mv in MoveOrderer::new(&moves, self.board.zkey) {
             self.board.make_move(mv);
             self.info.nodes += 1;
             let score = self
@@ -338,7 +337,7 @@ impl Search {
                     .write()
                     .expect("Transposition table is poisoned! Unable to write new entry.")
                     .insert(
-                        ZKey::from(&self.board),
+                        self.board.zkey,
                         TTEntry {
                             score,
                             depth,
@@ -360,7 +359,7 @@ impl Search {
             .write()
             .expect("Transposition table is poisoned! Unable to write new entry.")
             .insert(
-                ZKey::from(&self.board),
+                self.board.zkey,
                 TTEntry {
                     score: alpha,
                     depth,
@@ -475,18 +474,17 @@ impl Search {
     /// let pv = search.get_pv(3);
     /// assert_eq!(pv.len(), 3);
     /// ```
-    fn get_pv(&self, length: Depth) -> Vec<Ply> {
+    fn get_pv(&mut self, length: Depth) -> Vec<Ply> {
         let mut plys = Vec::new();
-        let mut iter_board = self.board.clone();
 
         for _ in 0..length {
             if let Some(entry) = TRANSPOSITION_TABLE
                 .read()
                 .expect("Transposition table is poisoned! Unable to read entry.")
-                .get(&ZKey::from(&iter_board))
+                .get(&self.board.zkey)
             {
                 plys.push(entry.best_ply);
-                iter_board.make_move(entry.best_ply);
+                self.board.make_move(entry.best_ply);
             } else {
                 break;
             }
@@ -584,7 +582,7 @@ mod tests {
     fn test_get_pv_1() {
         let board = BoardBuilder::construct_starting_board().build();
         let original_board = board.clone();
-        let search = Search::new(&board, None);
+        let mut search = Search::new(&board, None);
         assert_eq!(search.get_pv(1).len(), 0);
         assert_eq!(board, original_board);
     }
