@@ -39,4 +39,4 @@ jobs:
     - name: Update Rust
       run: rustup update nightly && rustup default nightly
     - name: Run benchmark tests
-      run: make && ./rce --bench
+      run: make && ./rce bench
