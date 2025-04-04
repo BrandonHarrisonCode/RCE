@@ -328,8 +328,6 @@ impl Board {
     /// ```
     /// ```
     pub fn unmake_move(&mut self) {
-        self.position_history.remove(&self.zkey);
-
         let old_move = self
             .history
             .pop()
@@ -408,6 +406,7 @@ impl Board {
         }
 
         self.switch_turn();
+        self.position_history.remove(&self.zkey);
     }
 
     /// Moves a piece from one square to another, removing the piece from the destination square.

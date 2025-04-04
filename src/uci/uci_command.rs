@@ -2,7 +2,7 @@ use crate::search::limits::SearchLimits;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UCICommand {
-    UCI,
+    Uci,
     IsReady,
     UCINewGame,
     SetOption {
@@ -34,16 +34,17 @@ impl UCICommand {
 
         let command = args[0];
         match command {
-            "uci" => Ok(UCICommand::UCI),
-            "isready" => Ok(UCICommand::IsReady),
-            "ucinewgame" => Ok(UCICommand::UCINewGame),
+            "uci" => Ok(Self::Uci),
+            "isready" => Ok(Self::IsReady),
+            "ucinewgame" => Ok(Self::UCINewGame),
             "setoption" => Self::parse_option(&args[1..]),
             "position" => Self::parse_position(&args[1..]),
-            "go" => Self::parse_go(&args[1..])
-                .map_err(|e| format!("Failed to parse go command: {}", e.to_string())),
-            "stop" => Ok(UCICommand::Stop),
-            "quit" => Ok(UCICommand::Quit),
-            _ => Err(format!("Unrecognized command: {}", command)),
+            "go" => {
+                Self::parse_go(&args[1..]).map_err(|e| format!("Failed to parse go command: {e}"))
+            }
+            "stop" => Ok(Self::Stop),
+            "quit" => Ok(Self::Quit),
+            _ => Err(format!("Unrecognized command: {command}")),
         }
     }
 
@@ -62,7 +63,7 @@ impl UCICommand {
 
         let value_idx = args.iter().position(|&arg| arg == "value");
         let value = match value_idx {
-            Some(idx) if args.len() >= idx + 1 => Some(args[idx + 1..].join(" ").to_lowercase()),
+            Some(idx) if args.len() > idx => Some(args[idx + 1..].join(" ").to_lowercase()),
             Some(_) => {
                 return Err(
                     "No value provided but value command specified to setoption!".to_string(),
@@ -71,14 +72,16 @@ impl UCICommand {
             None => None,
         };
 
-        let name = match value_idx {
-            Some(end_idx) => args[name_idx + 1..end_idx].join(" ").to_lowercase(),
-            None => args[name_idx + 1..].join(" "),
-        };
+        let name = value_idx
+            .map_or_else(
+                || args[name_idx + 1..].join(" "),
+                |end_idx| args[name_idx + 1..end_idx].join(" "),
+            )
+            .to_lowercase();
 
         assert!(!name.is_empty(), "Name should not be empty!");
 
-        Ok(UCICommand::SetOption { name, value })
+        Ok(Self::SetOption { name, value })
     }
 
     fn parse_position(args: &[&str]) -> Result<Self, String> {
@@ -101,15 +104,15 @@ impl UCICommand {
 
         let moves = match kind {
             PositionKind::StartPos if args.len() > 2 && args[1] == "moves" => {
-                Some(args[2..].iter().map(|s| s.to_string()).collect())
+                Some(args[2..].iter().map(ToString::to_string).collect())
             }
             PositionKind::Fen { .. } if args.len() > 8 && args[7] == "moves" => {
-                Some(args[8..].iter().map(|s| s.to_string()).collect())
+                Some(args[8..].iter().map(ToString::to_string).collect())
             }
             _ => None,
         };
 
-        Ok(UCICommand::Position { kind, moves })
+        Ok(Self::Position { kind, moves })
     }
 
     fn parse_go(args: &[&str]) -> Result<Self, String> {
@@ -182,7 +185,7 @@ impl UCICommand {
                     ));
                 }
                 "infinite" => {
-                    return Ok(UCICommand::Go {
+                    return Ok(Self::Go {
                         limits: SearchLimits::new(),
                     });
                 }
@@ -192,6 +195,6 @@ impl UCICommand {
             idx += 1;
         }
 
-        Ok(UCICommand::Go { limits })
+        Ok(Self::Go { limits })
     }
 }

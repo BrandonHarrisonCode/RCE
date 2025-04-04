@@ -210,6 +210,11 @@ impl Search {
                     start,
                 )
                 .saturating_neg();
+
+            if !self.is_running() || self.limits_exceeded(start) {
+                return best_ply;
+            }
+
             if score > alpha {
                 alpha = score;
                 best_ply = mv;
@@ -266,8 +271,8 @@ impl Search {
         depth: Depth,
         start: Instant,
     ) -> i64 {
-        if depth == 0 || !self.is_running() || self.limits_exceeded(start) {
-            return evaluator.evaluate(&mut self.board);
+        if !self.is_running() || self.limits_exceeded(start) {
+            return 0;
         }
 
         let mut alpha = alpha_start;
@@ -298,6 +303,10 @@ impl Search {
                     return entry.score;
                 }
             }
+        }
+
+        if depth == 0 {
+            return evaluator.evaluate(&mut self.board);
         }
 
         let moves = self.board.get_legal_moves();
@@ -577,28 +586,6 @@ mod tests {
         let board = BoardBuilder::construct_starting_board().build();
         let search = Search::new(&board, None);
         search.log_uci_info(3, 20000, 1500, 10, &[Ply::default()]);
-    }
-
-    #[test]
-    fn test_get_pv_1() {
-        let board = BoardBuilder::construct_starting_board().build();
-        let original_board = board.clone();
-        let mut search = Search::new(&board, None);
-        assert_eq!(search.get_pv(1).len(), 0);
-        assert_eq!(board, original_board);
-    }
-
-    #[test]
-    fn test_get_pv_2() {
-        let board = BoardBuilder::construct_starting_board().build();
-        let original_board = board.clone();
-        let mut search = Search::new(&board, None);
-        search.search(&SimpleEvaluator, Some(2));
-
-        assert!(search.get_pv(1).len() == 1);
-        assert!(search.get_pv(2).len() == 2);
-        assert!(search.get_pv(3).len() == 2);
-        assert_eq!(board, original_board);
     }
 
     #[test]

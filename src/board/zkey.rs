@@ -93,6 +93,12 @@ impl Hash for ZKey {
     }
 }
 
+impl std::fmt::Display for ZKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 impl nohash_hasher::IsEnabled for ZKey {}
 
 impl From<&Board> for ZKey {
