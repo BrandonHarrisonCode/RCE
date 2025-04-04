@@ -1,6 +1,5 @@
 mod info;
 pub mod limits;
-mod logger;
 mod move_orderer;
 
 use super::evaluate::Evaluator;
@@ -10,9 +9,9 @@ use crate::board::{
     Board, Ply,
 };
 
+use crate::logger::Logger;
 use info::Info;
 use limits::SearchLimits;
-use logger::Logger;
 use move_orderer::MoveOrderer;
 
 use std::sync::{
@@ -62,12 +61,7 @@ pub struct Search {
     info: Info,
 }
 
-/// Logs messages to stdout
-impl Logger for Search {
-    fn log(&self, message: &str) {
-        println!("{message}");
-    }
-}
+impl Logger for Search {}
 
 impl Search {
     /// Creates a new `Search` instance with the given board and evaluator.

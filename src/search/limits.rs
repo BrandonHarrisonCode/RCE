@@ -1,6 +1,7 @@
 use super::{Depth, Millisecond, NodeCount};
 
 #[allow(clippy::module_name_repetitions)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchLimits {
     pub depth: Option<Depth>,
     pub nodes: Option<NodeCount>,
