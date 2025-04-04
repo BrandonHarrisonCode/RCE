@@ -1,4 +1,3 @@
-use std::{collections::HashSet, fmt};
 pub mod bitboard;
 pub mod boardbuilder;
 pub mod piece;
@@ -19,6 +18,8 @@ pub use ply::Ply;
 use square::Square;
 use zkey::ZKey;
 
+use std::{collections::HashSet, fmt};
+
 /// A board object, representing all of the state of the game
 /// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -26,11 +27,11 @@ pub struct Board {
     pub current_turn: Color,
     pub fullmove_counter: u16,
     en_passant_file: Option<u8>,
-
-    pub bitboards: PieceBitboards,
-
     history: Vec<Ply>,
     position_history: HashSet<ZKey>,
+
+    pub bitboards: PieceBitboards,
+    zkey: ZKey,
 }
 
 impl Default for Board {
@@ -41,17 +42,19 @@ impl Default for Board {
     /// let board = Board::default();
     /// ```
     fn default() -> Self {
-        Self {
+        let mut output = Self {
             current_turn: Color::White,
             fullmove_counter: 1,
-
-            bitboards: PieceBitboards::default(),
-
             en_passant_file: None,
-
             history: vec![Ply::default()],
             position_history: HashSet::new(),
-        }
+
+            bitboards: PieceBitboards::default(),
+            zkey: ZKey::new(),
+        };
+        output.zkey = ZKey::from(&output);
+
+        output
     }
 }
 
@@ -66,29 +69,38 @@ impl Board {
         BoardBuilder::default()
     }
 
-    /// Returns a boolean representing whether or not the current player has castling rights
+    /// Returns a list of all legal moves for the current side
     ///
     /// # Examples
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
-    /// assert_eq!(board.castle_status(CastlingKind::WhiteKingside), Castling::Availiable);
+    /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
-    #[allow(clippy::missing_const_for_fn)]
-    pub fn castle_status(&self, kind: CastlingKind) -> CastlingStatus {
-        match kind {
-            CastlingKind::WhiteKingside => {
-                self.history.last().unwrap().castling_rights.white_kingside
-            }
-            CastlingKind::WhiteQueenside => {
-                self.history.last().unwrap().castling_rights.white_queenside
-            }
-            CastlingKind::BlackKingside => {
-                self.history.last().unwrap().castling_rights.black_kingside
-            }
-            CastlingKind::BlackQueenside => {
-                self.history.last().unwrap().castling_rights.black_queenside
-            }
+    pub fn get_legal_moves(&mut self) -> Vec<Ply> {
+        self.get_all_moves()
+            .into_iter()
+            .filter(|mv| self.is_legal_move(*mv).is_ok())
+            .collect()
+    }
+
+    /// Returns a boolean representing whether or not a given move is legal
+    ///
+    /// The move is only considered legal if it does not leave the king in check
+    ///
+    /// # Examples
+    /// ```
+    /// let ply = Ply(Square::new("e2"), Square::new("e9"));
+    /// assert!(!board.is_legal_move(ply));
+    /// ```
+    fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
+        self.make_move(ply);
+        if self.is_in_check(self.current_turn.opposite()) {
+            self.unmake_move();
+            return Err("Move is not valid. The move would leave the king in check.");
         }
+        self.unmake_move();
+
+        Ok(ply)
     }
 
     /// Returns a list of all potential moves for the current side
@@ -138,52 +150,459 @@ impl Board {
         all_moves
     }
 
-    /// Returns a list of all legal moves for the current side
+    /// Makes a half-move on this board
+    ///
+    /// # Arguments
+    ///
+    /// * `new_move` - A Ply that holds the origin and destination square of the move.
     ///
     /// # Examples
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
-    /// let movelist = board.get_all_moves(Square::new("a2"));
+    /// // Move the a pawn one square forward
+    /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
     /// ```
-    pub fn get_legal_moves(&mut self) -> Vec<Ply> {
-        self.get_all_moves()
-            .into_iter()
-            .filter(|mv| self.is_legal_move(*mv).is_ok())
-            .collect()
-    }
+    pub fn make_move(&mut self, mut new_move: Ply) {
+        self.position_history.insert(self.zkey);
+        let previous_move: Ply = self.history.last().copied().unwrap_or_default();
 
-    /// Returns a boolean representing whether or not a given move is legal
-    ///
-    /// The move is only considered legal if it does not leave the king in check
-    ///
-    /// # Examples
-    /// ```
-    /// let ply = Ply(Square::new("e2"), Square::new("e9"));
-    /// assert!(!board.is_legal_move(ply));
-    /// ```
-    fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
-        self.make_move(ply);
-        if self.is_in_check(self.current_turn.opposite()) {
-            self.unmake_move();
-            return Err("Move is not valid. The move would leave the king in check.");
+        // Increment or reset halfmove clock
+        new_move.halfmove_clock = match (new_move.piece, new_move.captured_piece) {
+            (Kind::Pawn(_), _) | (_, Some(_)) => 0,
+            _ => previous_move.halfmove_clock + 1,
+        };
+        new_move.castling_rights = previous_move.castling_rights;
+
+        // Clear previous en passant file
+        if self.en_passant_file.is_some() {
+            self.zkey.change_en_passant(self.en_passant_file.unwrap());
         }
-        self.unmake_move();
 
-        Ok(ply)
+        // Set new en passant file
+        if new_move.is_double_pawn_push {
+            self.en_passant_file = Some(new_move.dest.file);
+            self.zkey.change_en_passant(new_move.dest.file);
+        } else {
+            self.en_passant_file = None;
+        }
+
+        self.move_piece(
+            new_move.start,
+            new_move.dest,
+            new_move.piece,
+            new_move.promoted_to,
+            new_move.captured_piece,
+            new_move.en_passant,
+        );
+
+        self.make_move_castling_checks(&mut new_move);
+
+        self.switch_turn();
+        self.zkey.change_turn();
+        if self.current_turn == Color::White {
+            self.fullmove_counter += 1;
+        }
+        self.history.push(new_move);
     }
 
-    /// Switches the current turn to the other player
+    /// Handles Castling related logic for making moves
+    #[allow(clippy::too_many_lines)]
+    fn make_move_castling_checks(&mut self, new_move: &mut Ply) {
+        if new_move.is_castles {
+            let (rook_start, rook_dest) = match new_move.dest {
+                Square { rank: 0, file: 6 } => (Square::from("h1"), Square::from("f1")),
+                Square { rank: 0, file: 2 } => (Square::from("a1"), Square::from("d1")),
+                Square { rank: 7, file: 6 } => (Square::from("h8"), Square::from("f8")),
+                Square { rank: 7, file: 2 } => (Square::from("a8"), Square::from("d8")),
+                _ => panic!("Invalid castling king destination {}", new_move.dest),
+            };
+
+            self.move_piece(
+                rook_start,
+                rook_dest,
+                Kind::Rook(self.current_turn),
+                None,
+                None,
+                false,
+            );
+        }
+
+        match (new_move.piece, new_move.start) {
+            (Kind::King(Color::White), _) => {
+                if self.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::WhiteKingside);
+                    new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
+                }
+                if self.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::WhiteQueenside);
+                    new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
+                }
+            }
+            (Kind::King(Color::Black), _) => {
+                if self.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::BlackKingside);
+                    new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
+                }
+                if self.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::BlackQueenside);
+                    new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
+                }
+            }
+            (Kind::Rook(Color::White), Square { rank: 0, file: 0 }) => {
+                if self.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::WhiteQueenside);
+                    new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
+                }
+            }
+            (Kind::Rook(Color::White), Square { rank: 0, file: 7 }) => {
+                if self.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::WhiteKingside);
+                    new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
+                }
+            }
+            (Kind::Rook(Color::Black), Square { rank: 7, file: 0 }) => {
+                if self.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::BlackQueenside);
+                    new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
+                }
+            }
+            (Kind::Rook(Color::Black), Square { rank: 7, file: 7 }) => {
+                if self.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::BlackKingside);
+                    new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
+                }
+            }
+            _ => (),
+        }
+
+        match (new_move.captured_piece, new_move.dest) {
+            (Some(Kind::Rook(Color::White)), Square { rank: 0, file: 0 }) => {
+                if self.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::WhiteQueenside);
+                    new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
+                }
+            }
+            (Some(Kind::Rook(Color::White)), Square { rank: 0, file: 7 }) => {
+                if self.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::WhiteKingside);
+                    new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
+                }
+            }
+            (Some(Kind::Rook(Color::Black)), Square { rank: 7, file: 0 }) => {
+                if self.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::BlackQueenside);
+                    new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
+                }
+            }
+            (Some(Kind::Rook(Color::Black)), Square { rank: 7, file: 7 }) => {
+                if self.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
+                    self.zkey
+                        .change_castling_rights(CastlingKind::BlackKingside);
+                    new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
+                }
+            }
+            _ => (),
+        }
+    }
+
+    /// Unmakes a half-move on this board
+    ///
+    /// # Arguments
+    ///
+    /// * `old_move` - A Ply that holds the origin and destination square of the move.
+    ///
+    /// # Panics
+    /// Will panic if there is no piece at the destination square.
+    ///
+    /// # Examples
+    /// ```
+    /// ```
+    pub fn unmake_move(&mut self) {
+        self.position_history.remove(&self.zkey);
+
+        let old_move = self
+            .history
+            .pop()
+            .expect("No previous move in the board history!");
+
+        self.undo_move_piece(
+            old_move.start,
+            old_move.dest,
+            old_move.piece,
+            old_move.promoted_to,
+            old_move.captured_piece,
+            old_move.en_passant,
+        );
+
+        if old_move.is_castles {
+            assert!(matches!(old_move.piece, Kind::King(_)));
+            let (rook_start, rook_dest) = match old_move.dest {
+                Square { rank: 0, file: 6 } => (Square::from("h1"), Square::from("f1")),
+                Square { rank: 0, file: 2 } => (Square::from("a1"), Square::from("d1")),
+                Square { rank: 7, file: 6 } => (Square::from("h8"), Square::from("f8")),
+                Square { rank: 7, file: 2 } => (Square::from("a8"), Square::from("d8")),
+                _ => panic!("Invalid castling king destination {}", old_move.dest),
+            };
+
+            self.undo_move_piece(
+                rook_start,
+                rook_dest,
+                Kind::Rook(self.current_turn.opposite()),
+                None,
+                None,
+                false,
+            );
+
+            // Revert castling rights
+            if old_move.castling_rights.white_kingside
+                != self.castle_status(CastlingKind::WhiteKingside)
+            {
+                self.zkey
+                    .change_castling_rights(CastlingKind::WhiteKingside);
+            }
+            if old_move.castling_rights.white_queenside
+                != self.castle_status(CastlingKind::WhiteQueenside)
+            {
+                self.zkey
+                    .change_castling_rights(CastlingKind::WhiteQueenside);
+            }
+            if old_move.castling_rights.black_kingside
+                != self.castle_status(CastlingKind::BlackKingside)
+            {
+                self.zkey
+                    .change_castling_rights(CastlingKind::BlackKingside);
+            }
+            if old_move.castling_rights.black_queenside
+                != self.castle_status(CastlingKind::BlackQueenside)
+            {
+                self.zkey
+                    .change_castling_rights(CastlingKind::BlackQueenside);
+            }
+        }
+
+        // Unset en passant file
+        if let Some(file) = self.en_passant_file {
+            self.zkey.change_en_passant(file);
+        }
+
+        if self.history.last().is_some_and(|f| f.is_double_pawn_push) {
+            let file = self.history.last().unwrap().dest.file;
+            self.en_passant_file = Some(file);
+            self.zkey.change_en_passant(file);
+        } else {
+            self.en_passant_file = None;
+        }
+
+        if self.current_turn == Color::White {
+            self.fullmove_counter -= 1;
+        }
+
+        self.switch_turn();
+        self.zkey.change_turn();
+    }
+
+    /// Moves a piece from one square to another, removing the piece from the destination square.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The square to move the piece from
+    /// * `dest` - The square to move the piece to
+    /// * `moving_piece` - The piece to move
+    /// * `promoted_to` - The piece to promote to, if applicable
+    /// * `captured_piece` - The piece to capture, if applicable
+    /// * `en_passant` - Whether or not the move is an en passant capture
+    ///
+    /// # Panics
+    /// Will panic if there is no piece at the expected square.
+    pub fn move_piece(
+        &mut self,
+        start: Square,
+        dest: Square,
+        moving_piece: Kind,
+        promoted_to: Option<Kind>,
+        captured_piece: Option<Kind>,
+        en_passant: bool,
+    ) {
+        self.remove_piece(start, moving_piece);
+        match (captured_piece, en_passant) {
+            (Some(captured_piece), true) => {
+                let en_passant_capture_square = Square {
+                    file: dest.file,
+                    rank: start.rank,
+                };
+                self.remove_piece(en_passant_capture_square, captured_piece);
+            }
+            (Some(captured_piece), false) => {
+                self.remove_piece(dest, captured_piece);
+            }
+            (None, false) => (),
+            (None, true) => panic!("En passant capture without a captured piece!"),
+        }
+        self.add_piece(dest, promoted_to.unwrap_or(moving_piece));
+    }
+
+    /// Undos moving a piece from one square to another.
+    /// This includes readding any captured pieces and undoing any promotions.
+    ///
+    /// # Arguments
+    ///
+    /// * `start` - The square to move the piece from
+    /// * `dest` - The square to move the piece to
+    /// * `moving_piece` - The piece to move
+    /// * `promoted_to` - The piece to promote to, if applicable
+    /// * `captured_piece` - The piece to capture, if applicable
+    /// * `en_passant` - Whether or not the move is an en passant capture
+    ///
+    /// # Panics
+    /// Will panic if there is no piece at the expected square.
+    pub fn undo_move_piece(
+        &mut self,
+        start: Square,
+        dest: Square,
+        moving_piece: Kind,
+        promoted_to: Option<Kind>,
+        captured_piece: Option<Kind>,
+        en_passant: bool,
+    ) {
+        self.remove_piece(dest, promoted_to.unwrap_or(moving_piece));
+        match (captured_piece, en_passant) {
+            (Some(captured_piece), true) => {
+                let en_passant_capture_square = Square {
+                    file: dest.file,
+                    rank: start.rank,
+                };
+                self.add_piece(en_passant_capture_square, captured_piece);
+            }
+            (Some(captured_piece), false) => {
+                self.add_piece(dest, captured_piece);
+            }
+            (None, false) => (),
+            (None, true) => panic!("En passant capture without a captured piece!"),
+        }
+        self.add_piece(start, moving_piece);
+    }
+
+    /// Adds a new piece of the specified kind to a square on the board
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - A square on the board to place the piece
+    ///
+    /// * `piece` - The type of piece to place at this square
     ///
     /// # Examples
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
-    /// board.switch_turn();
-    /// assert_eq!(Color::Black, board.current_turn);
-    /// board.switch_turn();
-    /// assert_eq!(Color::White, board.current_turn);
+    /// board.add_piece(&Square::new("a3"), &PieceKind::Rook(Color::White));
     /// ```
-    pub const fn switch_turn(&mut self) {
-        self.current_turn = self.current_turn.opposite();
+    pub fn add_piece(&mut self, square: Square, piece: Kind) {
+        self.zkey.add_or_remove_piece(piece, square);
+        self.bitboards.add_piece(square, piece);
+    }
+
+    /// Remove a specific kind of piece from the board at the specified square
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - A square on the board to clear
+    ///
+    /// * `piece` - The type of piece to remove from the square
+    ///
+    /// # Panics
+    /// Will panic if there is no piece at the expected square.
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// // Playing with rook odds
+    /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
+    /// ```
+    pub fn remove_piece(&mut self, square: Square, piece: Kind) {
+        self.zkey.add_or_remove_piece(piece, square);
+        self.bitboards.remove_piece(square, piece);
+    }
+
+    /// Returns a `PieceKind` Option of the piece currently occupying `square`
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - A square on the board we would like to inspect
+    ///
+    /// # Errors
+    /// Returns `None` if there is no piece at the specified square.
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new("a1")));
+    /// assert_eq!(None, board.get_piece(Square::new("b3")));
+    /// ```
+    pub fn get_piece(&self, square: Square) -> Option<Kind> {
+        self.bitboards.get_piece_kind(square)
+    }
+
+    /// Returns a boolean representing whether or not the current side is in check
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// assert!(!board.is_in_check());
+    /// ```
+    pub fn is_in_check(&self, color: Color) -> bool {
+        let attacks = self.get_attacked_squares(color);
+
+        let king_pos = match color {
+            Color::White => self.bitboards.white_king,
+            Color::Black => self.bitboards.black_king,
+        };
+
+        !(king_pos & attacks).is_empty()
+    }
+
+    /// Returns a bitboard representing all squares that are attacked from `color`'s perspective
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color of the player to calculate the attacked squares for
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    ///
+    /// let attacked_squares = board.get_attacked_squares(Color::White);
+    /// ```
+    #[allow(clippy::literal_string_with_formatting_args)]
+    fn get_attacked_squares(&self, color: Color) -> Bitboard {
+        let attacking_pieces = match color {
+            Color::White => self.bitboards.black_pieces,
+            Color::Black => self.bitboards.white_pieces,
+        };
+
+        let mut attacks = Bitboard::new(0);
+        for square in 0..64u8 {
+            if attacking_pieces & (1 << square) == Bitboard::new(0) {
+                continue;
+            }
+
+            let piece = self
+                .get_piece(Square::from(square))
+                .expect("No piece found at {square} where bitboard claimed piece was!");
+
+            attacks |= piece.get_attacks(Square::from(square), self);
+        }
+
+        attacks
     }
 
     /// Returns a `CastlingStatus` representing whether or not the current `kind` of castling is availiable
@@ -216,6 +635,31 @@ impl Board {
             Ok(CastlingStatus::Available)
         } else {
             Ok(CastlingStatus::Unavailable)
+        }
+    }
+
+    /// Returns a boolean representing whether or not the current player has castling rights
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// assert_eq!(board.castle_status(CastlingKind::WhiteKingside), Castling::Availiable);
+    /// ```
+    #[allow(clippy::missing_const_for_fn)]
+    pub fn castle_status(&self, kind: CastlingKind) -> CastlingStatus {
+        match kind {
+            CastlingKind::WhiteKingside => {
+                self.history.last().unwrap().castling_rights.white_kingside
+            }
+            CastlingKind::WhiteQueenside => {
+                self.history.last().unwrap().castling_rights.white_queenside
+            }
+            CastlingKind::BlackKingside => {
+                self.history.last().unwrap().castling_rights.black_kingside
+            }
+            CastlingKind::BlackQueenside => {
+                self.history.last().unwrap().castling_rights.black_queenside
+            }
         }
     }
 
@@ -275,39 +719,18 @@ impl Board {
         }
     }
 
-    /// Returns a bitboard representing all squares that are attacked from `color`'s perspective
-    ///
-    /// # Arguments
-    ///
-    /// * `color` - The color of the player to calculate the attacked squares for
+    /// Switches the current turn to the other player
     ///
     /// # Examples
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
-    ///
-    /// let attacked_squares = board.get_attacked_squares(Color::White);
+    /// board.switch_turn();
+    /// assert_eq!(Color::Black, board.current_turn);
+    /// board.switch_turn();
+    /// assert_eq!(Color::White, board.current_turn);
     /// ```
-    #[allow(clippy::literal_string_with_formatting_args)]
-    fn get_attacked_squares(&self, color: Color) -> Bitboard {
-        let attacking_pieces = match color {
-            Color::White => self.bitboards.black_pieces,
-            Color::Black => self.bitboards.white_pieces,
-        };
-
-        let mut attacks = Bitboard::new(0);
-        for square in 0..64u8 {
-            if attacking_pieces & (1 << square) == Bitboard::new(0) {
-                continue;
-            }
-
-            let piece = self
-                .get_piece(Square::from(square))
-                .expect("No piece found at {square} where bitboard claimed piece was!");
-
-            attacks |= piece.get_attacks(Square::from(square), self);
-        }
-
-        attacks
+    pub const fn switch_turn(&mut self) {
+        self.current_turn = self.current_turn.opposite();
     }
 
     /// Returns the halfmove clock of the current board state
@@ -330,113 +753,8 @@ impl Board {
     /// # Arguments
     ///
     /// * `position` - The `ZKey` to check for
-    pub fn position_reached(&self, position: &ZKey) -> bool {
-        self.position_history.contains(position)
-    }
-
-    /// Returns a boolean representing whether or not the current side is in check
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// assert!(!board.is_in_check());
-    /// ```
-    pub fn is_in_check(&self, color: Color) -> bool {
-        let attacks = self.get_attacked_squares(color);
-
-        let king_pos = match color {
-            Color::White => self.bitboards.white_king,
-            Color::Black => self.bitboards.black_king,
-        };
-
-        !(king_pos & attacks).is_empty()
-    }
-
-    /// Returns a `PieceKind` Option of the piece currently occupying `square`
-    ///
-    /// # Arguments
-    ///
-    /// * `square` - A square on the board we would like to inspect
-    ///
-    /// # Errors
-    /// Returns `None` if there is no piece at the specified square.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// assert_eq!(PieceKind::Rook(Color::White), board.get_piece(Square::new("a1")));
-    /// assert_eq!(None, board.get_piece(Square::new("b3")));
-    /// ```
-    pub fn get_piece(&self, square: Square) -> Option<Kind> {
-        self.bitboards.get_piece_kind(square)
-    }
-
-    /// Adds a new piece of the specified kind to a square on the board
-    ///
-    /// # Arguments
-    ///
-    /// * `square` - A square on the board to place the piece
-    ///
-    /// * `piece` - The type of piece to place at this square
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// board.add_piece(&Square::new("a3"), &PieceKind::Rook(Color::White));
-    /// ```
-    pub fn add_piece(&mut self, square: Square, piece: Kind) {
-        self.bitboards.add_piece(square, piece);
-    }
-
-    /// Remove a specific kind of piece from the board at the specified square
-    ///
-    /// # Arguments
-    ///
-    /// * `square` - A square on the board to clear
-    ///
-    /// * `piece` - The type of piece to remove from the square
-    ///
-    /// # Panics
-    /// Will panic if there is no piece at the expected square.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// // Playing with rook odds
-    /// board.remove_piece(&Square::new("a1"), &PieceKind::Rook(Color::White));
-    /// ```
-    pub fn remove_piece(&mut self, square: Square, piece: Kind) {
-        self.bitboards.remove_piece(square, piece);
-    }
-
-    /// Replaces the piece at the dest square with the piece at the destination square
-    ///
-    /// # ArgumentSome(file)s
-    ///
-    /// * `origin` - The square of the piece to move
-    /// * `to_replace` - The square to move the piece to
-    ///
-    /// # Returns
-    ///
-    /// An Option of the piece kind that was replaced, if any
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// let captured_piece = board.replace_square(Square::new("e2"), Square::new("e4"));
-    /// ```
-    fn replace_square(&mut self, origin: Square, to_replace: Square) -> Option<Kind> {
-        let start_piece_kind = self.get_piece(origin).unwrap();
-        self.remove_piece(origin, start_piece_kind);
-
-        let dest_piece_kind_option = self.get_piece(to_replace);
-        if let Some(dest_piece_kind) = dest_piece_kind_option {
-            self.remove_piece(to_replace, dest_piece_kind);
-        }
-
-        self.add_piece(to_replace, start_piece_kind);
-
-        dest_piece_kind_option
+    pub fn position_reached(&self, position: ZKey) -> bool {
+        self.position_history.contains(&position)
     }
 
     /// Finds the move in the list of all legal moves that corresponds to the given notation
@@ -445,212 +763,6 @@ impl Board {
             .into_iter()
             .find(|m| m.to_notation() == notation)
             .ok_or("Move not found")
-    }
-
-    /// Makes a half-move on this board
-    ///
-    /// # Arguments
-    ///
-    /// * `new_move` - A Ply that holds the origin and destination square of the move.
-    ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// // Move the a pawn one square forward
-    /// board.make_move(Ply::new(Square::new("a2"), Square::new("a3")));
-    /// ```
-    #[allow(clippy::too_many_lines)]
-    pub fn make_move(&mut self, mut new_move: Ply) {
-        self.position_history.insert(ZKey::from(&*self));
-        let previous_move: Ply = self.history.last().copied().unwrap_or_default();
-        new_move.halfmove_clock = previous_move.halfmove_clock + 1;
-        new_move.castling_rights = previous_move.castling_rights;
-
-        self.make_move_en_passant_checks(&new_move);
-
-        if let (Some(promoted_to), Some(Kind::Pawn(c))) =
-            (new_move.promoted_to, self.get_piece(new_move.dest))
-        {
-            self.remove_piece(new_move.dest, Kind::Pawn(c));
-            self.add_piece(new_move.dest, promoted_to);
-        }
-
-        self.make_move_castling_checks(&mut new_move);
-
-        self.switch_turn();
-        if self.current_turn == Color::White {
-            self.fullmove_counter += 1;
-        }
-        self.history.push(new_move);
-    }
-
-    /// Handles En Passant related logic for making moves
-    fn make_move_en_passant_checks(&mut self, new_move: &Ply) {
-        if new_move.is_double_pawn_push {
-            self.en_passant_file = Some(new_move.dest.file);
-        } else {
-            self.en_passant_file = None;
-        }
-
-        let dest_piece_kind = self.replace_square(new_move.start, new_move.dest);
-        if new_move.en_passant {
-            self.remove_piece(
-                Square {
-                    file: new_move.dest.file,
-                    rank: new_move.start.rank,
-                },
-                Kind::Pawn(self.current_turn.opposite()),
-            );
-        } else {
-            assert_eq!(new_move.captured_piece, dest_piece_kind);
-        }
-    }
-
-    /// Handles Castling related logic for making moves
-    fn make_move_castling_checks(&mut self, new_move: &mut Ply) {
-        if new_move.is_castles {
-            let (rook_start, rook_dest) = match new_move.dest {
-                Square { rank: 0, file: 6 } => (Square::from("h1"), Square::from("f1")),
-                Square { rank: 0, file: 2 } => (Square::from("a1"), Square::from("d1")),
-                Square { rank: 7, file: 6 } => (Square::from("h8"), Square::from("f8")),
-                Square { rank: 7, file: 2 } => (Square::from("a8"), Square::from("d8")),
-                _ => panic!("Invalid castling king destination {}", new_move.dest),
-            };
-
-            self.replace_square(rook_start, rook_dest);
-
-            match new_move.dest {
-                Square {
-                    rank: 0,
-                    file: 6 | 2,
-                } => {
-                    new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
-                    new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
-                }
-                Square {
-                    rank: 7,
-                    file: 6 | 2,
-                } => {
-                    new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
-                    new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
-                }
-                _ => panic!("Invalid castling king destination {}", new_move.dest),
-            }
-        } else if matches!(self.get_piece(new_move.dest), Some(Kind::King(_))) {
-            match self.current_turn {
-                Color::White => {
-                    new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
-                    new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
-                }
-                Color::Black => {
-                    new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
-                    new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
-                }
-            }
-        } else if matches!(self.get_piece(new_move.dest), Some(Kind::Rook(_))) {
-            match (self.current_turn, new_move.start) {
-                (Color::White, Square { rank: 0, file: 0 }) => {
-                    new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
-                }
-                (Color::White, Square { rank: 0, file: 7 }) => {
-                    new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
-                }
-                (Color::Black, Square { rank: 7, file: 0 }) => {
-                    new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
-                }
-                (Color::Black, Square { rank: 7, file: 7 }) => {
-                    new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
-                }
-                _ => (),
-            }
-        }
-
-        if let Some(piece) = new_move.captured_piece {
-            if matches!(piece, Kind::Rook(_)) {
-                match (self.current_turn, new_move.dest) {
-                    (Color::White, Square { rank: 7, file: 0 }) => {
-                        new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
-                    }
-                    (Color::White, Square { rank: 7, file: 7 }) => {
-                        new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
-                    }
-                    (Color::Black, Square { rank: 0, file: 0 }) => {
-                        new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
-                    }
-                    (Color::Black, Square { rank: 0, file: 7 }) => {
-                        new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
-                    }
-                    _ => (),
-                }
-            }
-        }
-    }
-
-    /// Unmakes a half-move on this board
-    ///
-    /// # Arguments
-    ///
-    /// * `old_move` - A Ply that holds the origin and destination square of the move.
-    ///
-    /// # Panics
-    /// Will panic if there is no piece at the destination square.
-    ///
-    /// # Examples
-    /// ```
-    /// ```
-    #[allow(dead_code)]
-    pub fn unmake_move(&mut self) {
-        let old_move = self
-            .history
-            .pop()
-            .expect("No previous move in the board history!");
-
-        self.replace_square(old_move.dest, old_move.start);
-
-        if let Some(promoted_piece) = old_move.promoted_to {
-            self.remove_piece(old_move.start, promoted_piece);
-            self.add_piece(old_move.start, Kind::Pawn(self.current_turn.opposite()));
-        }
-
-        if let Some(captured_piece) = old_move.captured_piece {
-            if old_move.en_passant {
-                self.add_piece(
-                    Square {
-                        file: old_move.dest.file,
-                        rank: old_move.start.rank,
-                    },
-                    captured_piece,
-                );
-            } else {
-                self.add_piece(old_move.dest, captured_piece);
-            }
-        }
-
-        if old_move.is_castles {
-            let (rook_start, rook_dest) = match old_move.dest {
-                Square { rank: 0, file: 6 } => (Square::from("h1"), Square::from("f1")),
-                Square { rank: 0, file: 2 } => (Square::from("a1"), Square::from("d1")),
-                Square { rank: 7, file: 6 } => (Square::from("h8"), Square::from("f8")),
-                Square { rank: 7, file: 2 } => (Square::from("a8"), Square::from("d8")),
-                _ => panic!("Invalid castling king destination {}", old_move.dest),
-            };
-
-            self.replace_square(rook_dest, rook_start);
-        }
-
-        if self.history.last().is_some_and(|f| f.is_double_pawn_push) {
-            self.en_passant_file = Some(self.history.last().unwrap().dest.file);
-        } else {
-            self.en_passant_file = None;
-        }
-
-        if self.current_turn == Color::White {
-            self.fullmove_counter -= 1;
-        }
-
-        self.switch_turn();
-
-        self.position_history.remove(&ZKey::from(&*self));
     }
 }
 
@@ -1372,7 +1484,7 @@ mod tests {
         let mut board = BoardBuilder::construct_starting_board().build();
         let start = Square::from("a2");
         let dest = Square::from("a3");
-        let ply = Ply::new(start, dest, Kind::Pawn(Color::Black));
+        let ply = Ply::new(start, dest, Kind::Pawn(Color::White));
 
         assert_eq!(board.current_turn, Color::White);
 
