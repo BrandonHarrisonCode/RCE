@@ -28,6 +28,7 @@ use crate::board::Ply;
 /// ```
 pub struct Info {
     pub best_move: Option<Ply>,
+    pub best_score: Option<i64>,
     pub nodes: u64,
 }
 
@@ -36,6 +37,7 @@ impl Info {
     pub const fn new() -> Self {
         Self {
             best_move: None,
+            best_score: None,
             nodes: 0,
         }
     }

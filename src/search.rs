@@ -4,13 +4,10 @@ mod logger;
 mod move_orderer;
 
 use super::evaluate::Evaluator;
-use crate::{
-    board::{
-        piece::Color,
-        transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
-        Board, Ply,
-    },
-    evaluate::simple_evaluator::SimpleEvaluator,
+use crate::board::{
+    piece::Color,
+    transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
+    Board, Ply,
 };
 
 use info::Info;
@@ -59,6 +56,7 @@ const NEGMAX: i64 = -i64::MAX; // i64::MIN + 1
 pub struct Search {
     pub running: Arc<AtomicBool>,
     board: Board,
+    original_board: Board,
     limits: SearchLimits,
 
     info: Info,
@@ -92,6 +90,7 @@ impl Search {
     pub fn new(board: &Board, limits: Option<SearchLimits>) -> Self {
         Self {
             board: board.clone(),
+            original_board: board.clone(),
             limits: limits.unwrap_or_default(),
             running: Arc::new(AtomicBool::new(true)),
 
@@ -154,15 +153,20 @@ impl Search {
     fn iter_deep(&mut self, evaluator: &impl Evaluator, max_depth: Option<Depth>) {
         let start = Instant::now();
         for depth in 1..=max_depth.unwrap_or(Depth::MAX) {
-            let current_best_move = self.alpha_beta_start(evaluator, depth, start);
-
-            // TODO: move here
+            self.alpha_beta_start(evaluator, depth, start);
 
             if !self.is_running() || self.limits_exceeded(start) {
                 break;
             }
 
-            self.info.best_move = Some(current_best_move); // TODO, test if moving this before the break statement produces better results now that we are investigating the pv first
+            let pv = self.get_pv(depth);
+            self.log_uci_info(
+                depth,
+                self.info.nodes,
+                start.elapsed().as_millis(),
+                self.info.best_score.unwrap_or(0),
+                &pv,
+            );
         }
 
         self.log(format!("bestmove {}", self.info.best_move.unwrap()).as_str());
@@ -191,39 +195,30 @@ impl Search {
         depth: Depth,
         start: Instant,
     ) -> Ply {
-        let mut alpha = i64::MIN;
-        let beta = i64::MAX;
-
         let moves = self.board.get_legal_moves();
         if moves.is_empty() {
             return Ply::default();
         }
 
+        let mut alpha = i64::MIN;
+        let beta = i64::MAX;
         let mut best_ply = moves[0];
         for mv in MoveOrderer::new(&moves, self.board.zkey) {
             self.board.make_move(mv);
             self.info.nodes += 1;
 
-            let value = self
-                .alpha_beta(evaluator, alpha, beta, depth - 1, start)
+            let score = self
+                .alpha_beta(
+                    evaluator,
+                    beta.saturating_neg(),
+                    alpha.saturating_neg(),
+                    depth - 1,
+                    start,
+                )
                 .saturating_neg();
-            if value > alpha {
-                alpha = value;
+            if score > alpha {
+                alpha = score;
                 best_ply = mv;
-
-                let pv = self.get_pv(depth);
-                self.log_uci_info(
-                    depth,
-                    self.info.nodes,
-                    start.elapsed().as_millis(),
-                    alpha,
-                    &pv,
-                );
-
-                // Checkmate found
-                if alpha == i64::MAX {
-                    break;
-                }
             }
             self.board.unmake_move();
         }
@@ -242,6 +237,9 @@ impl Search {
                         best_ply,
                     },
                 );
+
+            self.info.best_score = Some(alpha);
+            self.info.best_move = Some(best_ply);
         }
 
         best_ply
@@ -281,6 +279,14 @@ impl Search {
         let mut alpha = alpha_start;
         let mut beta = beta_start;
 
+        if self.board.get_halfmove_clock() >= 100 {
+            return 0; // Draw by fifty-move rule
+        }
+
+        if self.board.position_reached(self.board.zkey) {
+            return 0; // Avoid threefold repetition at first repeitition
+        }
+
         // Check if we have more information in the TTable than we have already reached in this search
         if let Some(entry) = TRANSPOSITION_TABLE
             .read()
@@ -308,21 +314,13 @@ impl Search {
             return 0; // Stalemate
         }
 
-        if self.board.get_halfmove_clock() >= 100 {
-            return 0; // Draw by fifty-move rule
-        }
-
-        if self.board.position_reached(self.board.zkey) {
-            return 0; // Avoid threefold repetition at first repeitition
-        }
-
         let mut best_ply = moves[0];
         for mv in MoveOrderer::new(&moves, self.board.zkey) {
             self.board.make_move(mv);
             self.info.nodes += 1;
             let score = self
                 .alpha_beta(
-                    &SimpleEvaluator,
+                    evaluator,
                     beta.saturating_neg(),
                     alpha.saturating_neg(),
                     depth - 1,
@@ -476,19 +474,28 @@ impl Search {
     /// ```
     fn get_pv(&mut self, length: Depth) -> Vec<Ply> {
         let mut plys = Vec::new();
+        let tt = TRANSPOSITION_TABLE
+            .read()
+            .expect("Transposition table is poisoned! Unable to read entry.");
+        let original_zkey = self.original_board.zkey;
 
         for _ in 0..length {
-            if let Some(entry) = TRANSPOSITION_TABLE
-                .read()
-                .expect("Transposition table is poisoned! Unable to read entry.")
-                .get(&self.board.zkey)
-            {
+            if let Some(entry) = tt.get(&self.original_board.zkey) {
                 plys.push(entry.best_ply);
-                self.board.make_move(entry.best_ply);
+                self.original_board.make_move(entry.best_ply);
             } else {
                 break;
             }
         }
+
+        for _ in &plys {
+            self.original_board.unmake_move();
+        }
+
+        assert!(
+            self.original_board.zkey == original_zkey,
+            "The original board has been modified!",
+        );
 
         plys
     }
@@ -594,9 +601,9 @@ mod tests {
         let mut search = Search::new(&board, None);
         search.search(&SimpleEvaluator, Some(2));
 
-        assert!(search.get_pv(1).len() <= 1);
-        assert!(search.get_pv(2).len() <= 2);
-        assert!(search.get_pv(3).len() <= 2);
+        assert!(search.get_pv(1).len() == 1);
+        assert!(search.get_pv(2).len() == 2);
+        assert!(search.get_pv(3).len() == 2);
         assert_eq!(board, original_board);
     }
 

@@ -198,7 +198,6 @@ impl Board {
         self.make_move_castling_checks(&mut new_move);
 
         self.switch_turn();
-        self.zkey.change_turn();
         if self.current_turn == Color::White {
             self.fullmove_counter += 1;
         }
@@ -229,52 +228,52 @@ impl Board {
 
         match (new_move.piece, new_move.start) {
             (Kind::King(Color::White), _) => {
-                if self.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
+                if new_move.castling_rights.white_kingside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::WhiteKingside);
                     new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
                 }
-                if self.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
+                if new_move.castling_rights.white_queenside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::WhiteQueenside);
                     new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
                 }
             }
             (Kind::King(Color::Black), _) => {
-                if self.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
+                if new_move.castling_rights.black_kingside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::BlackKingside);
                     new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
                 }
-                if self.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
+                if new_move.castling_rights.black_queenside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::BlackQueenside);
                     new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
                 }
             }
             (Kind::Rook(Color::White), Square { rank: 0, file: 0 }) => {
-                if self.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
+                if new_move.castling_rights.white_queenside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::WhiteQueenside);
                     new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
                 }
             }
             (Kind::Rook(Color::White), Square { rank: 0, file: 7 }) => {
-                if self.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
+                if new_move.castling_rights.white_kingside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::WhiteKingside);
                     new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
                 }
             }
             (Kind::Rook(Color::Black), Square { rank: 7, file: 0 }) => {
-                if self.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
+                if new_move.castling_rights.black_queenside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::BlackQueenside);
                     new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
                 }
             }
             (Kind::Rook(Color::Black), Square { rank: 7, file: 7 }) => {
-                if self.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
+                if new_move.castling_rights.black_kingside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::BlackKingside);
                     new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
@@ -285,28 +284,28 @@ impl Board {
 
         match (new_move.captured_piece, new_move.dest) {
             (Some(Kind::Rook(Color::White)), Square { rank: 0, file: 0 }) => {
-                if self.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
+                if new_move.castling_rights.white_queenside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::WhiteQueenside);
                     new_move.castling_rights.white_queenside = CastlingStatus::Unavailable;
                 }
             }
             (Some(Kind::Rook(Color::White)), Square { rank: 0, file: 7 }) => {
-                if self.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
+                if new_move.castling_rights.white_kingside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::WhiteKingside);
                     new_move.castling_rights.white_kingside = CastlingStatus::Unavailable;
                 }
             }
             (Some(Kind::Rook(Color::Black)), Square { rank: 7, file: 0 }) => {
-                if self.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
+                if new_move.castling_rights.black_queenside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::BlackQueenside);
                     new_move.castling_rights.black_queenside = CastlingStatus::Unavailable;
                 }
             }
             (Some(Kind::Rook(Color::Black)), Square { rank: 7, file: 7 }) => {
-                if self.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
+                if new_move.castling_rights.black_kingside == CastlingStatus::Available {
                     self.zkey
                         .change_castling_rights(CastlingKind::BlackKingside);
                     new_move.castling_rights.black_kingside = CastlingStatus::Unavailable;
@@ -363,32 +362,32 @@ impl Board {
                 None,
                 false,
             );
+        }
 
-            // Revert castling rights
-            if old_move.castling_rights.white_kingside
-                != self.castle_status(CastlingKind::WhiteKingside)
-            {
-                self.zkey
-                    .change_castling_rights(CastlingKind::WhiteKingside);
-            }
-            if old_move.castling_rights.white_queenside
-                != self.castle_status(CastlingKind::WhiteQueenside)
-            {
-                self.zkey
-                    .change_castling_rights(CastlingKind::WhiteQueenside);
-            }
-            if old_move.castling_rights.black_kingside
-                != self.castle_status(CastlingKind::BlackKingside)
-            {
-                self.zkey
-                    .change_castling_rights(CastlingKind::BlackKingside);
-            }
-            if old_move.castling_rights.black_queenside
-                != self.castle_status(CastlingKind::BlackQueenside)
-            {
-                self.zkey
-                    .change_castling_rights(CastlingKind::BlackQueenside);
-            }
+        // Revert castling rights
+        if old_move.castling_rights.white_kingside
+            != self.castle_status(CastlingKind::WhiteKingside)
+        {
+            self.zkey
+                .change_castling_rights(CastlingKind::WhiteKingside);
+        }
+        if old_move.castling_rights.white_queenside
+            != self.castle_status(CastlingKind::WhiteQueenside)
+        {
+            self.zkey
+                .change_castling_rights(CastlingKind::WhiteQueenside);
+        }
+        if old_move.castling_rights.black_kingside
+            != self.castle_status(CastlingKind::BlackKingside)
+        {
+            self.zkey
+                .change_castling_rights(CastlingKind::BlackKingside);
+        }
+        if old_move.castling_rights.black_queenside
+            != self.castle_status(CastlingKind::BlackQueenside)
+        {
+            self.zkey
+                .change_castling_rights(CastlingKind::BlackQueenside);
         }
 
         // Unset en passant file
@@ -409,7 +408,6 @@ impl Board {
         }
 
         self.switch_turn();
-        self.zkey.change_turn();
     }
 
     /// Moves a piece from one square to another, removing the piece from the destination square.
@@ -729,7 +727,8 @@ impl Board {
     /// board.switch_turn();
     /// assert_eq!(Color::White, board.current_turn);
     /// ```
-    pub const fn switch_turn(&mut self) {
+    pub fn switch_turn(&mut self) {
+        self.zkey.change_turn();
         self.current_turn = self.current_turn.opposite();
     }
 
