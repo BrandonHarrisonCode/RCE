@@ -15,18 +15,16 @@ mod bench;
 mod board;
 mod evaluate;
 mod search;
+mod testing_utils;
 mod uci;
-mod utils;
 
 use std::env;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() > 1 {
-        if args[1] == "bench" {
-            bench::bench();
-            return;
-        }
+    if args.len() > 1 && args[1] == "bench" {
+        bench::bench();
+        return;
     }
 
     board::zkey::ZTable::init();

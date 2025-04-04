@@ -159,7 +159,7 @@ mod tests {
     use super::{Color, Pawn, Piece, Ply, Square};
     use crate::board::Kind;
     use crate::board::{boardbuilder::BoardBuilder, Board};
-    use crate::utils::tests::check_unique_equality;
+    use crate::testing_utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
@@ -241,7 +241,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -258,7 +258,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -270,7 +270,7 @@ mod tests {
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![Ply::new(start_square, Square::from("g7"), piece)];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -285,7 +285,7 @@ mod tests {
             Ply::new(start_square, Square::from("b2"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -300,7 +300,7 @@ mod tests {
             Ply::new(start_square, Square::from("c4"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -317,7 +317,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -354,7 +354,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -379,7 +379,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -416,7 +416,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -441,7 +441,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -490,7 +490,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -539,7 +539,7 @@ mod tests {
                 .build(),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -551,6 +551,6 @@ mod tests {
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 }

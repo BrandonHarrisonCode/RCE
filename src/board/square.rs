@@ -117,6 +117,12 @@ impl From<Square> for u8 {
     }
 }
 
+impl From<Square> for usize {
+    fn from(square: Square) -> Self {
+        u8::from(square) as Self
+    }
+}
+
 impl From<Square> for u64 {
     fn from(square: Square) -> Self {
         1u64 << u8::from(square)
@@ -583,6 +589,15 @@ mod tests {
             let square = Square::from(i);
             let result = square.u8();
             assert_eq!(result, i);
+        }
+    }
+
+    #[test]
+    fn test_usize_identity() {
+        for i in 0..64 {
+            let square = Square::from(i);
+            let result: usize = square.into();
+            assert_eq!(result, i as usize);
         }
     }
 

@@ -3,12 +3,10 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::{self, JoinHandle};
 
-use crate::board::{Board, BoardBuilder};
-
 use crate::bench;
+use crate::board::{Board, BoardBuilder};
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
-use crate::search::limits::SearchLimits;
-use crate::search::Search;
+use crate::search::{limits::SearchLimits, Depth, Search};
 
 const TITLE: &str = "Rust Chess Engine";
 const AUTHOR: &str = "Brandon Harrison";
@@ -69,6 +67,7 @@ pub fn start() {
     }
 }
 
+/// Prints information about the engine like the name and options supported.
 fn print_engine_info() {
     println!("id name {TITLE} {VERSION}");
     println!("id author {AUTHOR}");
@@ -79,6 +78,9 @@ fn print_engine_info() {
     println!("uciok");
 }
 
+/// Loads the position from the UCI command. It can be either a FEN string or a starting position.
+/// It can also take an optional list of move to make from the original position.
+/// It expects these moves to be in longform algebraic notation, e.g. b2b4, e7a7, etc.
 fn load_position(fields: &[&str]) -> Result<Board, String> {
     let mut board = BoardBuilder::construct_starting_board().build();
     let mut idx = 1;
@@ -113,6 +115,7 @@ fn load_position(fields: &[&str]) -> Result<Board, String> {
     Ok(board)
 }
 
+/// Runs a search using the specified limits.
 fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>), String> {
     let mut limits = SearchLimits::new();
 
@@ -126,33 +129,33 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
             "ponder" => {}
             "wtime" => {
                 idx += 1;
-                limits = limits.white_time(parse_value(fields[idx], token));
+                limits = limits.white_time(parse_value(fields[idx]));
             }
             "btime" => {
                 idx += 1;
-                limits = limits.black_time(parse_value(fields[idx], token));
+                limits = limits.black_time(parse_value(fields[idx]));
             }
             "winc" => {
                 idx += 1;
-                limits = limits.white_increment(parse_value(fields[idx], token));
+                limits = limits.white_increment(parse_value(fields[idx]));
             }
             "binc" => {
                 idx += 1;
-                limits = limits.black_increment(parse_value(fields[idx], token));
+                limits = limits.black_increment(parse_value(fields[idx]));
             }
             "movestogo" => {}
             "depth" => {
                 idx += 1;
-                limits = limits.depth(parse_value(fields[idx], token));
+                limits = limits.depth(parse_value(fields[idx]));
             }
             "nodes" => {
                 idx += 1;
-                limits = limits.nodes(parse_value(fields[idx], token));
+                limits = limits.nodes(parse_value(fields[idx]));
             }
             "mate" => {}
             "movetime" => {
                 idx += 1;
-                limits = limits.movetime(parse_value(fields[idx], token));
+                limits = limits.movetime(parse_value(fields[idx]));
             }
             "infinite" => {
                 limits = limits.depth(None);
@@ -163,24 +166,41 @@ fn go(board: &Board, fields: &[&str]) -> Result<(Arc<AtomicBool>, JoinHandle<()>
         idx += 1;
     }
 
-    let max_depth: Option<u16> = limits.depth.map(|d| u16::try_from(d).unwrap_or(u16::MAX));
-    let mut search = Search::new(board, &SimpleEvaluator::new(), Some(limits));
-    let is_running = search.get_running();
+    let max_depth: Option<Depth> = limits
+        .depth
+        .map(|d| Depth::try_from(d).unwrap_or(Depth::MAX));
+    let mut search = Search::new(board, Some(limits));
+    let is_running = search.running.clone();
     let join_handle = thread::spawn(move || {
-        search.search(max_depth);
+        search.search(&SimpleEvaluator, max_depth);
     });
 
     Ok((is_running, join_handle))
 }
 
-fn parse_value<T>(str: &str, kind: &str) -> Option<T>
+/// Parses a value from a string and returns it as the specified type.
+/// If the parsing fails, it prints an error message and returns None.
+///
+/// # Arguments
+/// * `str` - The string to parse.
+///
+/// # Returns
+/// * `Some(T)` if parsing was successful.
+/// * `None` if parsing failed.
+///
+/// # Example
+/// ```
+/// let value: Option<u32> = parse_value("42", "u32");
+/// assert_eq!(value, Some(42));
+/// ```
+fn parse_value<T>(str: &str) -> Option<T>
 where
     T: std::str::FromStr,
     <T as std::str::FromStr>::Err: std::fmt::Display,
 {
     let result = str
         .parse()
-        .map_err(|e| format!("Failed to parse value \"{e}\" for {kind}!"));
+        .map_err(|e| format!("Failed to parse value \"{e}\" for token!"));
     if let Err(err_str) = result {
         eprintln!("{err_str}");
         return None;

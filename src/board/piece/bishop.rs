@@ -207,7 +207,7 @@ impl Bishop {
 mod tests {
     use super::{Bishop, Color, Piece, Ply, Square};
     use crate::board::Kind;
-    use crate::{board::boardbuilder::BoardBuilder, utils::tests::check_unique_equality};
+    use crate::{board::boardbuilder::BoardBuilder, testing_utils::tests::check_unique_equality};
     use pretty_assertions::{assert_eq, assert_ne};
 
     #[test]
@@ -292,7 +292,7 @@ mod tests {
             Ply::new(start_square, Square::from("h8"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -312,7 +312,7 @@ mod tests {
             Ply::new(start_square, Square::from("a2"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -338,7 +338,7 @@ mod tests {
             Ply::new(start_square, Square::from("h1"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -364,7 +364,7 @@ mod tests {
             Ply::new(start_square, Square::from("g1"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -386,7 +386,7 @@ mod tests {
             Ply::new(start_square, Square::from("b1"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -405,7 +405,7 @@ mod tests {
             Ply::new(start_square, Square::from("d2"), piece),
             Ply::new(start_square, Square::from("c1"), piece),
         ];
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -425,7 +425,7 @@ mod tests {
             Ply::new(start_square, Square::from("h8"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -445,7 +445,7 @@ mod tests {
             Ply::new(start_square, Square::from("a2"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -471,7 +471,7 @@ mod tests {
             Ply::new(start_square, Square::from("h1"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -497,7 +497,7 @@ mod tests {
             Ply::new(start_square, Square::from("g1"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -519,7 +519,7 @@ mod tests {
             Ply::new(start_square, Square::from("b1"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -539,7 +539,7 @@ mod tests {
             Ply::new(start_square, Square::from("c1"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 
     #[test]
@@ -559,6 +559,6 @@ mod tests {
             Ply::new(start_square, Square::from("h5"), piece),
         ];
 
-        check_unique_equality(result, correct)
+        check_unique_equality(&result, &correct)
     }
 }

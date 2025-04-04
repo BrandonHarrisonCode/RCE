@@ -58,7 +58,7 @@ mod tests {
     use super::{Color, Knight, Piece, Ply, Square};
     use crate::board::BoardBuilder;
     use crate::board::Kind;
-    use crate::utils::tests::check_unique_equality;
+    use crate::testing_utils::tests::check_unique_equality;
     use pretty_assertions::{assert_eq, assert_ne};
     use std::collections::HashSet;
 
@@ -140,7 +140,7 @@ mod tests {
             Ply::new(start_square, Square::from("d2"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 
     #[test]
@@ -198,7 +198,7 @@ mod tests {
             Ply::new(start_square, Square::from("d2"), piece),
         ];
 
-        check_unique_equality(result, correct);
+        check_unique_equality(&result, &correct);
     }
 
     #[test]

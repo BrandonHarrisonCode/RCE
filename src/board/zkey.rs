@@ -4,12 +4,12 @@ use std::sync::OnceLock;
 use rand_chacha::rand_core::{RngCore, SeedableRng};
 use rand_chacha::ChaCha8Rng;
 
-use crate::board::Color;
+use crate::board::{Color, Kind};
 
 use super::ply::castling::CastlingKind;
 use super::ply::castling::CastlingStatus;
 use super::square::Square;
-use super::Board;
+use super::{Board, BoardBuilder};
 
 const SEED: u64 = 0xBEEF_CAFE;
 
@@ -84,20 +84,12 @@ impl ZTable {
     }
 }
 
-/// A Zobrist key for a board position.
-#[derive(Debug, Clone, Copy)]
-pub struct ZKey {
-    key: u64,
-    white_kingside: CastlingStatus,
-    white_queenside: CastlingStatus,
-    black_kingside: CastlingStatus,
-    black_queenside: CastlingStatus,
-    en_passant: Option<u8>,
-}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ZKey(u64);
 
 impl Hash for ZKey {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_u64(self.key);
+        state.write_u64(self.0);
     }
 }
 
@@ -123,60 +115,46 @@ impl From<&Board> for ZKey {
     /// let zkey = ZKey::from(board);
     /// ```
     fn from(board: &Board) -> Self {
-        let mut key = Self::new();
+        let mut key = Self(0);
 
         for square in 0..64u8 {
             if let Some(piece) = board.get_piece(Square::from(square)) {
-                key.key ^= TABLE.get_or_init(ZTable::init).pieces[usize::from(piece.get_color())]
+                key.0 ^= TABLE.get_or_init(ZTable::init).pieces[usize::from(piece.get_color())]
                     [usize::from(piece)][usize::from(square)];
             }
         }
 
         if board.castle_status(CastlingKind::WhiteKingside) == CastlingStatus::Available {
-            key.key ^=
+            key.0 ^=
                 TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::WhiteKingside)];
-            key.white_kingside = CastlingStatus::Available;
         }
         if board.castle_status(CastlingKind::WhiteQueenside) == CastlingStatus::Available {
-            key.key ^=
+            key.0 ^=
                 TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::WhiteQueenside)];
-            key.white_queenside = CastlingStatus::Available;
         }
         if board.castle_status(CastlingKind::BlackKingside) == CastlingStatus::Available {
-            key.key ^=
+            key.0 ^=
                 TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::BlackKingside)];
-            key.black_kingside = CastlingStatus::Available;
         }
         if board.castle_status(CastlingKind::BlackQueenside) == CastlingStatus::Available {
-            key.key ^=
+            key.0 ^=
                 TABLE.get_or_init(ZTable::init).castling[usize::from(CastlingKind::BlackQueenside)];
-            key.black_queenside = CastlingStatus::Available;
         }
 
         if let Some(file) = board.en_passant_file {
-            key.key ^= TABLE.get_or_init(ZTable::init).en_passant[usize::from(file)];
-            key.en_passant = Some(file);
+            key.0 ^= TABLE.get_or_init(ZTable::init).en_passant[usize::from(file)];
         }
 
         if board.current_turn == Color::White {
-            key.key ^= TABLE.get_or_init(ZTable::init).white_turn;
+            key.0 ^= TABLE.get_or_init(ZTable::init).white_turn;
         }
 
         key
     }
 }
 
-/// Compares two Zobrist keys for equality, only considering the final key value.
-impl PartialEq for ZKey {
-    fn eq(&self, other: &Self) -> bool {
-        self.key == other.key
-    }
-}
-
-impl Eq for ZKey {}
-
-impl ZKey {
-    /// Creates a new Zobrist key.
+impl Default for ZKey {
+    /// Creates a new Zobrist key with a default value.
     ///
     /// # Returns
     ///
@@ -184,19 +162,109 @@ impl ZKey {
     ///
     /// # Example
     /// ```
-    /// use chess::board::zkey::ZKey;
+    /// use crate::board::zkey::ZKey;
+    ///
+    /// let zkey = ZKey::default();
+    /// ```
+    fn default() -> Self {
+        Self::from(&BoardBuilder::construct_starting_board().build())
+    }
+}
+
+impl ZKey {
+    /// Creates a new Zobrist key with a default value.
+    ///
+    /// # Returns
+    ///
+    /// * `ZKey` - The new Zobrist key
+    ///
+    /// # Example
+    /// ```
+    /// use crate::board::zkey::ZKey;
     ///
     /// let zkey = ZKey::new();
     /// ```
     pub const fn new() -> Self {
-        Self {
-            key: 0,
-            white_kingside: CastlingStatus::Unavailable,
-            white_queenside: CastlingStatus::Unavailable,
-            black_kingside: CastlingStatus::Unavailable,
-            black_queenside: CastlingStatus::Unavailable,
-            en_passant: None,
-        }
+        Self(0)
+    }
+
+    /// Adds or removes a piece from the Zobrist key.
+    /// Note that this function does not check if the piece is already present, so attempting to remove a piece that does not exist will actually add it instead.
+    ///
+    /// # Arguments
+    /// * `piece` - The piece to add or remove
+    /// * `square` - The square to add or remove the piece from
+    ///
+    /// # Example
+    /// ```
+    /// use crate::board::zkey::ZKey;
+    /// use crate::board::piece::Kind;
+    /// use crate::board::square::Square;
+    ///
+    /// let mut zkey = ZKey::new();
+    /// let piece = Kind::Pawn(Color::White);
+    /// let square = Square::from(0);
+    ///
+    /// zkey.add_or_remove_piece(piece, square);
+    /// ```
+    pub fn add_or_remove_piece(&mut self, piece: Kind, square: Square) {
+        self.0 ^= TABLE.get_or_init(ZTable::init).pieces[usize::from(piece.get_color())]
+            [usize::from(piece)][usize::from(square)];
+    }
+
+    /// Adds or removes castling rights from the Zobrist key.
+    /// This function flips the value of castling rights, so performing the same operation twice will revert the change.
+    ///
+    /// # Arguments
+    /// * `castling` - The castling rights to add or remove
+    ///
+    /// # Example
+    /// ```
+    /// use crate::board::zkey::ZKey;
+    /// use crate::board::ply::castling::CastlingKind;
+    ///
+    /// let mut zkey = ZKey::new();
+    /// let castling = CastlingKind::WhiteKingside;
+    ///
+    /// zkey.change_castling_rights(castling);
+    /// ```
+    pub fn change_castling_rights(&mut self, castling: CastlingKind) {
+        self.0 ^= TABLE.get_or_init(ZTable::init).castling[usize::from(castling)];
+    }
+
+    /// Changes the en passant file in the Zobrist key.
+    /// Note that this function does not unset the previous en passant file, so it is up to the caller to ensure that the correct file is set.
+    ///
+    /// # Arguments
+    /// * `file` - The file to set for en passant
+    ///
+    /// # Example
+    /// ```
+    /// use crate::board::zkey::ZKey;
+    /// use crate::board::square::Square;
+    ///
+    /// let mut zkey = ZKey::new();
+    /// let file = Square::from(0).file();
+    ///
+    /// zkey.change_en_passant(file);
+    /// ```
+    pub fn change_en_passant(&mut self, file: u8) {
+        self.0 ^= TABLE.get_or_init(ZTable::init).en_passant[usize::from(file)];
+    }
+
+    /// Changes the turn in the Zobrist key.
+    /// This function flips the value of the turn, so performing the same operation twice will revert the change.
+    ///
+    /// # Example
+    /// ```
+    /// use crate::board::zkey::ZKey;
+    /// use crate::board::Color;
+    ///
+    /// let mut zkey = ZKey::new();
+    /// zkey.change_turn();
+    /// ```
+    pub fn change_turn(&mut self) {
+        self.0 ^= TABLE.get_or_init(ZTable::init).white_turn; // Black's turn is implied by not being White's turn
     }
 }
 
@@ -204,6 +272,8 @@ impl ZKey {
 
 #[cfg(test)]
 mod tests {
+    use crate::board::Ply;
+
     use super::*;
     use pretty_assertions::assert_eq;
     use std::collections::HashSet;
@@ -277,12 +347,7 @@ mod tests {
     fn test_zkey_new() {
         let zkey = ZKey::new();
 
-        assert_eq!(zkey.key, 0);
-        assert_eq!(zkey.white_kingside, CastlingStatus::Unavailable);
-        assert_eq!(zkey.white_queenside, CastlingStatus::Unavailable);
-        assert_eq!(zkey.black_kingside, CastlingStatus::Unavailable);
-        assert_eq!(zkey.black_queenside, CastlingStatus::Unavailable);
-        assert!(zkey.en_passant.is_none());
+        assert_eq!(zkey.0, 0);
     }
 
     #[test]
@@ -290,12 +355,7 @@ mod tests {
         let zkey = ZKey::from(&Board::default());
         const START_POS_KEY: u64 = 8891004743231992090; // Current start position Zobrist key using the random seed
 
-        assert_eq!(zkey.key, START_POS_KEY);
-        assert_eq!(zkey.white_kingside, CastlingStatus::Available);
-        assert_eq!(zkey.white_queenside, CastlingStatus::Available);
-        assert_eq!(zkey.black_kingside, CastlingStatus::Available);
-        assert_eq!(zkey.black_queenside, CastlingStatus::Available);
-        assert!(zkey.en_passant.is_none());
+        assert_eq!(zkey.0, START_POS_KEY);
     }
 
     #[test]
@@ -307,8 +367,8 @@ mod tests {
             "rnbq1rk1/1p2bppp/p3pn2/4N3/3P4/2NB4/PP3PPP/R1BQK2R b KQ - 1 10",
         ));
 
-        assert_ne!(zkey0.key, 0);
-        assert_ne!(zkey1.key, 0);
+        assert_ne!(zkey0.0, 0);
+        assert_ne!(zkey1.0, 0);
         assert_ne!(zkey0, zkey1);
     }
 
@@ -321,22 +381,626 @@ mod tests {
     }
 
     #[test]
-    fn test_zkey_eq_check_key_only() {
-        let zkey = ZKey {
-            key: 123,
-            ..ZKey::new()
-        };
-        let same = ZKey {
-            key: 123,
-            white_kingside: CastlingStatus::Available,
-            ..ZKey::new()
-        };
-        let different = ZKey {
-            key: 321,
-            ..ZKey::new()
-        };
+    fn test_zkey_add_or_remove_piece() {
+        let mut board = Board::default();
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
 
-        assert_eq!(zkey, same);
-        assert_ne!(zkey, different);
+        assert_eq!(zkey.0, 8891004743231992090); // Current start position Zobrist key using the random seed
+
+        let piece = Kind::Pawn(Color::White);
+        let from_sq = Square::from("a2");
+        let to_sq = Square::from("a3"); // no en passant
+
+        zkey.add_or_remove_piece(piece, from_sq);
+        zkey.add_or_remove_piece(piece, to_sq);
+        zkey.change_turn();
+
+        board.make_move(Ply::new(from_sq, to_sq, piece));
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_add_or_remove_piece_en_passant() {
+        let mut board = Board::default();
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        assert_eq!(zkey.0, 8891004743231992090); // Current start position Zobrist key using the random seed
+
+        let piece = Kind::Pawn(Color::White);
+        let from_sq = Square::from("a2");
+        let to_sq = Square::from("a4"); // en passant has changed
+        let ply = Ply::builder(from_sq, to_sq, piece)
+            .double_pawn_push(true)
+            .build();
+
+        zkey.add_or_remove_piece(piece, from_sq);
+        zkey.add_or_remove_piece(piece, to_sq);
+        zkey.change_en_passant(to_sq.file);
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_add_or_remove_piece_en_passant_reset() {
+        let mut board = Board::default();
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        assert_eq!(zkey.0, 8891004743231992090); // Current start position Zobrist key using the random seed
+
+        let piece = Kind::Pawn(Color::White);
+        let from_sq = Square::from("a2");
+        let to_sq = Square::from("a4"); // en passant has changed
+        let ply = Ply::builder(from_sq, to_sq, piece)
+            .double_pawn_push(true)
+            .build();
+
+        zkey.add_or_remove_piece(piece, from_sq);
+        zkey.add_or_remove_piece(piece, to_sq);
+        zkey.change_en_passant(to_sq.file);
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        zkey.change_en_passant(to_sq.file); // Undo en passant`
+
+        let piece = Kind::Knight(Color::Black);
+        let from_sq = Square::from("b8");
+        let to_sq = Square::from("c5");
+        let ply = Ply::builder(from_sq, to_sq, piece).build();
+
+        zkey.add_or_remove_piece(piece, from_sq);
+        zkey.add_or_remove_piece(piece, to_sq);
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_add_or_remove_piece_capture() {
+        let mut board = Board::from_fen("8/6K1/8/4qP2/6k1/8/8/8 b - - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let moving_piece = Kind::Queen(Color::Black);
+        let captured_piece = Kind::Pawn(Color::White);
+        let from_sq = Square::from("e5");
+        let to_sq = Square::from("f5");
+        let ply = Ply::builder(from_sq, to_sq, moving_piece)
+            .captured(captured_piece)
+            .build();
+
+        zkey.add_or_remove_piece(moving_piece, from_sq);
+        zkey.add_or_remove_piece(moving_piece, to_sq);
+        zkey.add_or_remove_piece(captured_piece, to_sq);
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_add_or_remove_piece_en_passant_capture() {
+        let mut board = Board::from_fen("6k1/8/8/8/5Pp1/8/8/6K1 b - f3 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let moving_piece = Kind::Pawn(Color::Black);
+        let captured_piece = Kind::Pawn(Color::White);
+        let from_sq = Square::from("g4");
+        let to_sq = Square::from("f3");
+        let en_passant_sq = Square::from("f4");
+        let ply = Ply::builder(from_sq, to_sq, moving_piece)
+            .captured(captured_piece)
+            .en_passant(true)
+            .build();
+
+        zkey.add_or_remove_piece(moving_piece, from_sq);
+        zkey.add_or_remove_piece(moving_piece, to_sq);
+        zkey.add_or_remove_piece(captured_piece, en_passant_sq);
+        zkey.change_en_passant(en_passant_sq.file);
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_add_or_remove_piece_promotion() {
+        let mut board = Board::from_fen("k7/5P2/8/8/8/8/8/6K1 w - - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let moving_piece = Kind::Pawn(Color::White);
+        let promoted_piece = Kind::Queen(Color::White);
+        let from_sq = Square::from("f7");
+        let to_sq = Square::from("f8");
+        let ply = Ply::builder(from_sq, to_sq, moving_piece)
+            .promoted_to(promoted_piece)
+            .build();
+
+        zkey.add_or_remove_piece(moving_piece, from_sq);
+        zkey.add_or_remove_piece(promoted_piece, to_sq);
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_add_or_remove_piece_capture_promotion() {
+        let mut board = Board::from_fen("k5q1/5P2/8/8/8/8/8/6K1 w - - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let moving_piece = Kind::Pawn(Color::White);
+        let promoted_piece = Kind::Queen(Color::White);
+        let captured_piece = Kind::Queen(Color::Black);
+        let from_sq = Square::from("f7");
+        let to_sq = Square::from("g8");
+        let ply = Ply::builder(from_sq, to_sq, moving_piece)
+            .captured(captured_piece)
+            .promoted_to(promoted_piece)
+            .build();
+
+        zkey.add_or_remove_piece(moving_piece, from_sq);
+        zkey.add_or_remove_piece(promoted_piece, to_sq);
+        zkey.add_or_remove_piece(captured_piece, to_sq);
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_change_castling_rights_white_kingside() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("e1"),
+            Square::from("g1"),
+            Kind::King(Color::White),
+        )
+        .castles(true)
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::WhiteKingside);
+        zkey.change_castling_rights(CastlingKind::WhiteQueenside); // Both kingside and queenside rights are removed
+        zkey.add_or_remove_piece(Kind::King(Color::White), Square::from("e1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("h1"));
+        zkey.add_or_remove_piece(Kind::King(Color::White), Square::from("g1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("f1"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_change_castling_rights_white_queenside() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("e1"),
+            Square::from("c1"),
+            Kind::King(Color::White),
+        )
+        .castles(true)
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::WhiteKingside);
+        zkey.change_castling_rights(CastlingKind::WhiteQueenside); // Both kingside and queenside rights are removed
+        zkey.add_or_remove_piece(Kind::King(Color::White), Square::from("e1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("a1"));
+        zkey.add_or_remove_piece(Kind::King(Color::White), Square::from("c1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("d1"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_change_castling_rights_black_kingside() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("e8"),
+            Square::from("g8"),
+            Kind::King(Color::Black),
+        )
+        .castles(true)
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackKingside);
+        zkey.change_castling_rights(CastlingKind::BlackQueenside); // Both kingside and queenside rights are removed
+        zkey.add_or_remove_piece(Kind::King(Color::Black), Square::from("e8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("h8"));
+        zkey.add_or_remove_piece(Kind::King(Color::Black), Square::from("g8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("f8"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_change_castling_rights_black_queenside() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("e8"),
+            Square::from("c8"),
+            Kind::King(Color::Black),
+        )
+        .castles(true)
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackKingside);
+        zkey.change_castling_rights(CastlingKind::BlackQueenside); // Both kingside and queenside rights are removed
+        zkey.add_or_remove_piece(Kind::King(Color::Black), Square::from("e8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("a8"));
+        zkey.add_or_remove_piece(Kind::King(Color::Black), Square::from("c8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("d8"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_move_white_queenside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("a1"),
+            Square::from("b1"),
+            Kind::Rook(Color::White),
+        )
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::WhiteQueenside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("a1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("b1"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_move_white_kingside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("h1"),
+            Square::from("g1"),
+            Kind::Rook(Color::White),
+        )
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::WhiteKingside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("h1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("g1"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_move_black_queenside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("a8"),
+            Square::from("b8"),
+            Kind::Rook(Color::Black),
+        )
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackQueenside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("a8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("b8"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_move_black_kingside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("h8"),
+            Square::from("g8"),
+            Kind::Rook(Color::Black),
+        )
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackKingside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("h8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("g8"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_move_white_king() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("e1"),
+            Square::from("f1"),
+            Kind::King(Color::White),
+        )
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::WhiteKingside);
+        zkey.change_castling_rights(CastlingKind::WhiteQueenside);
+        zkey.add_or_remove_piece(Kind::King(Color::White), Square::from("e1"));
+        zkey.add_or_remove_piece(Kind::King(Color::White), Square::from("f1"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_move_black_king() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("e8"),
+            Square::from("f8"),
+            Kind::King(Color::Black),
+        )
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackKingside);
+        zkey.change_castling_rights(CastlingKind::BlackQueenside);
+        zkey.add_or_remove_piece(Kind::King(Color::Black), Square::from("e8"));
+        zkey.add_or_remove_piece(Kind::King(Color::Black), Square::from("f8"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_capture_white_queenside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("a8"),
+            Square::from("a1"),
+            Kind::Rook(Color::Black),
+        )
+        .captured(Kind::Rook(Color::White))
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackQueenside);
+        zkey.change_castling_rights(CastlingKind::WhiteQueenside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("a8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("a1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("a1"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_capture_white_kingside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R b KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("h8"),
+            Square::from("h1"),
+            Kind::Rook(Color::Black),
+        )
+        .captured(Kind::Rook(Color::White))
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackKingside);
+        zkey.change_castling_rights(CastlingKind::WhiteKingside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("h8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("h1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("h1"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_capture_black_queenside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("a1"),
+            Square::from("a8"),
+            Kind::Rook(Color::White),
+        )
+        .captured(Kind::Rook(Color::Black))
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackQueenside);
+        zkey.change_castling_rights(CastlingKind::WhiteQueenside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("a1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("a8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("a8"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
+    }
+
+    #[test]
+    fn test_zkey_capture_black_kingside_rook() {
+        let mut board = Board::from_fen("r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1");
+        let original_zkey = ZKey::from(&board);
+        let mut zkey = original_zkey.clone();
+
+        let ply = Ply::builder(
+            Square::from("h1"),
+            Square::from("h8"),
+            Kind::Rook(Color::White),
+        )
+        .captured(Kind::Rook(Color::Black))
+        .build();
+
+        zkey.change_castling_rights(CastlingKind::BlackKingside);
+        zkey.change_castling_rights(CastlingKind::WhiteKingside);
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("h1"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::White), Square::from("h8"));
+        zkey.add_or_remove_piece(Kind::Rook(Color::Black), Square::from("h8"));
+        zkey.change_turn();
+
+        board.make_move(ply);
+        assert_eq!(zkey, ZKey::from(&board));
+        assert_eq!(zkey, board.zkey);
+        assert_eq!(board.zkey, ZKey::from(&board));
+
+        board.unmake_move();
+        assert_eq!(board.zkey, original_zkey);
     }
 }

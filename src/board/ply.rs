@@ -8,7 +8,7 @@ pub mod castling;
 use builder::Builder;
 use castling::CastlingRights;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 pub struct Ply {
     pub start: Square,
     pub dest: Square,
@@ -22,20 +22,6 @@ pub struct Ply {
 
     pub halfmove_clock: u16,
     pub castling_rights: CastlingRights,
-}
-
-impl Ord for Ply {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.start
-            .cmp(&other.start)
-            .then(self.dest.cmp(&other.dest))
-    }
-}
-
-impl PartialOrd for Ply {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 impl Default for Ply {

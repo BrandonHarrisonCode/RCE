@@ -7,7 +7,6 @@ use super::ply::Ply;
 use super::zkey::ZKey;
 use super::Board;
 use super::CastlingStatus;
-use super::GameState;
 use super::Square;
 
 use super::piece_bitboards;
@@ -18,7 +17,6 @@ pub struct BoardBuilder {
     pub current_turn: Color,
     pub halfmove_clock: u16,
     pub fullmove_counter: u16,
-    pub game_state: GameState,
 
     pub en_passant_file: Option<u8>,
 
@@ -56,7 +54,6 @@ impl BoardBuilder {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
-            game_state: GameState::Unknown,
 
             en_passant_file: None,
 
@@ -73,7 +70,6 @@ impl BoardBuilder {
             current_turn: Color::default(),
             halfmove_clock: 0,
             fullmove_counter: 1,
-            game_state: GameState::Unknown,
 
             en_passant_file: None,
 
@@ -82,12 +78,6 @@ impl BoardBuilder {
             history: vec![Ply::default()],
             position_history: vec![],
         }
-    }
-
-    #[allow(dead_code)]
-    pub const fn game_state(mut self, state: GameState) -> Self {
-        self.game_state = state;
-        self
     }
 
     pub fn get_last_history(&mut self) -> &mut Ply {
@@ -365,7 +355,7 @@ impl BoardBuilder {
     /// let builder = BoardBuilder::default().position_history(Vec::new());
     /// ```
     pub fn position_history(mut self, position_history: &[ZKey]) -> Self {
-        self.position_history = position_history.iter().copied().collect();
+        self.position_history = position_history.to_vec();
         self
     }
 
@@ -470,17 +460,19 @@ impl BoardBuilder {
         );
 
         self.history[0].halfmove_clock = self.halfmove_clock;
-        Board {
+        let mut output = Board {
             current_turn: self.current_turn,
             fullmove_counter: self.fullmove_counter,
-            game_state: self.game_state,
-
             en_passant_file: self.en_passant_file,
-
             history: self.history.clone(),
             bitboards: self.bitboards.build(),
+
             position_history: HashSet::new(),
-        }
+            zkey: ZKey::new(),
+        };
+        output.zkey = ZKey::from(&output);
+
+        output
     }
 }
 
@@ -506,10 +498,11 @@ mod tests {
     #[test]
     fn board_builder_black_turn() {
         let board = BoardBuilder::new().turn(Color::Black).build();
-        let correct = Board {
+        let mut correct = Board {
             current_turn: Color::Black,
             ..BoardBuilder::construct_empty_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
 
         assert_eq!(board, correct);
     }
@@ -599,7 +592,7 @@ mod tests {
             .pawns(Color::White, 1)
             .pawns(Color::Black, 2)
             .build();
-        let correct = Board {
+        let mut correct = Board {
             bitboards: PieceBitboards {
                 white_pawns: Bitboard::new(1),
                 black_pawns: Bitboard::new(2),
@@ -610,6 +603,7 @@ mod tests {
             },
             ..BoardBuilder::construct_empty_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
 
         assert_eq!(board, correct);
     }
@@ -620,7 +614,7 @@ mod tests {
             .king(Color::White, 1)
             .king(Color::Black, 2)
             .build();
-        let correct = Board {
+        let mut correct = Board {
             bitboards: PieceBitboards {
                 white_king: Bitboard::new(1),
                 black_king: Bitboard::new(2),
@@ -631,6 +625,8 @@ mod tests {
             },
             ..BoardBuilder::construct_empty_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
+
         assert_eq!(board, correct);
     }
 
@@ -640,7 +636,7 @@ mod tests {
             .queens(Color::White, 1)
             .queens(Color::Black, 2)
             .build();
-        let correct = Board {
+        let mut correct = Board {
             bitboards: PieceBitboards {
                 white_queens: Bitboard::new(1),
                 black_queens: Bitboard::new(2),
@@ -651,6 +647,7 @@ mod tests {
             },
             ..BoardBuilder::construct_empty_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
 
         assert_eq!(board, correct);
     }
@@ -661,7 +658,7 @@ mod tests {
             .rooks(Color::White, 1)
             .rooks(Color::Black, 2)
             .build();
-        let correct = Board {
+        let mut correct = Board {
             bitboards: PieceBitboards {
                 white_rooks: Bitboard::new(1),
                 black_rooks: Bitboard::new(2),
@@ -672,6 +669,7 @@ mod tests {
             },
             ..BoardBuilder::construct_empty_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
 
         assert_eq!(board, correct);
     }
@@ -682,7 +680,7 @@ mod tests {
             .bishops(Color::White, 1)
             .bishops(Color::Black, 2)
             .build();
-        let correct = Board {
+        let mut correct = Board {
             bitboards: PieceBitboards {
                 white_bishops: Bitboard::new(1),
                 black_bishops: Bitboard::new(2),
@@ -693,6 +691,7 @@ mod tests {
             },
             ..BoardBuilder::construct_empty_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
 
         assert_eq!(board, correct);
     }
@@ -703,7 +702,7 @@ mod tests {
             .knights(Color::White, 1)
             .knights(Color::Black, 2)
             .build();
-        let correct = Board {
+        let mut correct = Board {
             bitboards: PieceBitboards {
                 white_knights: Bitboard::new(1),
                 black_knights: Bitboard::new(2),
@@ -714,6 +713,7 @@ mod tests {
             },
             ..BoardBuilder::construct_empty_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
 
         assert_eq!(board, correct);
     }
@@ -737,10 +737,11 @@ mod tests {
     #[test]
     fn board_builder_en_passant() {
         let board = BoardBuilder::default().en_passant_file(Some(1)).build();
-        let correct = Board {
+        let mut correct = Board {
             en_passant_file: Some(1),
             ..BoardBuilder::construct_starting_board().build()
         };
+        correct.zkey = ZKey::from(&correct);
 
         assert_eq!(board, correct);
     }

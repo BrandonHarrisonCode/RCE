@@ -1,4 +1,4 @@
-#[derive(Default, Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Default, Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[allow(clippy::module_name_repetitions)]
 pub enum CastlingStatus {
     #[default]
@@ -26,7 +26,7 @@ impl From<CastlingKind> for usize {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[allow(clippy::module_name_repetitions)]
 pub struct CastlingRights {
     pub white_kingside: CastlingStatus,
