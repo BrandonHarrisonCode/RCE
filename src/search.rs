@@ -212,7 +212,8 @@ impl Search {
                 .saturating_neg();
 
             if !self.is_running() || self.limits_exceeded(start) {
-                return best_ply;
+                self.board.unmake_move();
+                break;
             }
 
             if score > alpha {
