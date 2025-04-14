@@ -1,5 +1,7 @@
 use crate::board::Ply;
 
+use super::Score;
+
 /// Information about the search process.
 /// Usually displayed in the uci `info` log.
 ///
@@ -28,7 +30,7 @@ use crate::board::Ply;
 /// ```
 pub struct Info {
     pub best_move: Option<Ply>,
-    pub best_score: Option<i64>,
+    pub best_score: Option<Score>,
     pub nodes: u64,
 }
 
