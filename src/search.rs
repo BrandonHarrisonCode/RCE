@@ -275,9 +275,6 @@ impl Search {
             return 0;
         }
 
-        let mut alpha = alpha_start;
-        let mut beta = beta_start;
-
         if self.board.get_halfmove_clock() >= 100 {
             return 0; // Draw by fifty-move rule
         }
@@ -285,6 +282,13 @@ impl Search {
         if self.board.position_reached(self.board.zkey) {
             return 0; // Avoid threefold repetition at first repeitition
         }
+
+        if depth == 0 {
+            return evaluator.evaluate(&mut self.board);
+        }
+
+        let mut alpha = alpha_start;
+        let mut beta = beta_start;
 
         // Check if we have more information in the TTable than we have already reached in this search
         if let Some(entry) = TRANSPOSITION_TABLE
@@ -303,10 +307,6 @@ impl Search {
                     return entry.score;
                 }
             }
-        }
-
-        if depth == 0 {
-            return evaluator.evaluate(&mut self.board);
         }
 
         let moves = self.board.get_legal_moves();
