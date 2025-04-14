@@ -1501,6 +1501,62 @@ mod tests {
     }
 
     #[test]
+    fn test_make_unmake_move_history() {
+        let mut board = BoardBuilder::construct_starting_board().build();
+        let start = Square::from("a2");
+        let dest = Square::from("a3");
+        let ply = Ply::new(start, dest, Kind::Pawn(Color::White));
+
+        assert_eq!(board.current_turn, Color::White);
+        assert_eq!(board.history.len(), 1);
+
+        assert!(board.get_piece(dest).is_none());
+        board.make_move(ply);
+        assert_eq!(board.history.len(), 2);
+        assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::White));
+        assert_eq!(board.current_turn, Color::Black);
+
+        assert!(board.get_piece(start).is_none());
+
+        board.unmake_move();
+        assert_eq!(board.history.len(), 1);
+        assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
+        assert_eq!(board.current_turn, Color::White);
+
+        assert!(board.get_piece(dest).is_none());
+    }
+
+    #[test]
+    fn test_make_unmake_move_position_history() {
+        let mut board = BoardBuilder::construct_starting_board().build();
+        let start = Square::from("a2");
+        let dest = Square::from("a3");
+        let ply = Ply::new(start, dest, Kind::Pawn(Color::White));
+        let original_zkey = board.zkey;
+
+        assert_eq!(board.current_turn, Color::White);
+        assert_eq!(board.position_history.len(), 0);
+        assert!(!board.position_reached(original_zkey));
+
+        assert!(board.get_piece(dest).is_none());
+        board.make_move(ply);
+        assert_eq!(board.position_history.len(), 1);
+        assert!(board.position_reached(original_zkey));
+        assert_eq!(board.get_piece(dest).unwrap(), Kind::Pawn(Color::White));
+        assert_eq!(board.current_turn, Color::Black);
+
+        assert!(board.get_piece(start).is_none());
+
+        board.unmake_move();
+        assert_eq!(board.position_history.len(), 0);
+        assert!(!board.position_reached(original_zkey));
+        assert_eq!(board.get_piece(start).unwrap(), Kind::Pawn(Color::White));
+        assert_eq!(board.current_turn, Color::White);
+
+        assert!(board.get_piece(dest).is_none());
+    }
+
+    #[test]
     fn test_make_unmake_move_double() {
         // Make and unmake two moves in a row
         let mut board = BoardBuilder::construct_starting_board().build();
