@@ -212,6 +212,11 @@ impl Search {
                 .saturating_neg();
 
             if !self.is_running() || self.limits_exceeded(start) {
+                // Don't throw out a partial search just because the current move was not searched
+                if self.info.best_score.is_some_and(|s| alpha > s) {
+                    self.info.best_score = Some(alpha);
+                    self.info.best_move = Some(best_ply);
+                }
                 return best_ply;
             }
 
