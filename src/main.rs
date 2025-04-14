@@ -14,6 +14,7 @@ extern crate derive_more;
 mod bench;
 mod board;
 mod evaluate;
+mod logger;
 mod search;
 mod testing_utils;
 mod uci;
