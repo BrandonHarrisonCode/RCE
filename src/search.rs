@@ -268,15 +268,12 @@ impl Search {
         evaluator: &impl Evaluator,
         alpha_start: i64,
         beta_start: i64,
-        depth: Depth,
+        mut depth: Depth,
         start: Instant,
     ) -> i64 {
         if !self.is_running() || self.limits_exceeded(start) {
             return 0;
         }
-
-        let mut alpha = alpha_start;
-        let mut beta = beta_start;
 
         if self.board.get_halfmove_clock() >= 100 {
             return 0; // Draw by fifty-move rule
@@ -285,6 +282,9 @@ impl Search {
         if self.board.position_reached(self.board.zkey) {
             return 0; // Avoid threefold repetition at first repeitition
         }
+
+        let mut alpha = alpha_start;
+        let mut beta = beta_start;
 
         // Check if we have more information in the TTable than we have already reached in this search
         if let Some(entry) = TRANSPOSITION_TABLE
@@ -303,6 +303,10 @@ impl Search {
                     return entry.score;
                 }
             }
+        }
+
+        if self.board.is_in_check(self.board.current_turn) {
+            depth += 1;
         }
 
         if depth == 0 {
