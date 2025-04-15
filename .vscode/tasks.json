@@ -7,6 +7,9 @@
 			"problemMatcher": [
 				"$rustc"
 			],
+			"args": [
+				"--release"
+			],
 			"group": {
 				"kind": "build",
 				"isDefault": true
@@ -31,6 +34,9 @@
 		{
 			"type": "cargo",
 			"command": "run",
+			"args": [
+				"--release"
+			],
 			"problemMatcher": [
 				"$rustc"
 			],
@@ -77,9 +83,14 @@
 				"$rustc"
 			],
 			"group": {
-				"kind": "test",
+				"kind": "test"
 			},
 			"label": "rust: cargo bench"
 		},
+		{
+			"type": "shell",
+			"command": "make && ./rce bench",
+			"label": "run bench"
+		}
 	]
 }
