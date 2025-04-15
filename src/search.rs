@@ -198,19 +198,45 @@ impl Search {
         let mut alpha = i16::MIN;
         let beta = i16::MAX;
         let mut best_ply = moves[0];
+        let mut pvs = false;
         for mv in MoveOrderer::new(&moves, self.board.zkey) {
             self.board.make_move(mv);
             self.info.nodes += 1;
 
-            let score = self
-                .alpha_beta(
-                    evaluator,
-                    beta.saturating_neg(),
-                    alpha.saturating_neg(),
-                    depth - 1,
-                    start,
-                )
-                .saturating_neg();
+            let mut score;
+            if pvs {
+                score = self
+                    .alpha_beta(
+                        evaluator,
+                        alpha.saturating_neg() - 1,
+                        alpha.saturating_neg(),
+                        depth - 1,
+                        start,
+                    )
+                    .saturating_neg();
+                // Principal variation search failed, the score is different then our bounds
+                if alpha < score && score < beta {
+                    score = self
+                        .alpha_beta(
+                            evaluator,
+                            beta.saturating_neg(),
+                            alpha.saturating_neg(),
+                            depth - 1,
+                            start,
+                        )
+                        .saturating_neg();
+                }
+            } else {
+                score = self
+                    .alpha_beta(
+                        evaluator,
+                        beta.saturating_neg(),
+                        alpha.saturating_neg(),
+                        depth - 1,
+                        start,
+                    )
+                    .saturating_neg();
+            }
 
             if !self.is_running() || self.limits_exceeded(start) {
                 // Don't throw out a partial search just because the current move was not searched
@@ -224,6 +250,7 @@ impl Search {
             if score > alpha {
                 alpha = score;
                 best_ply = mv;
+                pvs = true;
             }
             self.board.unmake_move();
         }
@@ -269,6 +296,7 @@ impl Search {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let score = search.alpha_beta(Score::MIN, Score::MAX, 3);
     /// ```
+    #[allow(clippy::too_many_lines)]
     fn alpha_beta(
         &mut self,
         evaluator: &impl Evaluator,
@@ -324,18 +352,46 @@ impl Search {
         }
 
         let mut best_ply = moves[0];
+        let mut pvs = false;
         for mv in MoveOrderer::new(&moves, self.board.zkey) {
             self.board.make_move(mv);
             self.info.nodes += 1;
-            let score = self
-                .alpha_beta(
-                    evaluator,
-                    beta.saturating_neg(),
-                    alpha.saturating_neg(),
-                    depth - 1,
-                    start,
-                )
-                .saturating_neg();
+
+            let mut score;
+            if pvs {
+                score = self
+                    .alpha_beta(
+                        evaluator,
+                        alpha.saturating_neg() - 1,
+                        alpha.saturating_neg(),
+                        depth - 1,
+                        start,
+                    )
+                    .saturating_neg();
+                // Principal variation search failed, the score is different then our bounds
+                if alpha < score && score < beta {
+                    score = self
+                        .alpha_beta(
+                            evaluator,
+                            beta.saturating_neg(),
+                            alpha.saturating_neg(),
+                            depth - 1,
+                            start,
+                        )
+                        .saturating_neg();
+                }
+            } else {
+                score = self
+                    .alpha_beta(
+                        evaluator,
+                        beta.saturating_neg(),
+                        alpha.saturating_neg(),
+                        depth - 1,
+                        start,
+                    )
+                    .saturating_neg();
+            }
+
             self.board.unmake_move();
 
             // Move is too good, opponent will not allow the game to reach this position
@@ -359,6 +415,7 @@ impl Search {
             if score > alpha {
                 alpha = score;
                 best_ply = mv;
+                pvs = true;
             }
         }
 
