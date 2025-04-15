@@ -21,10 +21,11 @@ use std::sync::{
 use std::time::Instant;
 
 pub type Depth = u8;
+pub type Score = i16;
 pub type NodeCount = u64;
 pub type Millisecond = u128;
 
-const NEGMAX: i64 = -i64::MAX; // i64::MIN + 1
+const NEGMAX: Score = -Score::MAX; // Score::MIN + 1
 
 /// The `Search` struct is responsible for performing the actual search on a board.
 /// It uses iterdeep with negamax to search the best move for the current player.
@@ -194,8 +195,8 @@ impl Search {
             return Ply::default();
         }
 
-        let mut alpha = i64::MIN;
-        let beta = i64::MAX;
+        let mut alpha = i16::MIN;
+        let beta = i16::MAX;
         let mut best_ply = moves[0];
         for mv in MoveOrderer::new(&moves, self.board.zkey) {
             self.board.make_move(mv);
@@ -259,23 +260,23 @@ impl Search {
     ///
     /// # Returns
     ///
-    /// * `i64` - The score of the "best" position
+    /// * `Score` - The score of the "best" position
     ///
     /// # Example
     /// ```
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let evaluator = SimpleEvaluator::new();
     /// let mut search = Search::new(&board, &evaluator, None);
-    /// let score = search.alpha_beta(i64::MIN, i64::MAX, 3);
+    /// let score = search.alpha_beta(Score::MIN, Score::MAX, 3);
     /// ```
     fn alpha_beta(
         &mut self,
         evaluator: &impl Evaluator,
-        alpha_start: i64,
-        beta_start: i64,
+        alpha_start: Score,
+        beta_start: Score,
         depth: Depth,
         start: Instant,
-    ) -> i64 {
+    ) -> Score {
         if !self.is_running() || self.limits_exceeded(start) {
             return 0;
         }
@@ -317,7 +318,7 @@ impl Search {
         let moves = self.board.get_legal_moves();
         if moves.is_empty() {
             if self.board.is_in_check(self.board.current_turn) {
-                return i64::MIN; // Checkmate
+                return Score::MIN; // Checkmate
             }
             return 0; // Stalemate
         }
@@ -442,12 +443,12 @@ impl Search {
         depth: Depth,
         nodes: NodeCount,
         time_elapsed_in_ms: Millisecond,
-        best_value: i64,
+        best_value: Score,
         pv: &[Ply],
     ) {
         let score = match best_value {
-            i64::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
-            i64::MAX => format!("mate {}", pv.len().div_ceil(2)),
+            Score::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
+            Score::MAX => format!("mate {}", pv.len().div_ceil(2)),
             _ => format!("cp {best_value}"),
         };
         let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
@@ -620,7 +621,7 @@ mod tests {
     fn test_alpha_beta() {
         let board = BoardBuilder::construct_starting_board().build();
         let mut search = Search::new(&board, None);
-        let score = search.alpha_beta(&SimpleEvaluator, i64::MIN, i64::MAX, 4, Instant::now());
+        let score = search.alpha_beta(&SimpleEvaluator, Score::MIN, Score::MAX, 4, Instant::now());
         assert_eq!(score, 0)
     }
 

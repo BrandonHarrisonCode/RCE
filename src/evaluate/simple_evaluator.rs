@@ -2,23 +2,24 @@ use super::Evaluator;
 use crate::board::piece::Kind;
 use crate::board::square::Square;
 use crate::board::Board;
+use crate::search::Score;
 
 /// A simple evaluator that assigns a value to each piece and sums them up.
 #[derive(Clone)]
 pub struct SimpleEvaluator;
 
 impl SimpleEvaluator {
-    const KING_VALUE: i64 = i32::MAX as i64;
-    const QUEEN_VALUE: i64 = 900;
-    const ROOK_VALUE: i64 = 500;
-    const BISHOP_VALUE: i64 = 300;
-    const KNIGHT_VALUE: i64 = 300;
-    const PAWN_VALUE: i64 = 100;
+    const KING_VALUE: Score = Score::MAX / 2;
+    const QUEEN_VALUE: Score = 900;
+    const ROOK_VALUE: Score = 500;
+    const BISHOP_VALUE: Score = 300;
+    const KNIGHT_VALUE: Score = 300;
+    const PAWN_VALUE: Score = 100;
 }
 
 impl Evaluator for SimpleEvaluator {
-    fn evaluate(&self, board: &mut Board) -> i64 {
-        let mut score: i64 = 0;
+    fn evaluate(&self, board: &mut Board) -> Score {
+        let mut score: Score = 0;
 
         for square in 0..64u8 {
             if let Some(piece) = board.get_piece(Square::from(square)) {
