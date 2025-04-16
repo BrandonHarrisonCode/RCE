@@ -315,7 +315,7 @@ impl Search {
         evaluator: &impl Evaluator,
         alpha_start: Score,
         beta_start: Score,
-        depth: Depth,
+        mut depth: Depth,
         start: Instant,
     ) -> Score {
         if !self.is_running() || self.limits_exceeded(start) {
@@ -350,6 +350,10 @@ impl Search {
                     return entry.score;
                 }
             }
+        }
+
+        if self.board.is_in_check(self.board.current_turn) {
+            depth += 1; // Get out of check before entering quiescence
         }
 
         if depth == 0 {
