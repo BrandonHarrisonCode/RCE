@@ -190,17 +190,23 @@ impl Search {
         depth: Depth,
         start: Instant,
     ) -> Ply {
-        let moves = self.board.get_legal_moves();
+        let moves = self.board.get_all_moves();
         if moves.is_empty() {
             return Ply::default();
         }
 
+        let mut total_legal_moves = 0;
         let mut alpha = i16::MIN;
         let beta = i16::MAX;
         let mut best_ply = moves[0];
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+            if self.board.is_legal_move(mv).is_err() {
+                continue; // Skip illegal moves
+            }
+            total_legal_moves += 1;
+
             self.board.make_move(mv);
             self.info.nodes += 1;
 
@@ -256,6 +262,10 @@ impl Search {
                 pvs = true;
             }
             self.board.unmake_move();
+        }
+
+        if total_legal_moves == 0 {
+            return Ply::default();
         }
 
         // Don't save incomplete searches
@@ -346,18 +356,18 @@ impl Search {
             return evaluator.evaluate(&mut self.board);
         }
 
-        let moves = self.board.get_legal_moves();
-        if moves.is_empty() {
-            if self.board.is_in_check(self.board.current_turn) {
-                return Score::MIN; // Checkmate
-            }
-            return 0; // Stalemate
-        }
+        let moves = self.board.get_all_moves();
+        let mut total_legal_moves = 0;
 
         let mut best_ply = moves[0];
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+            if self.board.is_legal_move(mv).is_err() {
+                continue; // Skip illegal moves
+            }
+            total_legal_moves += 1;
+
             self.board.make_move(mv);
             self.info.nodes += 1;
 
@@ -426,6 +436,13 @@ impl Search {
                 best_ply = mv;
                 pvs = true;
             }
+        }
+
+        if total_legal_moves == 0 {
+            if self.board.is_in_check(self.board.current_turn) {
+                return Score::MIN + i16::from(self.info.depth); // Checkmate (with tiebreaker being shortest depth)
+            }
+            return 0; // Stalemate
         }
 
         TRANSPOSITION_TABLE
