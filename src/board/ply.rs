@@ -84,6 +84,10 @@ impl Ply {
         self.promoted_to.is_some()
     }
 
+    pub const fn is_quiet(&self) -> bool {
+        !self.is_capture() && !self.is_promotion()
+    }
+
     pub const fn is_en_passant(&self) -> bool {
         self.en_passant
     }
