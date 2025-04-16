@@ -199,11 +199,13 @@ impl Search {
         let beta = i16::MAX;
         let mut best_ply = moves[0];
         let mut pvs = false;
-        for mv in MoveOrderer::new(&moves, self.board.zkey) {
+        let killers = self.info.killers[usize::from(self.info.depth)];
+        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
             self.board.make_move(mv);
             self.info.nodes += 1;
 
             let mut score;
+            self.info.depth += 1;
             if pvs {
                 score = self
                     .alpha_beta(
@@ -237,6 +239,7 @@ impl Search {
                     )
                     .saturating_neg();
             }
+            self.info.depth -= 1;
 
             if !self.is_running() || self.limits_exceeded(start) {
                 // Don't throw out a partial search just because the current move was not searched
@@ -353,11 +356,13 @@ impl Search {
 
         let mut best_ply = moves[0];
         let mut pvs = false;
-        for mv in MoveOrderer::new(&moves, self.board.zkey) {
+        let killers = self.info.killers[usize::from(self.info.depth)];
+        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
             self.board.make_move(mv);
             self.info.nodes += 1;
 
             let mut score;
+            self.info.depth += 1;
             if pvs {
                 score = self
                     .alpha_beta(
@@ -391,6 +396,7 @@ impl Search {
                     )
                     .saturating_neg();
             }
+            self.info.depth -= 1;
 
             self.board.unmake_move();
 
@@ -408,6 +414,9 @@ impl Search {
                             best_ply: mv,
                         },
                     );
+
+                self.store_killers(mv);
+
                 return beta;
             }
 
@@ -515,6 +524,23 @@ impl Search {
             format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {pv_string}")
                 .as_str(),
         );
+    }
+
+    /// Stores the killer moves for the current depth
+    ///
+    /// # Arguments
+    ///
+    /// * `ply` - The move to store as a killer move
+    fn store_killers(&mut self, ply: Ply) {
+        if ply.is_capture() || ply.is_promotion() {
+            return; // A killer move is a quiet move, we're already considering captures and promotions first
+        }
+
+        if self.info.killers[usize::from(self.info.depth)][0] != Some(ply) {
+            self.info.killers[usize::from(self.info.depth)][1] =
+                self.info.killers[usize::from(self.info.depth)][0];
+            self.info.killers[usize::from(self.info.depth)][0] = Some(ply);
+        }
     }
 
     /// Returns the principal variation (PV) of the search.

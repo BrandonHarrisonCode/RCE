@@ -9,6 +9,8 @@ use crate::board::Ply;
 mod scored_ply;
 use scored_ply::ScoredPly;
 
+use super::info::MAX_KILLERS;
+
 // Colors don't matter here, but we have to pick one
 const VICTIMS_VALUE_ASCENDING: [Kind; 5] = [
     Kind::Pawn(Color::White),
@@ -36,6 +38,8 @@ struct ScoreBonus;
 impl ScoreBonus {
     pub const CAPTURE: MoveScore = 4000;
     pub const PROMOTION: MoveScore = 3000;
+    pub const FIRST_KILLER: MoveScore = 2000;
+    pub const SECOND_KILLER: MoveScore = 1000;
 }
 
 type MoveScore = u64;
@@ -45,7 +49,7 @@ pub struct MoveOrderer {
     index: usize,
 }
 
-fn score_moves(zkey: ZKey, moves: &[Ply]) -> Vec<ScoredPly> {
+fn score_moves(zkey: ZKey, moves: &[Ply], killers: &[Option<Ply>; MAX_KILLERS]) -> Vec<ScoredPly> {
     let best_ply = TRANSPOSITION_TABLE
         .read()
         .expect("Transposition table is poisoned! Unable to read entry.")
@@ -55,13 +59,13 @@ fn score_moves(zkey: ZKey, moves: &[Ply]) -> Vec<ScoredPly> {
     moves
         .iter()
         .map(|&ply| {
-            let score = score_move(ply, best_ply);
+            let score = score_move(ply, best_ply, killers);
             ScoredPly { ply, score }
         })
         .collect()
 }
 
-fn score_move(ply: Ply, best_ply: Option<Ply>) -> MoveScore {
+fn score_move(ply: Ply, best_ply: Option<Ply>, killers: &[Option<Ply>; MAX_KILLERS]) -> MoveScore {
     let mut score: MoveScore = 0;
     if best_ply.is_some_and(|best_ply| best_ply == ply) {
         return MoveScore::MAX;
@@ -84,6 +88,15 @@ fn score_move(ply: Ply, best_ply: Option<Ply>) -> MoveScore {
     if ply.is_promotion() {
         score += ScoreBonus::PROMOTION;
     }
+
+    if ply.is_quiet() {
+        if Some(ply) == killers[0] {
+            score += ScoreBonus::FIRST_KILLER;
+        } else if Some(ply) == killers[1] {
+            score += ScoreBonus::SECOND_KILLER;
+        }
+    }
+
     score
 }
 
@@ -104,8 +117,8 @@ fn init_mvv_lva() -> [[MoveScore; VICTIMS_VALUE_ASCENDING.len()]; ATTACKERS_VALU
 }
 
 impl MoveOrderer {
-    pub fn new(moves: &[Ply], zkey: ZKey) -> Self {
-        let scored_moves = score_moves(zkey, moves);
+    pub fn new(moves: &[Ply], zkey: ZKey, killers: &[Option<Ply>; MAX_KILLERS]) -> Self {
+        let scored_moves = score_moves(zkey, moves, killers);
 
         Self {
             scored_moves,
