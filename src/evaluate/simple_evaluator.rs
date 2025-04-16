@@ -9,7 +9,7 @@ use crate::search::Score;
 pub struct SimpleEvaluator;
 
 impl SimpleEvaluator {
-    const KING_VALUE: Score = Score::MAX / 2;
+    const KING_VALUE: Score = 0; // Kings should always cancel each other out, so no need to count
     const QUEEN_VALUE: Score = 900;
     const ROOK_VALUE: Score = 500;
     const BISHOP_VALUE: Score = 300;
