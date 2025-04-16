@@ -353,7 +353,7 @@ impl Search {
         }
 
         if depth == 0 {
-            return evaluator.evaluate(&mut self.board);
+            return self.quiescence(evaluator, alpha, beta, start);
         }
 
         let moves = self.board.get_all_moves();
@@ -461,6 +461,68 @@ impl Search {
                     best_ply,
                 },
             );
+
+        alpha
+    }
+
+    fn quiescence(
+        &mut self,
+        evaluator: &impl Evaluator,
+        alpha_start: Score,
+        beta_start: Score,
+        start: Instant,
+    ) -> Score {
+        if !self.is_running() || self.limits_exceeded(start) {
+            return 0;
+        }
+
+        let mut alpha = alpha_start;
+        let beta = beta_start;
+
+        let score = evaluator.evaluate(&mut self.board);
+        if score >= beta {
+            return beta; // No need to search any further, beta cutoff
+        }
+
+        if score > alpha {
+            alpha = score; // New best move
+        }
+
+        // We don't check for fifty move rule or three-fold because every move in quiescence is a capture
+
+        let moves: Vec<Ply> = self.board.get_filtered_moves(Ply::is_capture);
+
+        let killers = self.info.killers[usize::from(self.info.depth)];
+        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+            if self.board.is_legal_move(mv).is_err() {
+                continue; // Skip illegal moves
+            }
+
+            self.board.make_move(mv);
+            self.info.nodes += 1;
+
+            self.info.depth += 1;
+            let score = self
+                .quiescence(
+                    evaluator,
+                    beta.saturating_neg(),
+                    alpha.saturating_neg(),
+                    start,
+                )
+                .saturating_neg();
+            self.info.depth -= 1;
+
+            self.board.unmake_move();
+
+            // Move is too good, opponent will not allow the game to reach this position
+            if score >= beta {
+                return beta;
+            }
+
+            if score > alpha {
+                alpha = score;
+            }
+        }
 
         alpha
     }
