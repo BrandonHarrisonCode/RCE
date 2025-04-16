@@ -77,10 +77,15 @@ impl Board {
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_legal_moves(&mut self) -> Vec<Ply> {
-        self.get_all_moves()
-            .into_iter()
-            .filter(|mv| self.is_legal_move(*mv).is_ok())
-            .collect()
+        let mut moves = self.get_all_moves();
+        moves.retain(|mv| self.is_legal_move(*mv).is_ok());
+        moves
+    }
+
+    pub fn get_filtered_moves(&self, predicate: fn(&Ply) -> bool) -> Vec<Ply> {
+        let mut moves = self.get_all_moves();
+        moves.retain(predicate);
+        moves
     }
 
     /// Returns a boolean representing whether or not a given move is legal
