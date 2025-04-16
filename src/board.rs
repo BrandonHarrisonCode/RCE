@@ -92,7 +92,7 @@ impl Board {
     /// let ply = Ply(Square::new("e2"), Square::new("e9"));
     /// assert!(!board.is_legal_move(ply));
     /// ```
-    fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
+    pub fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
         self.make_move(ply);
         if self.is_in_check(self.current_turn.opposite()) {
             self.unmake_move();
@@ -116,7 +116,7 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
-    fn get_all_moves(&self) -> Vec<Ply> {
+    pub fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
 
         for square_idx in 0..64u8 {
