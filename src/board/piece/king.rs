@@ -22,12 +22,15 @@ impl Piece for King {
         };
 
         let move_mask = Self::get_attacks(square) & !same_pieces;
-        let squares: Vec<Square> = move_mask.into();
-
-        let mut moveset: Vec<Ply> = squares
+        let mut moveset: Vec<Ply> = move_mask
             .into_iter()
-            .map(|s| Ply::new(square, s, Kind::King(color)))
+            .map(|dest| {
+                Ply::builder(square, dest, Kind::King(color))
+                    .captured(board.get_piece(dest))
+                    .build()
+            })
             .collect();
+
         if square == Square::from("e1") && color == Color::White {
             if board
                 .castling_ability(CastlingKind::WhiteKingside)

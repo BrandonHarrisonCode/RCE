@@ -124,6 +124,12 @@ impl Board {
     pub fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
 
+        /*if self.current_turn == Color::White {
+            for _square in self.bitboards.white_pawns {
+                all_moves.extend(Kind::Pawn(Color::White).get_moveset(Square::from(square), self));
+            }
+        }*/
+
         for square_idx in 0..64u8 {
             let square = Square::from(square_idx);
             if let Some(piece) = self.get_piece(square) {
@@ -131,24 +137,7 @@ impl Board {
                     continue;
                 }
 
-                all_moves.append(
-                    &mut piece
-                        .get_moveset(square, self)
-                        .into_iter()
-                        .map(|mut mv| {
-                            if mv.en_passant {
-                                mv.captured_piece = self.get_piece(Square {
-                                    rank: mv.start.rank,
-                                    file: mv.dest.file,
-                                });
-                            } else {
-                                mv.captured_piece = self.get_piece(mv.dest);
-                            }
-
-                            mv
-                        })
-                        .collect::<Vec<Ply>>(),
-                );
+                all_moves.extend(piece.get_moveset(square, self));
             }
         }
 
@@ -1636,7 +1625,7 @@ mod tests {
         let start = Square::from("a2"); // White Pawn
         let dest = Square::from("a7"); // Black Pawn
         let ply = Ply::builder(start, dest, Kind::Pawn(Color::White))
-            .captured(Kind::Pawn(Color::Black))
+            .captured(Some(Kind::Pawn(Color::Black)))
             .build();
         assert_eq!(board.current_turn, Color::White);
 
@@ -1663,28 +1652,28 @@ mod tests {
             Square::from("h8"),
             Kind::Rook(Color::White),
         )
-        .captured(Kind::Rook(Color::Black))
+        .captured(Some(Kind::Rook(Color::Black)))
         .build();
         let ply_capture_black_queenside_rook = Ply::builder(
             Square::from("b6"),
             Square::from("a8"),
             Kind::Rook(Color::White),
         )
-        .captured(Kind::Rook(Color::Black))
+        .captured(Some(Kind::Rook(Color::Black)))
         .build();
         let ply_capture_white_kingside_rook = Ply::builder(
             Square::from("g3"),
             Square::from("h1"),
             Kind::Rook(Color::Black),
         )
-        .captured(Kind::Rook(Color::White))
+        .captured(Some(Kind::Rook(Color::White)))
         .build();
         let ply_capture_white_queenside_rook = Ply::builder(
             Square::from("b3"),
             Square::from("a1"),
             Kind::Rook(Color::Black),
         )
-        .captured(Kind::Rook(Color::White))
+        .captured(Some(Kind::Rook(Color::White)))
         .build();
 
         board.make_move(ply_capture_black_kingside_rook);
@@ -1985,7 +1974,7 @@ mod tests {
         let start = Square::from("f7"); // White Pawn
         let dest = Square::from("g8"); // Black Knight
         let ply = Ply::builder(start, dest, Kind::Pawn(Color::White))
-            .captured(Kind::Knight(Color::Black))
+            .captured(Some(Kind::Knight(Color::Black)))
             .promoted_to(Kind::Queen(Color::White))
             .build();
 
@@ -2251,6 +2240,16 @@ mod tests {
             Board::from_fen("r3k2r/pbppqNb1/1n2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/1R2K2R b Kkq - 2 2");
         let result = board.get_legal_moves().len();
         let correct = 44;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_22() {
+        let mut board =
+            Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nPP5/BB2P3/q4N2/Pp1P2PP/R2Q1RK1 b kq - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 43;
 
         assert_eq!(result, correct);
     }

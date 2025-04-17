@@ -167,7 +167,7 @@ mod tests {
         let dest = Square::from("d6");
         let captured_piece = Kind::Rook(Color::Black);
         let ply = Ply::builder(start, dest, Kind::Queen(Color::White))
-            .captured(captured_piece)
+            .captured(Some(captured_piece))
             .build();
 
         assert_eq!(ply.start, start);
@@ -198,7 +198,7 @@ mod tests {
         let captured_piece = Kind::Queen(Color::White);
         let promoted_to = Kind::Rook(Color::Black);
         let ply = Ply::builder(start, dest, Kind::Pawn(Color::Black))
-            .captured(captured_piece)
+            .captured(Some(captured_piece))
             .promoted_to(promoted_to)
             .build();
 

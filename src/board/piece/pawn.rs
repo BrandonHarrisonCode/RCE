@@ -10,33 +10,11 @@ static ATTACKS: OnceLock<[[Bitboard; 64]; 2]> = OnceLock::new();
 
 impl Eq for Pawn {}
 
-impl Pawn {
-    fn explode_promotion(ply: Ply, color: Color, back_rank: u8) -> Vec<Ply> {
-        if ply.dest.rank == back_rank {
-            vec![
-                Ply::builder(ply.start, ply.dest, ply.piece)
-                    .promoted_to(Kind::Queen(color))
-                    .build(),
-                Ply::builder(ply.start, ply.dest, ply.piece)
-                    .promoted_to(Kind::Rook(color))
-                    .build(),
-                Ply::builder(ply.start, ply.dest, ply.piece)
-                    .promoted_to(Kind::Knight(color))
-                    .build(),
-                Ply::builder(ply.start, ply.dest, ply.piece)
-                    .promoted_to(Kind::Bishop(color))
-                    .build(),
-            ]
-        } else {
-            vec![ply]
-        }
-    }
-}
-
 impl Piece for Pawn {
     const WHITE_SYMBOL: &'static str = "♟";
     const BLACK_SYMBOL: &'static str = "♙";
 
+    #[allow(clippy::too_many_lines)]
     fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
         const NEXT_SQUARE_OFFSET: usize = 8;
         const DOUBLE_NEXT_SQUARE_OFFSET: usize = 2 * NEXT_SQUARE_OFFSET;
@@ -51,14 +29,45 @@ impl Piece for Pawn {
             Color::Black => board.bitboards.white_pieces,
         };
 
+        let mut moveset: Vec<Ply> = Vec::new();
+
         // Directional captures
         let move_mask = Self::get_attacks(square, color) & enemy_pieces;
-        let squares: Vec<Square> = move_mask.into();
-
-        let mut moveset: Vec<Ply> = squares
-            .into_iter()
-            .map(|s| Ply::new(square, s, Kind::Pawn(color)))
-            .collect();
+        for dest in move_mask {
+            let captured_piece = board.get_piece(dest);
+            if dest.rank == back_rank {
+                moveset.push(
+                    Ply::builder(square, dest, Kind::Pawn(color))
+                        .promoted_to(Kind::Queen(color))
+                        .captured(captured_piece)
+                        .build(),
+                );
+                moveset.push(
+                    Ply::builder(square, dest, Kind::Pawn(color))
+                        .promoted_to(Kind::Rook(color))
+                        .captured(captured_piece)
+                        .build(),
+                );
+                moveset.push(
+                    Ply::builder(square, dest, Kind::Pawn(color))
+                        .promoted_to(Kind::Knight(color))
+                        .captured(captured_piece)
+                        .build(),
+                );
+                moveset.push(
+                    Ply::builder(square, dest, Kind::Pawn(color))
+                        .promoted_to(Kind::Bishop(color))
+                        .captured(captured_piece)
+                        .build(),
+                );
+            } else {
+                moveset.push(
+                    Ply::builder(square, dest, Kind::Pawn(color))
+                        .captured(board.get_piece(dest))
+                        .build(),
+                );
+            }
+        }
 
         #[allow(clippy::cast_possible_truncation)]
         let next_square_mask = match color {
@@ -80,7 +89,30 @@ impl Piece for Pawn {
 
         // Single pawn push
         if next_square_mask.is_empty() {
-            moveset.push(Ply::new(square, square + direction, Kind::Pawn(color)));
+            if (square + direction).rank == back_rank {
+                moveset.push(
+                    Ply::builder(square, square + direction, Kind::Pawn(color))
+                        .promoted_to(Kind::Queen(color))
+                        .build(),
+                );
+                moveset.push(
+                    Ply::builder(square, square + direction, Kind::Pawn(color))
+                        .promoted_to(Kind::Rook(color))
+                        .build(),
+                );
+                moveset.push(
+                    Ply::builder(square, square + direction, Kind::Pawn(color))
+                        .promoted_to(Kind::Knight(color))
+                        .build(),
+                );
+                moveset.push(
+                    Ply::builder(square, square + direction, Kind::Pawn(color))
+                        .promoted_to(Kind::Bishop(color))
+                        .build(),
+                );
+            } else {
+                moveset.push(Ply::new(square, square + direction, Kind::Pawn(color)));
+            }
         }
 
         // Double pawn push
@@ -105,7 +137,7 @@ impl Piece for Pawn {
                 moveset.push(
                     Ply::builder(square, dest_east, Kind::Pawn(color))
                         .en_passant(true)
-                        .captured(Kind::Pawn(color.opposite()))
+                        .captured(Some(Kind::Pawn(color.opposite())))
                         .build(),
                 );
             }
@@ -118,17 +150,13 @@ impl Piece for Pawn {
                 moveset.push(
                     Ply::builder(square, dest_west, Kind::Pawn(color))
                         .en_passant(true)
-                        .captured(Kind::Pawn(color.opposite()))
+                        .captured(Some(Kind::Pawn(color.opposite())))
                         .build(),
                 );
             }
         }
 
-        // Promotion
         moveset
-            .iter()
-            .flat_map(|ply| Self::explode_promotion(*ply, color, back_rank))
-            .collect()
     }
 }
 
@@ -268,7 +296,9 @@ mod tests {
         let start_square = Square::from("h6");
 
         let result = piece.get_moveset(start_square, &board);
-        let correct = vec![Ply::new(start_square, Square::from("g7"), piece)];
+        let correct = vec![Ply::builder(start_square, Square::from("g7"), piece)
+            .captured(Some(Kind::Pawn(Color::Black)))
+            .build()];
 
         check_unique_equality(&result, &correct)
     }
@@ -282,7 +312,9 @@ mod tests {
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("a2"), piece),
-            Ply::new(start_square, Square::from("b2"), piece),
+            Ply::builder(start_square, Square::from("b2"), piece)
+                .captured(Some(Kind::Pawn(Color::White)))
+                .build(),
         ];
 
         check_unique_equality(&result, &correct)
@@ -297,7 +329,9 @@ mod tests {
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("d4"), piece),
-            Ply::new(start_square, Square::from("c4"), piece),
+            Ply::builder(start_square, Square::from("c4"), piece)
+                .captured(Some(Kind::Pawn(Color::White)))
+                .build(),
         ];
 
         check_unique_equality(&result, &correct)
@@ -342,15 +376,19 @@ mod tests {
                 .build(),
             Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
+                .captured(Some(Kind::Knight(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
+                .captured(Some(Kind::Knight(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
+                .captured(Some(Kind::Knight(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("g8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
+                .captured(Some(Kind::Knight(Color::Black)))
                 .build(),
         ];
 
@@ -404,15 +442,19 @@ mod tests {
                 .build(),
             Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
+                .captured(Some(Kind::Knight(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
+                .captured(Some(Kind::Knight(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
+                .captured(Some(Kind::Knight(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("g1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
+                .captured(Some(Kind::Knight(Color::White)))
                 .build(),
         ];
 
@@ -466,27 +508,35 @@ mod tests {
                 .build(),
             Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
+                .captured(Some(Kind::Rook(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
+                .captured(Some(Kind::Rook(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
+                .captured(Some(Kind::Rook(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("e8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
+                .captured(Some(Kind::Rook(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Queen(Color::White))
+                .captured(Some(Kind::Bishop(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Rook(Color::White))
+                .captured(Some(Kind::Bishop(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Knight(Color::White))
+                .captured(Some(Kind::Bishop(Color::Black)))
                 .build(),
             Ply::builder(start_square, Square::from("c8"), piece)
                 .promoted_to(Kind::Bishop(Color::White))
+                .captured(Some(Kind::Bishop(Color::Black)))
                 .build(),
         ];
 
@@ -515,27 +565,35 @@ mod tests {
                 .build(),
             Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
+                .captured(Some(Kind::Rook(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
+                .captured(Some(Kind::Rook(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
+                .captured(Some(Kind::Rook(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("e1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
+                .captured(Some(Kind::Rook(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Queen(Color::Black))
+                .captured(Some(Kind::Bishop(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Rook(Color::Black))
+                .captured(Some(Kind::Bishop(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Knight(Color::Black))
+                .captured(Some(Kind::Bishop(Color::White)))
                 .build(),
             Ply::builder(start_square, Square::from("c1"), piece)
                 .promoted_to(Kind::Bishop(Color::Black))
+                .captured(Some(Kind::Bishop(Color::White)))
                 .build(),
         ];
 

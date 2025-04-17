@@ -795,6 +795,14 @@ mod tests {
         assert_eq!(score, 0)
     }
 
+    // #[test]
+    // fn test_search_deep() {
+    //     let board =
+    //         Board::from_fen("2kr3r/ppp1qpp1/2n1b1n1/4p2p/4N3/1BNPP2P/PPP3PK/R2Q1R2 w - - 1 15");
+    //     let mut search = Search::new(&board, None);
+    //     search.iter_deep(&SimpleEvaluator, Some(10));
+    // }
+
     #[bench]
     fn bench_search_depth_3(bencher: &mut Bencher) {
         bencher.iter(|| {
