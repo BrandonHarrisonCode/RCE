@@ -369,6 +369,7 @@ impl Search {
 
             let mut score;
             self.info.depth += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.depth);
             if pvs {
                 score = self
                     .alpha_beta(
@@ -498,6 +499,7 @@ impl Search {
             self.info.nodes += 1;
 
             self.info.depth += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.depth);
             let score = self
                 .quiescence(
                     evaluator,
@@ -580,6 +582,11 @@ impl Search {
     /// ```
     #[allow(clippy::cast_possible_truncation)]
     fn log_uci_info(&self, depth: Depth, time_elapsed_in_ms: Option<Millisecond>, pv: &[Ply]) {
+        let depth_str = match self.info.seldepth {
+            0 => format!("depth {depth}"),
+            _ => format!("depth {depth} seldepth {}", self.info.seldepth),
+        };
+
         let score_str = match self.info.best_score {
             Some(score) if score <= Score::MIN + Score::from(Depth::MAX) + 1 => {
                 format!("score mate -{}", pv.len().div_ceil(2))
@@ -606,10 +613,8 @@ impl Search {
         let pv_string = pv_notation.join(" ");
 
         self.log(
-            format!(
-                "info depth {depth} {node_str} {time_str} {nps_str} {score_str} pv {pv_string}"
-            )
-            .as_str(),
+            format!("info {depth_str} {node_str} {time_str} {nps_str} {score_str} pv {pv_string}")
+                .as_str(),
         );
     }
 
