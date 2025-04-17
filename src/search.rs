@@ -657,7 +657,7 @@ impl Search {
         for _ in 0..length {
             if let Some(entry) = tt.get(&self.original_board.zkey) {
                 let best_ply = entry.best_ply;
-                if !self.original_board.is_legal_move(best_ply).is_ok() {
+                if self.original_board.is_legal_move(best_ply).is_err() {
                     break;
                 }
                 plys.push(best_ply);
