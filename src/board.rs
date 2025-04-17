@@ -30,7 +30,7 @@ pub struct Board {
     history: Vec<Ply>,
     position_history: HashSet<ZKey>,
 
-    pub bitboards: PieceBitboards,
+    bitboards: PieceBitboards,
     pub zkey: ZKey,
 }
 
@@ -552,6 +552,19 @@ impl Board {
     /// ```
     pub fn get_piece(&self, square: Square) -> Option<Kind> {
         self.bitboards.get_piece_kind(square)
+    }
+
+    /// Counts the number of pieces of the specified kind
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The piece kind to count.
+    ///
+    /// # Returns
+    ///
+    /// * `u32` - The number of pieces of the specified kind.
+    pub const fn get_piece_count(&self, kind: Kind) -> u32 {
+        self.bitboards.get_piece_count(kind)
     }
 
     /// Returns a boolean representing whether or not the current side is in check
@@ -2007,6 +2020,24 @@ mod tests {
     fn test_is_in_check_black_by_queen() {
         let board = Board::from_fen("8/1K6/2Q5/8/8/2k3q1/8/8 b - - 0 1");
         assert!(board.is_in_check(Color::Black));
+    }
+
+    #[test]
+    fn test_get_piece_count() {
+        let board = BoardBuilder::construct_starting_board().build();
+        assert_eq!(board.get_piece_count(Kind::Pawn(Color::White)), 8);
+        assert_eq!(board.get_piece_count(Kind::Knight(Color::White)), 2);
+        assert_eq!(board.get_piece_count(Kind::Bishop(Color::White)), 2);
+        assert_eq!(board.get_piece_count(Kind::Rook(Color::White)), 2);
+        assert_eq!(board.get_piece_count(Kind::Queen(Color::White)), 1);
+        assert_eq!(board.get_piece_count(Kind::King(Color::White)), 1);
+
+        assert_eq!(board.get_piece_count(Kind::Pawn(Color::Black)), 8);
+        assert_eq!(board.get_piece_count(Kind::Knight(Color::Black)), 2);
+        assert_eq!(board.get_piece_count(Kind::Bishop(Color::Black)), 2);
+        assert_eq!(board.get_piece_count(Kind::Rook(Color::Black)), 2);
+        assert_eq!(board.get_piece_count(Kind::Queen(Color::Black)), 1);
+        assert_eq!(board.get_piece_count(Kind::King(Color::Black)), 1);
     }
 
     #[test]
