@@ -352,8 +352,11 @@ impl Search {
             }
         }
 
+        // Get out of check before entering quiescence
         if self.board.is_in_check(self.board.current_turn) {
-            depth += 1; // Get out of check before entering quiescence
+            // Since this is called from alpha_beta_start, depth will always be at least (Depth::MAX - 1).
+            // However, if we add more extensions, we need to be concerned with overflow in the future.
+            depth += 1;
         }
 
         if depth == 0 {
