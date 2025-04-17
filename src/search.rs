@@ -605,7 +605,7 @@ impl Search {
         let node_str = format!("nodes {}", self.info.nodes);
         let nps_str = match time_elapsed_in_ms {
             Some(time) if time > 0 => {
-                format!("nps {}", ((self.info.nodes * 1000) / (time as u64)) / 1000)
+                format!("nps {}", (self.info.nodes * 1000) / (time as u64))
             }
             _ => String::new(),
         };
