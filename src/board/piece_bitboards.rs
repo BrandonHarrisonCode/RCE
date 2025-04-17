@@ -212,6 +212,33 @@ impl PieceBitboards {
         }
     }
 
+    /// Counts the number of pieces of the specified kind
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The piece kind to count.
+    ///
+    /// # Returns
+    ///
+    /// * `u32` - The number of pieces of the specified kind.
+    pub const fn get_piece_count(&self, kind: Kind) -> u32 {
+        match kind {
+            Kind::Pawn(Color::White) => self.white_pawns.count_ones(),
+            Kind::Knight(Color::White) => self.white_knights.count_ones(),
+            Kind::Bishop(Color::White) => self.white_bishops.count_ones(),
+            Kind::Rook(Color::White) => self.white_rooks.count_ones(),
+            Kind::Queen(Color::White) => self.white_queens.count_ones(),
+            Kind::King(Color::White) => self.white_king.count_ones(),
+
+            Kind::Pawn(Color::Black) => self.black_pawns.count_ones(),
+            Kind::Knight(Color::Black) => self.black_knights.count_ones(),
+            Kind::Bishop(Color::Black) => self.black_bishops.count_ones(),
+            Kind::Rook(Color::Black) => self.black_rooks.count_ones(),
+            Kind::Queen(Color::Black) => self.black_queens.count_ones(),
+            Kind::King(Color::Black) => self.black_king.count_ones(),
+        }
+    }
+
     /// Adds the specified piece kind to the specified square
     ///
     /// # Arguments

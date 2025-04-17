@@ -30,7 +30,7 @@ pub struct Board {
     history: Vec<Ply>,
     position_history: HashSet<ZKey>,
 
-    pub bitboards: PieceBitboards,
+    bitboards: PieceBitboards,
     pub zkey: ZKey,
 }
 
@@ -98,11 +98,6 @@ impl Board {
     /// assert!(!board.is_legal_move(ply));
     /// ```
     pub fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
-        if ply.piece == Kind::King(ply.piece.get_color())
-            && self.is_square_attacked(ply.dest, ply.piece.get_color())
-        {
-            return Err("Move is not valid. The king would be in check.");
-        }
         self.make_move(ply);
         if self.is_in_check(ply.piece.get_color()) {
             self.unmake_move();
@@ -560,25 +555,17 @@ impl Board {
         self.bitboards.get_piece_kind(square)
     }
 
-    /// Returns a `bool` indicating if the square is attacked by the specified color
+    /// Counts the number of pieces of the specified kind
     ///
     /// # Arguments
     ///
-    /// * `square` - The square to check for attacks
-    /// * `attacking_color` - The color of the attacking pieces
+    /// * `kind` - The piece kind to count.
     ///
-    /// # Examples
-    /// ```
-    /// let board = BoardBuilder::construct_starting_board().build();
-    /// assert!(!board.is_square_attacked(Square::new("a8"), Color::White));
-    /// assert!(board.is_square_attacked(Square::new("a3"), Color::White));
-    /// ```
-    pub fn is_square_attacked(&self, square: Square, attacking_color: Color) -> bool {
-        let attacks = self.get_attacked_squares(attacking_color);
-
-        let square_pos = Bitboard::from(square);
-
-        !(square_pos & attacks).is_empty()
+    /// # Returns
+    ///
+    /// * `u32` - The number of pieces of the specified kind.
+    pub const fn get_piece_count(&self, kind: Kind) -> u32 {
+        self.bitboards.get_piece_count(kind)
     }
 
     /// Returns a boolean representing whether or not the current side is in check
@@ -633,8 +620,6 @@ impl Board {
         attacks
     }
 
-    // position startpos moves b1a3 d7d5 a1b1 b8c6 b1a1 e7e5 g1f3 e5e4 f3g1 f8a3 b2a3 d8f6 a1b1 b7b6 c1b2 c6d4 e2e3 c8g4 d1g4 h7h5 g4d1 f6g5 e3d4 g8h6 b1a1 a7a6 d1c1 g5f5 a1b1 a8a7 g1h3 g7g6 c1d1 b6b5 h3g1 e8d8 d1e2 f5g4 e2g4 h5g4 b1a1 h8e8 g2g3 d8d7 a1b1 h6f5 b1d1 d7c6 d1a1 a7a8 a1c1 c6b7 c1b1 a8d8 e1d1 c7c6 b1c1 a6a5 d1e1 b5b4 a3b4 a5b4 c1a1 b7b6 a1b1 d8a8 f1e2 b6c7 e2g4 a8a2 g4f5 g6f5 e1d1 a2a8 d1c1 e8d8 c2c3 b4b3 c1d1 d8e8 d1e1 f5f4 g3f4 e8h8 e1f1 f7f5 g1e2 c7b6 b2c1 b6c7 b1b3 a8a1 f1e1 h8g8 h2h3 g8g2 e1f1 g2g8 h1g1 a1a8 g1g8 a8g8 c1b2 g8h8 f1g2 c7d6 b2a1 h8g8 e2g3 g8g7 f2f3 d6e6 f3e4 d5e4 b3a3 g7g6 a3a5 e6d7 a5f5 g6g7 f5e5 d7d8 e5e4 d8d7 d2d3 g7g6 a1b2 g6g7 b2c1 g7g6 c1d2 g6g8 d2e1 g8a8 e1f2 a8b8 g3e2 b8g8 g2f1 g8h8 e2g1 h8b8 f1e2 b8b2 e2e1 d7c7 g1f3 b2b1 e1d2 b1a1 c3c4 a1a2 d2e3 c7b6 e4e6 a2a1 f3e5 a1c1 e5c6 c1d1 h3h4 b6c7 d4d5 d1f1 f2g3 f1g1 e3f2 g1a1 e6e7 c7d6 f4f5 d6c5 f2g2 a1b1 e7d7 b1b2 g3f2 b2f2 g2f2 c5b6 f2g1 b6c5 d7b7 c5d6 f5f6 d6c5 f6f7 c5d6
-    // go wtime 18470 btime 26880 winc 2000 binc 2000
     /// Returns a `CastlingStatus` representing whether or not the current `kind` of castling is availiable
     ///
     /// # Arguments
@@ -2035,6 +2020,24 @@ mod tests {
     fn test_is_in_check_black_by_queen() {
         let board = Board::from_fen("8/1K6/2Q5/8/8/2k3q1/8/8 b - - 0 1");
         assert!(board.is_in_check(Color::Black));
+    }
+
+    #[test]
+    fn test_get_piece_count() {
+        let board = BoardBuilder::construct_starting_board().build();
+        assert_eq!(board.get_piece_count(Kind::Pawn(Color::White)), 8);
+        assert_eq!(board.get_piece_count(Kind::Knight(Color::White)), 2);
+        assert_eq!(board.get_piece_count(Kind::Bishop(Color::White)), 2);
+        assert_eq!(board.get_piece_count(Kind::Rook(Color::White)), 2);
+        assert_eq!(board.get_piece_count(Kind::Queen(Color::White)), 1);
+        assert_eq!(board.get_piece_count(Kind::King(Color::White)), 1);
+
+        assert_eq!(board.get_piece_count(Kind::Pawn(Color::Black)), 8);
+        assert_eq!(board.get_piece_count(Kind::Knight(Color::Black)), 2);
+        assert_eq!(board.get_piece_count(Kind::Bishop(Color::Black)), 2);
+        assert_eq!(board.get_piece_count(Kind::Rook(Color::Black)), 2);
+        assert_eq!(board.get_piece_count(Kind::Queen(Color::Black)), 1);
+        assert_eq!(board.get_piece_count(Kind::King(Color::Black)), 1);
     }
 
     #[test]

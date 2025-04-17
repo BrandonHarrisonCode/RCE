@@ -1,6 +1,5 @@
 use super::Evaluator;
 use crate::board::piece::Kind;
-use crate::board::square::Square;
 use crate::board::Board;
 use crate::search::Score;
 
@@ -9,7 +8,6 @@ use crate::search::Score;
 pub struct SimpleEvaluator;
 
 impl SimpleEvaluator {
-    const KING_VALUE: Score = 0; // Kings should always cancel each other out, so no need to count
     const QUEEN_VALUE: Score = 900;
     const ROOK_VALUE: Score = 500;
     const BISHOP_VALUE: Score = 300;
@@ -18,26 +16,37 @@ impl SimpleEvaluator {
 }
 
 impl Evaluator for SimpleEvaluator {
+    #[allow(clippy::cast_possible_truncation)]
     fn evaluate(&self, board: &mut Board) -> Score {
         let mut score: Score = 0;
 
-        for square in 0..64u8 {
-            if let Some(piece) = board.get_piece(Square::from(square)) {
-                let piece_value = match piece {
-                    Kind::King(_) => Self::KING_VALUE,
-                    Kind::Queen(_) => Self::QUEEN_VALUE,
-                    Kind::Rook(_) => Self::ROOK_VALUE,
-                    Kind::Bishop(_) => Self::BISHOP_VALUE,
-                    Kind::Knight(_) => Self::KNIGHT_VALUE,
-                    Kind::Pawn(_) => Self::PAWN_VALUE,
-                };
+        for (kind, value) in [
+            (Kind::Queen(board.current_turn), Self::QUEEN_VALUE),
+            (Kind::Rook(board.current_turn), Self::ROOK_VALUE),
+            (Kind::Bishop(board.current_turn), Self::BISHOP_VALUE),
+            (Kind::Knight(board.current_turn), Self::KNIGHT_VALUE),
+            (Kind::Pawn(board.current_turn), Self::PAWN_VALUE),
+        ] {
+            score = score.saturating_add(board.get_piece_count(kind) as i16 * value);
+        }
 
-                if piece.get_color() == board.current_turn {
-                    score = score.saturating_add(piece_value);
-                } else {
-                    score = score.saturating_sub(piece_value);
-                }
-            }
+        for (kind, value) in [
+            (
+                Kind::Queen(board.current_turn.opposite()),
+                Self::QUEEN_VALUE,
+            ),
+            (Kind::Rook(board.current_turn.opposite()), Self::ROOK_VALUE),
+            (
+                Kind::Bishop(board.current_turn.opposite()),
+                Self::BISHOP_VALUE,
+            ),
+            (
+                Kind::Knight(board.current_turn.opposite()),
+                Self::KNIGHT_VALUE,
+            ),
+            (Kind::Pawn(board.current_turn.opposite()), Self::PAWN_VALUE),
+        ] {
+            score = score.saturating_sub(board.get_piece_count(kind) as i16 * value);
         }
 
         score
