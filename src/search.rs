@@ -312,8 +312,8 @@ impl Search {
         mut depth: Depth,
         start: Instant,
     ) -> Score {
-        if !self.is_running()
-            || (self.info.nodes & CHECK_TERMINATION == 0 && self.limits_exceeded(start))
+        if self.info.nodes & CHECK_TERMINATION == 0
+            && (!self.is_running() || self.limits_exceeded(start))
         {
             return 0;
         }
@@ -476,8 +476,8 @@ impl Search {
         beta_start: Score,
         start: Instant,
     ) -> Score {
-        if !self.is_running()
-            || (self.info.nodes & CHECK_TERMINATION == 0 && self.limits_exceeded(start))
+        if self.info.nodes & CHECK_TERMINATION == 0
+            && (!self.is_running() || self.limits_exceeded(start))
         {
             return 0;
         }
