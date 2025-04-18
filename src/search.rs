@@ -551,12 +551,6 @@ impl Search {
                 return true;
             }
         }
-        if let Some(depth) = self.limits.depth {
-            if self.info.depth >= depth {
-                self.running.store(false, Ordering::Relaxed);
-                return true;
-            }
-        }
         if let Some(movetime) = self.limits.movetime {
             if start.elapsed().as_millis() >= movetime {
                 self.running.store(false, Ordering::Relaxed);
