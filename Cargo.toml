@@ -25,3 +25,6 @@ strum_macros = "0.26.1"
 
 [dev-dependencies]
 pretty_assertions = "1.4.0"
+
+[profile.release]
+lto = "fat"
