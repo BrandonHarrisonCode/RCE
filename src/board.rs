@@ -619,24 +619,32 @@ impl Board {
     ///
     /// let attacked_squares = board.get_attacked_squares(Color::White);
     /// ```
-    #[allow(clippy::literal_string_with_formatting_args)]
     fn get_attacked_squares(&self, color: Color) -> Bitboard {
         let attacking_pieces = match color {
-            Color::White => self.bitboards.black_pieces,
-            Color::Black => self.bitboards.white_pieces,
+            Color::White => [
+                (Kind::Pawn(Color::Black), self.bitboards.black_pawns),
+                (Kind::Knight(Color::Black), self.bitboards.black_knights),
+                (Kind::Bishop(Color::Black), self.bitboards.black_bishops),
+                (Kind::Rook(Color::Black), self.bitboards.black_rooks),
+                (Kind::Queen(Color::Black), self.bitboards.black_queens),
+                (Kind::King(Color::Black), self.bitboards.black_king),
+            ],
+            Color::Black => [
+                (Kind::Pawn(Color::White), self.bitboards.white_pawns),
+                (Kind::Knight(Color::White), self.bitboards.white_knights),
+                (Kind::Bishop(Color::White), self.bitboards.white_bishops),
+                (Kind::Rook(Color::White), self.bitboards.white_rooks),
+                (Kind::Queen(Color::White), self.bitboards.white_queens),
+                (Kind::King(Color::White), self.bitboards.white_king),
+            ],
         };
 
         let mut attacks = Bitboard::new(0);
-        for square in 0..64u8 {
-            if attacking_pieces & (1 << square) == Bitboard::new(0) {
-                continue;
+
+        for (kind, bitboard) in attacking_pieces {
+            for square in bitboard {
+                attacks |= kind.get_attacks(square, self);
             }
-
-            let piece = self
-                .get_piece(Square::from(square))
-                .expect("No piece found at {square} where bitboard claimed piece was!");
-
-            attacks |= piece.get_attacks(Square::from(square), self);
         }
 
         attacks
