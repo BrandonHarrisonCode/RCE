@@ -20,6 +20,8 @@ use zkey::ZKey;
 
 use std::{collections::HashSet, fmt};
 
+const MAX_PLY_PER_POSITION: usize = 218;
+
 /// A board object, representing all of the state of the game
 /// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -122,55 +124,55 @@ impl Board {
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_all_moves(&self) -> Vec<Ply> {
-        let mut all_moves = Vec::new();
+        let mut all_moves = Vec::with_capacity(MAX_PLY_PER_POSITION);
 
         if self.current_turn == Color::White {
             for square in self.bitboards.white_king {
-                all_moves.extend(Kind::King(Color::White).get_moveset(square, self));
+                all_moves.append(&mut Kind::King(Color::White).get_moveset(square, self));
             }
 
             for square in self.bitboards.white_pawns {
-                all_moves.extend(Kind::Pawn(Color::White).get_moveset(square, self));
+                all_moves.append(&mut Kind::Pawn(Color::White).get_moveset(square, self));
             }
 
             for square in self.bitboards.white_queens {
-                all_moves.extend(Kind::Queen(Color::White).get_moveset(square, self));
+                all_moves.append(&mut Kind::Queen(Color::White).get_moveset(square, self));
             }
 
             for square in self.bitboards.white_rooks {
-                all_moves.extend(Kind::Rook(Color::White).get_moveset(square, self));
+                all_moves.append(&mut Kind::Rook(Color::White).get_moveset(square, self));
             }
 
             for square in self.bitboards.white_bishops {
-                all_moves.extend(Kind::Bishop(Color::White).get_moveset(square, self));
+                all_moves.append(&mut Kind::Bishop(Color::White).get_moveset(square, self));
             }
 
             for square in self.bitboards.white_knights {
-                all_moves.extend(Kind::Knight(Color::White).get_moveset(square, self));
+                all_moves.append(&mut Kind::Knight(Color::White).get_moveset(square, self));
             }
         } else {
             for square in self.bitboards.black_king {
-                all_moves.extend(Kind::King(Color::Black).get_moveset(square, self));
+                all_moves.append(&mut Kind::King(Color::Black).get_moveset(square, self));
             }
 
             for square in self.bitboards.black_pawns {
-                all_moves.extend(Kind::Pawn(Color::Black).get_moveset(square, self));
+                all_moves.append(&mut Kind::Pawn(Color::Black).get_moveset(square, self));
             }
 
             for square in self.bitboards.black_queens {
-                all_moves.extend(Kind::Queen(Color::Black).get_moveset(square, self));
+                all_moves.append(&mut Kind::Queen(Color::Black).get_moveset(square, self));
             }
 
             for square in self.bitboards.black_rooks {
-                all_moves.extend(Kind::Rook(Color::Black).get_moveset(square, self));
+                all_moves.append(&mut Kind::Rook(Color::Black).get_moveset(square, self));
             }
 
             for square in self.bitboards.black_bishops {
-                all_moves.extend(Kind::Bishop(Color::Black).get_moveset(square, self));
+                all_moves.append(&mut Kind::Bishop(Color::Black).get_moveset(square, self));
             }
 
             for square in self.bitboards.black_knights {
-                all_moves.extend(Kind::Knight(Color::Black).get_moveset(square, self));
+                all_moves.append(&mut Kind::Knight(Color::Black).get_moveset(square, self));
             }
         }
 
