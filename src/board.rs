@@ -126,15 +126,14 @@ impl Board {
     pub fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::with_capacity(MAX_PLY_PER_POSITION);
 
-        for square_idx in 0..64u8 {
-            let square = Square::from(square_idx);
-            if let Some(piece) = self.get_piece(square) {
-                if self.current_turn != piece.get_color() {
-                    continue;
-                }
+        let moving_pieces = match self.current_turn {
+            Color::White => self.bitboards.white_pieces,
+            Color::Black => self.bitboards.black_pieces,
+        };
 
-                all_moves.extend(piece.get_moveset(square, self));
-            }
+        for square in moving_pieces {
+            let piece = self.get_piece(square).expect("No piece found at square");
+            all_moves.extend(piece.get_moveset(square, self));
         }
 
         all_moves
