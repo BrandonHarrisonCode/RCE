@@ -124,20 +124,53 @@ impl Board {
     pub fn get_all_moves(&self) -> Vec<Ply> {
         let mut all_moves = Vec::new();
 
-        /*if self.current_turn == Color::White {
-            for _square in self.bitboards.white_pawns {
-                all_moves.extend(Kind::Pawn(Color::White).get_moveset(Square::from(square), self));
+        if self.current_turn == Color::White {
+            for square in self.bitboards.white_king {
+                all_moves.extend(Kind::King(Color::White).get_moveset(square, self));
             }
-        }*/
 
-        for square_idx in 0..64u8 {
-            let square = Square::from(square_idx);
-            if let Some(piece) = self.get_piece(square) {
-                if self.current_turn != piece.get_color() {
-                    continue;
-                }
+            for square in self.bitboards.white_pawns {
+                all_moves.extend(Kind::Pawn(Color::White).get_moveset(square, self));
+            }
 
-                all_moves.extend(piece.get_moveset(square, self));
+            for square in self.bitboards.white_queens {
+                all_moves.extend(Kind::Queen(Color::White).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.white_rooks {
+                all_moves.extend(Kind::Rook(Color::White).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.white_bishops {
+                all_moves.extend(Kind::Bishop(Color::White).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.white_knights {
+                all_moves.extend(Kind::Knight(Color::White).get_moveset(square, self));
+            }
+        } else {
+            for square in self.bitboards.black_king {
+                all_moves.extend(Kind::King(Color::Black).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.black_pawns {
+                all_moves.extend(Kind::Pawn(Color::Black).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.black_queens {
+                all_moves.extend(Kind::Queen(Color::Black).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.black_rooks {
+                all_moves.extend(Kind::Rook(Color::Black).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.black_bishops {
+                all_moves.extend(Kind::Bishop(Color::Black).get_moveset(square, self));
+            }
+
+            for square in self.bitboards.black_knights {
+                all_moves.extend(Kind::Knight(Color::Black).get_moveset(square, self));
             }
         }
 
