@@ -99,9 +99,10 @@ impl Board {
     /// ```
     pub fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
         self.make_move(ply);
-        if self.is_in_check(self.current_turn.opposite()) {
+        if self.is_in_check(ply.piece.get_color()) {
             self.unmake_move();
-            return Err("Move is not valid. The move would leave the king in check.");
+
+            return Err("Move is not valid. The king would be in check.");
         }
         self.unmake_move();
 
@@ -597,7 +598,6 @@ impl Board {
     ///
     /// let attacked_squares = board.get_attacked_squares(Color::White);
     /// ```
-    #[allow(clippy::literal_string_with_formatting_args)]
     fn get_attacked_squares(&self, color: Color) -> Bitboard {
         let attacking_pieces = match color {
             Color::White => self.bitboards.black_pieces,
@@ -612,7 +612,7 @@ impl Board {
 
             let piece = self
                 .get_piece(Square::from(square))
-                .expect("No piece found at {square} where bitboard claimed piece was!");
+                .expect("No piece found at square where bitboard claimed piece was!");
 
             attacks |= piece.get_attacks(Square::from(square), self);
         }
