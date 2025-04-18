@@ -7,6 +7,9 @@
     clippy::format_push_string
 )]
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 #[macro_use]
 extern crate strum_macros;
 extern crate derive_more;
