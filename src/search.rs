@@ -25,8 +25,6 @@ pub type Score = i16;
 pub type NodeCount = u64;
 pub type Millisecond = u128;
 
-const NEGMAX: Score = -Score::MAX; // Score::MIN + 1
-
 /// The `Search` struct is responsible for performing the actual search on a board.
 /// It uses iterdeep with negamax to search the best move for the current player.
 /// It also uses a transposition table to store previously evaluated positions.
@@ -155,13 +153,7 @@ impl Search {
             }
 
             let pv = self.get_pv(depth);
-            self.log_uci_info(
-                depth,
-                self.info.nodes,
-                start.elapsed().as_millis(),
-                self.info.best_score.unwrap_or(0),
-                &pv,
-            );
+            self.log_uci_info(depth, Some(start.elapsed().as_millis()), &pv);
         }
 
         self.log(format!("bestmove {}", self.info.best_move.unwrap()).as_str());
@@ -380,6 +372,7 @@ impl Search {
 
             let mut score;
             self.info.depth += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.depth);
             if pvs {
                 score = self
                     .alpha_beta(
@@ -509,6 +502,7 @@ impl Search {
             self.info.nodes += 1;
 
             self.info.depth += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.depth);
             let score = self
                 .quiescence(
                     evaluator,
@@ -605,24 +599,39 @@ impl Search {
     /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
     /// ```
     #[allow(clippy::cast_possible_truncation)]
-    fn log_uci_info(
-        &self,
-        depth: Depth,
-        nodes: NodeCount,
-        time_elapsed_in_ms: Millisecond,
-        best_value: Score,
-        pv: &[Ply],
-    ) {
-        let score = match best_value {
-            Score::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
-            Score::MAX => format!("mate {}", pv.len().div_ceil(2)),
-            _ => format!("cp {best_value}"),
+    fn log_uci_info(&self, depth: Depth, time_elapsed_in_ms: Option<Millisecond>, pv: &[Ply]) {
+        let depth_str = match self.info.seldepth {
+            0 => format!("depth {depth}"),
+            _ => format!("depth {depth} seldepth {}", self.info.seldepth),
         };
-        let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
+
+        let score_str = match self.info.best_score {
+            Some(score) if score <= Score::MIN + Score::from(Depth::MAX) + 1 => {
+                format!("score mate -{}", pv.len().div_ceil(2))
+            }
+            Some(score) if score >= Score::MAX - Score::from(Depth::MAX) => {
+                format!("score mate {}", pv.len().div_ceil(2))
+            }
+            Some(score) => format!("score cp {score}"),
+            _ => String::new(),
+        };
+
+        let time_str = match time_elapsed_in_ms {
+            Some(time) if time > 0 => format!("time {time}"),
+            _ => String::new(),
+        };
+        let node_str = format!("nodes {}", self.info.nodes);
+        let nps_str = match time_elapsed_in_ms {
+            Some(time) if time > 0 => {
+                format!("nps {}", (self.info.nodes * 1000) / (time as u64))
+            }
+            _ => String::new(),
+        };
         let pv_notation: Vec<String> = pv.iter().map(std::string::ToString::to_string).collect();
         let pv_string = pv_notation.join(" ");
+
         self.log(
-            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {pv_string}")
+            format!("info {depth_str} {node_str} {time_str} {nps_str} {score_str} pv {pv_string}")
                 .as_str(),
         );
     }
@@ -779,7 +788,7 @@ mod tests {
     fn test_log_uci() {
         let board = BoardBuilder::construct_starting_board().build();
         let search = Search::new(&board, None);
-        search.log_uci_info(3, 20000, 1500, 10, &[Ply::default()]);
+        search.log_uci_info(3, Some(20000), &[Ply::default()]);
     }
 
     #[test]
