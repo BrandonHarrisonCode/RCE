@@ -344,8 +344,11 @@ impl Search {
             }
         }
 
+        // Get out of check before entering quiescence
         if self.board.is_in_check(self.board.current_turn) {
-            depth += 1; // Get out of check before entering quiescence
+            // Since this is called from alpha_beta_start, depth will always be at least (Depth::MAX - 1).
+            // However, if we add more extensions, we need to be concerned with overflow in the future.
+            depth += 1;
         }
 
         if depth == 0 {
@@ -539,8 +542,23 @@ impl Search {
     /// let limits_exceeded = search.check_limits();
     /// ```
     fn limits_exceeded(&self, start: Instant) -> bool {
+        if self.info.depth == Depth::MAX {
+            return true;
+        }
         if let Some(nodes) = self.limits.nodes {
             if self.info.nodes >= nodes {
+                self.running.store(false, Ordering::Relaxed);
+                return true;
+            }
+        }
+        if let Some(depth) = self.limits.depth {
+            if self.info.depth >= depth {
+                self.running.store(false, Ordering::Relaxed);
+                return true;
+            }
+        }
+        if let Some(movetime) = self.limits.movetime {
+            if start.elapsed().as_millis() >= movetime {
                 self.running.store(false, Ordering::Relaxed);
                 return true;
             }
@@ -794,6 +812,48 @@ mod tests {
         let mut search = Search::new(&board, None);
         let best_move = search.alpha_beta_start(&SimpleEvaluator, 5, Instant::now());
         assert_eq!(best_move, Ply::default());
+    }
+
+    /// Designed to catch bug where we access the killer table set on a previous search out of bounds because we're searching to max depth
+    #[test]
+    fn test_mate_in_2() {
+        let mut board = Board::from_fen("8/1R6/2N2P2/2kP4/2P4P/3P4/8/6K1 w - - 1 94");
+        let mut search = Search::new(&board, None);
+        search.search(&SimpleEvaluator, Some(6));
+        let search_move = search
+            .info
+            .best_move
+            .expect("No best move found during search!");
+        let best_move = board
+            .find_move("f6f7")
+            .expect("Move not found in legal moves!");
+
+        assert_eq!(search_move, best_move);
+        board.make_move(best_move);
+
+        let best_move = board
+            .find_move("c5d6")
+            .expect("Move not found in legal moves!");
+        board.make_move(best_move);
+
+        let best_move_queen = board
+            .find_move("f7f8q")
+            .expect("Move not found in legal moves!");
+
+        let best_move_bishop = board
+            .find_move("f7f8b")
+            .expect("Move not found in legal moves!");
+
+        search = Search::new(&board, None);
+        search.search(&SimpleEvaluator, Some(Depth::MAX));
+        let search_move = search
+            .info
+            .best_move
+            .expect("No best move found during search!");
+        assert!(
+            search_move == best_move_queen || search_move == best_move_bishop,
+            "Search found {search_move} was the best move, but the best move was {best_move_queen} or {best_move_bishop}"
+        );
     }
 
     #[test]
