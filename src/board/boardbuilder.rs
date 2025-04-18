@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use rustc_hash::FxHashSet;
 
 use super::piece::Color;
 use super::piece::Kind as PieceKind;
@@ -467,7 +467,7 @@ impl BoardBuilder {
             history: self.history.clone(),
             bitboards: self.bitboards.build(),
 
-            position_history: HashSet::new(),
+            position_history: FxHashSet::default(),
             zkey: ZKey::new(),
         };
         output.zkey = ZKey::from(&output);
