@@ -3,7 +3,7 @@ use crate::board::Ply;
 use super::{Depth, Score};
 
 pub const MAX_KILLERS: usize = 2;
-pub type KillerList = [[Option<Ply>; MAX_KILLERS]; Depth::MAX as usize];
+pub type KillerList = [[Option<Ply>; MAX_KILLERS]; Depth::MAX as usize + 1];
 
 /// Information about the search process.
 /// Usually displayed in the uci `info` log.
@@ -36,6 +36,7 @@ pub struct Info {
     pub best_score: Option<Score>,
     pub nodes: u64,
     pub depth: Depth,
+    pub seldepth: Depth,
     pub killers: KillerList,
 }
 
@@ -47,7 +48,8 @@ impl Info {
             best_score: None,
             nodes: 0,
             depth: 0,
-            killers: [[None; MAX_KILLERS]; Depth::MAX as usize],
+            seldepth: 0,
+            killers: [[None; MAX_KILLERS]; Depth::MAX as usize + 1],
         }
     }
 }

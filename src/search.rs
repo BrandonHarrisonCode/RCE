@@ -25,8 +25,6 @@ pub type Score = i16;
 pub type NodeCount = u64;
 pub type Millisecond = u128;
 
-const NEGMAX: Score = -Score::MAX; // Score::MIN + 1
-
 /// The `Search` struct is responsible for performing the actual search on a board.
 /// It uses iterdeep with negamax to search the best move for the current player.
 /// It also uses a transposition table to store previously evaluated positions.
@@ -155,13 +153,7 @@ impl Search {
             }
 
             let pv = self.get_pv(depth);
-            self.log_uci_info(
-                depth,
-                self.info.nodes,
-                start.elapsed().as_millis(),
-                self.info.best_score.unwrap_or(0),
-                &pv,
-            );
+            self.log_uci_info(depth, Some(start.elapsed().as_millis()), &pv);
         }
 
         self.log(format!("bestmove {}", self.info.best_move.unwrap()).as_str());
@@ -352,8 +344,11 @@ impl Search {
             }
         }
 
+        // Get out of check before entering quiescence
         if self.board.is_in_check(self.board.current_turn) {
-            depth += 1; // Get out of check before entering quiescence
+            // Since this is called from alpha_beta_start, depth will always be at least (Depth::MAX - 1).
+            // However, if we add more extensions, we need to be concerned with overflow in the future.
+            depth += 1;
         }
 
         if depth == 0 {
@@ -377,6 +372,7 @@ impl Search {
 
             let mut score;
             self.info.depth += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.depth);
             if pvs {
                 score = self
                     .alpha_beta(
@@ -506,6 +502,7 @@ impl Search {
             self.info.nodes += 1;
 
             self.info.depth += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.depth);
             let score = self
                 .quiescence(
                     evaluator,
@@ -545,8 +542,23 @@ impl Search {
     /// let limits_exceeded = search.check_limits();
     /// ```
     fn limits_exceeded(&self, start: Instant) -> bool {
+        if self.info.depth == Depth::MAX {
+            return true;
+        }
         if let Some(nodes) = self.limits.nodes {
             if self.info.nodes >= nodes {
+                self.running.store(false, Ordering::Relaxed);
+                return true;
+            }
+        }
+        if let Some(depth) = self.limits.depth {
+            if self.info.depth >= depth {
+                self.running.store(false, Ordering::Relaxed);
+                return true;
+            }
+        }
+        if let Some(movetime) = self.limits.movetime {
+            if start.elapsed().as_millis() >= movetime {
                 self.running.store(false, Ordering::Relaxed);
                 return true;
             }
@@ -587,24 +599,39 @@ impl Search {
     /// search.log_uci(3, 1000, 0, Ply::new(0, 0, 0, 0));
     /// ```
     #[allow(clippy::cast_possible_truncation)]
-    fn log_uci_info(
-        &self,
-        depth: Depth,
-        nodes: NodeCount,
-        time_elapsed_in_ms: Millisecond,
-        best_value: Score,
-        pv: &[Ply],
-    ) {
-        let score = match best_value {
-            Score::MIN | NEGMAX => format!("mate -{}", pv.len().div_ceil(2)),
-            Score::MAX => format!("mate {}", pv.len().div_ceil(2)),
-            _ => format!("cp {best_value}"),
+    fn log_uci_info(&self, depth: Depth, time_elapsed_in_ms: Option<Millisecond>, pv: &[Ply]) {
+        let depth_str = match self.info.seldepth {
+            0 => format!("depth {depth}"),
+            _ => format!("depth {depth} seldepth {}", self.info.seldepth),
         };
-        let nps: u64 = nodes / (time_elapsed_in_ms as u64 / 1000).max(1);
+
+        let score_str = match self.info.best_score {
+            Some(score) if score <= Score::MIN + Score::from(Depth::MAX) + 1 => {
+                format!("score mate -{}", pv.len().div_ceil(2))
+            }
+            Some(score) if score >= Score::MAX - Score::from(Depth::MAX) => {
+                format!("score mate {}", pv.len().div_ceil(2))
+            }
+            Some(score) => format!("score cp {score}"),
+            _ => String::new(),
+        };
+
+        let time_str = match time_elapsed_in_ms {
+            Some(time) if time > 0 => format!("time {time}"),
+            _ => String::new(),
+        };
+        let node_str = format!("nodes {}", self.info.nodes);
+        let nps_str = match time_elapsed_in_ms {
+            Some(time) if time > 0 => {
+                format!("nps {}", (self.info.nodes * 1000) / (time as u64))
+            }
+            _ => String::new(),
+        };
         let pv_notation: Vec<String> = pv.iter().map(std::string::ToString::to_string).collect();
         let pv_string = pv_notation.join(" ");
+
         self.log(
-            format!("info depth {depth} nodes {nodes} time {time_elapsed_in_ms} nps {nps} score {score} pv {pv_string}")
+            format!("info {depth_str} {node_str} {time_str} {nps_str} {score_str} pv {pv_string}")
                 .as_str(),
         );
     }
@@ -761,7 +788,7 @@ mod tests {
     fn test_log_uci() {
         let board = BoardBuilder::construct_starting_board().build();
         let search = Search::new(&board, None);
-        search.log_uci_info(3, 20000, 1500, 10, &[Ply::default()]);
+        search.log_uci_info(3, Some(20000), &[Ply::default()]);
     }
 
     #[test]
@@ -785,6 +812,48 @@ mod tests {
         let mut search = Search::new(&board, None);
         let best_move = search.alpha_beta_start(&SimpleEvaluator, 5, Instant::now());
         assert_eq!(best_move, Ply::default());
+    }
+
+    /// Designed to catch bug where we access the killer table set on a previous search out of bounds because we're searching to max depth
+    #[test]
+    fn test_mate_in_2() {
+        let mut board = Board::from_fen("8/1R6/2N2P2/2kP4/2P4P/3P4/8/6K1 w - - 1 94");
+        let mut search = Search::new(&board, None);
+        search.search(&SimpleEvaluator, Some(6));
+        let search_move = search
+            .info
+            .best_move
+            .expect("No best move found during search!");
+        let best_move = board
+            .find_move("f6f7")
+            .expect("Move not found in legal moves!");
+
+        assert_eq!(search_move, best_move);
+        board.make_move(best_move);
+
+        let best_move = board
+            .find_move("c5d6")
+            .expect("Move not found in legal moves!");
+        board.make_move(best_move);
+
+        let best_move_queen = board
+            .find_move("f7f8q")
+            .expect("Move not found in legal moves!");
+
+        let best_move_bishop = board
+            .find_move("f7f8b")
+            .expect("Move not found in legal moves!");
+
+        search = Search::new(&board, None);
+        search.search(&SimpleEvaluator, Some(Depth::MAX));
+        let search_move = search
+            .info
+            .best_move
+            .expect("No best move found during search!");
+        assert!(
+            search_move == best_move_queen || search_move == best_move_bishop,
+            "Search found {search_move} was the best move, but the best move was {best_move_queen} or {best_move_bishop}"
+        );
     }
 
     #[test]

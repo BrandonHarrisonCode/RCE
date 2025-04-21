@@ -18,7 +18,8 @@ pub use ply::Ply;
 use square::Square;
 use zkey::ZKey;
 
-use std::{collections::HashSet, fmt};
+use rustc_hash::FxHashSet;
+use std::fmt;
 
 const MAX_PLY_PER_POSITION: usize = 218;
 
@@ -30,7 +31,7 @@ pub struct Board {
     pub fullmove_counter: u16,
     en_passant_file: Option<u8>,
     history: Vec<Ply>,
-    position_history: HashSet<ZKey>,
+    position_history: FxHashSet<ZKey>,
 
     bitboards: PieceBitboards,
     pub zkey: ZKey,
@@ -49,7 +50,7 @@ impl Default for Board {
             fullmove_counter: 1,
             en_passant_file: None,
             history: vec![Ply::default()],
-            position_history: HashSet::new(),
+            position_history: FxHashSet::default(),
 
             bitboards: PieceBitboards::default(),
             zkey: ZKey::new(),
@@ -101,9 +102,10 @@ impl Board {
     /// ```
     pub fn is_legal_move(&mut self, ply: Ply) -> Result<Ply, &'static str> {
         self.make_move(ply);
-        if self.is_in_check(self.current_turn.opposite()) {
+        if self.is_in_check(ply.piece.get_color()) {
             self.unmake_move();
-            return Err("Move is not valid. The move would leave the king in check.");
+
+            return Err("Move is not valid. The king would be in check.");
         }
         self.unmake_move();
 
