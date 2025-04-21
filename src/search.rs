@@ -25,6 +25,8 @@ pub type Score = i16;
 pub type NodeCount = u64;
 pub type Millisecond = u128;
 
+pub const CHECK_TERMINATION: u64 = 0x7FF; // 2.047 nodes
+
 /// The `Search` struct is responsible for performing the actual search on a board.
 /// It uses iterdeep with negamax to search the best move for the current player.
 /// It also uses a transposition table to store previously evaluated positions.
@@ -310,7 +312,9 @@ impl Search {
         mut depth: Depth,
         start: Instant,
     ) -> Score {
-        if !self.is_running() || self.limits_exceeded(start) {
+        if self.info.nodes & CHECK_TERMINATION == 0
+            && (!self.is_running() || self.limits_exceeded(start))
+        {
             return 0;
         }
 
@@ -472,7 +476,9 @@ impl Search {
         beta_start: Score,
         start: Instant,
     ) -> Score {
-        if !self.is_running() || self.limits_exceeded(start) {
+        if self.info.nodes & CHECK_TERMINATION == 0
+            && (!self.is_running() || self.limits_exceeded(start))
+        {
             return 0;
         }
 
@@ -543,24 +549,25 @@ impl Search {
     /// ```
     fn limits_exceeded(&self, start: Instant) -> bool {
         if self.info.depth == Depth::MAX {
+            self.stop();
             return true;
         }
         if let Some(nodes) = self.limits.nodes {
             if self.info.nodes >= nodes {
-                self.running.store(false, Ordering::Relaxed);
+                self.stop();
                 return true;
             }
         }
         if let Some(movetime) = self.limits.movetime {
             if start.elapsed().as_millis() >= movetime {
-                self.running.store(false, Ordering::Relaxed);
+                self.stop();
                 return true;
             }
         }
 
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
+        if time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
             || ([
                 self.limits.white_time,
                 self.limits.white_increment,
@@ -574,6 +581,12 @@ impl Search {
                         .limits
                         .time_management_timer
                         .unwrap_or(Millisecond::MAX))
+        {
+            self.stop();
+            return true;
+        }
+
+        false
     }
 
     /// Logs the UCI output
@@ -856,6 +869,15 @@ mod tests {
         let mut search = Search::new(&board, None);
         let score = search.alpha_beta(&SimpleEvaluator, Score::MIN, Score::MAX, 4, Instant::now());
         assert_eq!(score, 0)
+    }
+
+    #[test]
+    #[ignore]
+    fn test_search_deep() {
+        let board =
+            Board::from_fen("2kr3r/ppp1qpp1/2n1b1n1/4p2p/4N3/1BNPP2P/PPP3PK/R2Q1R2 w - - 1 15");
+        let mut search = Search::new(&board, None);
+        search.iter_deep(&SimpleEvaluator, Some(10));
     }
 
     #[bench]

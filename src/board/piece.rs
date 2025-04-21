@@ -110,25 +110,14 @@ impl Kind {
     }
 
     pub fn get_moveset(self, square: Square, board: &Board) -> Vec<Ply> {
-        let moveset = match self {
+        match self {
             Self::Pawn(color) => Pawn::get_moveset(square, board, color),
             Self::King(color) => King::get_moveset(square, board, color),
             Self::Queen(color) => Queen::get_moveset(square, board, color),
             Self::Rook(color) => Rook::get_moveset(square, board, color),
             Self::Bishop(color) => Bishop::get_moveset(square, board, color),
             Self::Knight(color) => Knight::get_moveset(square, board, color),
-        };
-
-        moveset
-            .into_iter()
-            .filter(|mv| {
-                mv.start.rank < 8
-                    && mv.start.file < 8
-                    && mv.dest.rank < 8
-                    && mv.dest.file < 8
-                    && mv.start != mv.dest
-            })
-            .collect::<Vec<Ply>>()
+        }
     }
 
     pub fn get_attacks(self, square: Square, board: &Board) -> Bitboard {

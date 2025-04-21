@@ -25,11 +25,13 @@ impl Piece for Rook {
         };
 
         let move_mask = Self::get_attacks(square, board.bitboards.all_pieces) & !same_pieces;
-        let squares: Vec<Square> = move_mask.into();
-
-        squares
+        move_mask
             .into_iter()
-            .map(|s| Ply::new(square, s, Kind::Rook(color)))
+            .map(|dest| {
+                Ply::builder(square, dest, Kind::Rook(color))
+                    .captured(board.get_piece(dest))
+                    .build()
+            })
             .collect()
     }
 }
@@ -461,7 +463,9 @@ mod tests {
         let result = piece.get_moveset(start_square, &board);
         let correct = vec![
             Ply::new(start_square, Square::from("a2"), piece),
-            Ply::new(start_square, Square::from("a3"), piece),
+            Ply::builder(start_square, Square::from("a3"), piece)
+                .captured(Some(Kind::Pawn(Color::White)))
+                .build(),
             Ply::new(start_square, Square::from("b1"), piece),
             Ply::new(start_square, Square::from("c1"), piece),
             Ply::new(start_square, Square::from("d1"), piece),

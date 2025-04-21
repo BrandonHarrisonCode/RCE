@@ -50,8 +50,8 @@ impl Builder {
     }
 
     #[allow(dead_code)]
-    pub const fn captured(&mut self, captured_piece: Kind) -> &mut Self {
-        self.captured_piece = Some(captured_piece);
+    pub const fn captured(&mut self, captured_piece: Option<Kind>) -> &mut Self {
+        self.captured_piece = captured_piece;
         self
     }
 

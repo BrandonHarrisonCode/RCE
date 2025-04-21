@@ -497,7 +497,7 @@ mod tests {
         let from_sq = Square::from("e5");
         let to_sq = Square::from("f5");
         let ply = Ply::builder(from_sq, to_sq, moving_piece)
-            .captured(captured_piece)
+            .captured(Some(captured_piece))
             .build();
 
         zkey.add_or_remove_piece(moving_piece, from_sq);
@@ -526,7 +526,7 @@ mod tests {
         let to_sq = Square::from("f3");
         let en_passant_sq = Square::from("f4");
         let ply = Ply::builder(from_sq, to_sq, moving_piece)
-            .captured(captured_piece)
+            .captured(Some(captured_piece))
             .en_passant(true)
             .build();
 
@@ -584,7 +584,7 @@ mod tests {
         let from_sq = Square::from("f7");
         let to_sq = Square::from("g8");
         let ply = Ply::builder(from_sq, to_sq, moving_piece)
-            .captured(captured_piece)
+            .captured(Some(captured_piece))
             .promoted_to(promoted_piece)
             .build();
 
@@ -901,7 +901,7 @@ mod tests {
             Square::from("a1"),
             Kind::Rook(Color::Black),
         )
-        .captured(Kind::Rook(Color::White))
+        .captured(Some(Kind::Rook(Color::White)))
         .build();
 
         zkey.change_castling_rights(CastlingKind::BlackQueenside);
@@ -931,7 +931,7 @@ mod tests {
             Square::from("h1"),
             Kind::Rook(Color::Black),
         )
-        .captured(Kind::Rook(Color::White))
+        .captured(Some(Kind::Rook(Color::White)))
         .build();
 
         zkey.change_castling_rights(CastlingKind::BlackKingside);
@@ -961,7 +961,7 @@ mod tests {
             Square::from("a8"),
             Kind::Rook(Color::White),
         )
-        .captured(Kind::Rook(Color::Black))
+        .captured(Some(Kind::Rook(Color::Black)))
         .build();
 
         zkey.change_castling_rights(CastlingKind::BlackQueenside);
@@ -991,7 +991,7 @@ mod tests {
             Square::from("h8"),
             Kind::Rook(Color::White),
         )
-        .captured(Kind::Rook(Color::Black))
+        .captured(Some(Kind::Rook(Color::Black)))
         .build();
 
         zkey.change_castling_rights(CastlingKind::BlackKingside);
