@@ -320,9 +320,11 @@ impl Search {
         mut depth: Depth,
         start: Instant,
     ) -> Score {
-        if self.info.nodes & CHECK_TERMINATION == 0
-            && (!self.is_running() || self.limits_exceeded(start))
-        {
+        if self.info.nodes & CHECK_TERMINATION == 0 {
+            self.limits_exceeded(start);
+        }
+
+        if !self.is_running() {
             return 0;
         }
 
@@ -488,9 +490,11 @@ impl Search {
         beta_start: Score,
         start: Instant,
     ) -> Score {
-        if self.info.nodes & CHECK_TERMINATION == 0
-            && (!self.is_running() || self.limits_exceeded(start))
-        {
+        if self.info.nodes & CHECK_TERMINATION == 0 {
+            self.limits_exceeded(start);
+        }
+
+        if !self.is_running() {
             return 0;
         }
 
@@ -564,18 +568,8 @@ impl Search {
     /// let limits_exceeded = search.check_limits();
     /// ```
     fn limits_exceeded(&self, start: Instant) -> bool {
-        if self.info.depth == Depth::MAX {
-            self.stop();
-            return true;
-        }
         if let Some(nodes) = self.limits.nodes {
             if self.info.nodes >= nodes {
-                self.stop();
-                return true;
-            }
-        }
-        if let Some(movetime) = self.limits.movetime {
-            if start.elapsed().as_millis() >= movetime {
                 self.stop();
                 return true;
             }
@@ -640,13 +634,13 @@ impl Search {
         };
 
         let time_str = match time_elapsed_in_ms {
-            Some(time) if time > 0 => format!("time {time}"),
+            Some(time) if time > 0 => format!(" time {time}"),
             _ => String::new(),
         };
         let node_str = format!("nodes {}", self.info.nodes);
         let nps_str = match time_elapsed_in_ms {
             Some(time) if time > 0 => {
-                format!("nps {}", (self.info.nodes * 1000) / (time as u64))
+                format!(" nps {}", (self.info.nodes * 1000) / (time as u64))
             }
             _ => String::new(),
         };
@@ -654,7 +648,7 @@ impl Search {
         let pv_string = pv_notation.join(" ");
 
         self.log(
-            format!("info {depth_str} {node_str} {time_str} {nps_str} {score_str} pv {pv_string}")
+            format!("info {depth_str} {node_str}{time_str}{nps_str} {score_str} pv {pv_string}")
                 .as_str(),
         );
     }
