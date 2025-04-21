@@ -28,3 +28,4 @@ pretty_assertions = "1.4.0"
 
 [profile.release]
 lto = "fat"
+codegen-units = 1
