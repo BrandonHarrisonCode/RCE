@@ -38,6 +38,7 @@ pub struct Info {
     pub depth: Depth,
     pub seldepth: Depth,
     pub killers: KillerList,
+    pub terminated: bool,
 }
 
 impl Info {
@@ -50,6 +51,7 @@ impl Info {
             depth: 0,
             seldepth: 0,
             killers: [[None; MAX_KILLERS]; Depth::MAX as usize + 1],
+            terminated: false,
         }
     }
 }

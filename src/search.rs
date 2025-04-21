@@ -567,7 +567,7 @@ impl Search {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let limits_exceeded = search.check_limits();
     /// ```
-    fn limits_exceeded(&self, start: Instant) -> bool {
+    fn limits_exceeded(&mut self, start: Instant) -> bool {
         if let Some(nodes) = self.limits.nodes {
             if self.info.nodes >= nodes {
                 self.stop();
@@ -768,11 +768,14 @@ impl Search {
     /// search.stop();
     /// assert_eq!(search.is_running(), false);
     /// ```
-    pub fn stop(&self) {
+    pub fn stop(&mut self) {
         self.running.store(false, Ordering::Relaxed);
+        self.info.terminated = true;
     }
 
     /// Returns a boolean determining if the search is still running
+    ///
+    /// Uses a copy of the `AtomicBool` to determine if the search is still running, leading to some speedups.
     ///
     /// # Returns
     ///
@@ -785,8 +788,8 @@ impl Search {
     /// let mut search = Search::new(&board, &evaluator, None);
     /// let running = search.check_running();
     /// ```
-    pub fn is_running(&self) -> bool {
-        self.running.load(Ordering::Relaxed)
+    pub const fn is_running(&self) -> bool {
+        !self.info.terminated
     }
 }
 
