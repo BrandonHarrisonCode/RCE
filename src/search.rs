@@ -25,6 +25,8 @@ pub type Score = i16;
 pub type NodeCount = u64;
 pub type Millisecond = u128;
 
+pub const CHECK_TERMINATION: u64 = 0x7FF; // 2.047 nodes
+
 /// The `Search` struct is responsible for performing the actual search on a board.
 /// It uses iterdeep with negamax to search the best move for the current player.
 /// It also uses a transposition table to store previously evaluated positions.
@@ -310,7 +312,9 @@ impl Search {
         mut depth: Depth,
         start: Instant,
     ) -> Score {
-        if !self.is_running() || self.limits_exceeded(start) {
+        if self.info.nodes & CHECK_TERMINATION == 0
+            && (!self.is_running() || self.limits_exceeded(start))
+        {
             return 0;
         }
 
@@ -472,7 +476,9 @@ impl Search {
         beta_start: Score,
         start: Instant,
     ) -> Score {
-        if !self.is_running() || self.limits_exceeded(start) {
+        if self.info.nodes & CHECK_TERMINATION == 0
+            && (!self.is_running() || self.limits_exceeded(start))
+        {
             return 0;
         }
 
@@ -543,30 +549,31 @@ impl Search {
     /// ```
     fn limits_exceeded(&self, start: Instant) -> bool {
         if self.info.depth == Depth::MAX {
+            self.stop();
             return true;
         }
         if let Some(nodes) = self.limits.nodes {
             if self.info.nodes >= nodes {
-                self.running.store(false, Ordering::Relaxed);
+                self.stop();
                 return true;
             }
         }
         if let Some(depth) = self.limits.depth {
             if self.info.depth >= depth {
-                self.running.store(false, Ordering::Relaxed);
+                self.stop();
                 return true;
             }
         }
         if let Some(movetime) = self.limits.movetime {
             if start.elapsed().as_millis() >= movetime {
-                self.running.store(false, Ordering::Relaxed);
+                self.stop();
                 return true;
             }
         }
 
         let duration = start.elapsed();
         let time_elapsed_in_ms = duration.as_millis();
-        time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
+        if time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
             || ([
                 self.limits.white_time,
                 self.limits.white_increment,
@@ -580,6 +587,12 @@ impl Search {
                         .limits
                         .time_management_timer
                         .unwrap_or(Millisecond::MAX))
+        {
+            self.stop();
+            return true;
+        }
+
+        false
     }
 
     /// Logs the UCI output
