@@ -21,6 +21,8 @@ use zkey::ZKey;
 use rustc_hash::FxHashSet;
 use std::fmt;
 
+const MAX_PLY_PER_POSITION: usize = 218;
+
 /// A board object, representing all of the state of the game
 /// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -124,34 +126,16 @@ impl Board {
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
     pub fn get_all_moves(&self) -> Vec<Ply> {
-        let mut all_moves = Vec::new();
+        let mut all_moves = Vec::with_capacity(MAX_PLY_PER_POSITION);
 
-        for square_idx in 0..64u8 {
-            let square = Square::from(square_idx);
-            if let Some(piece) = self.get_piece(square) {
-                if self.current_turn != piece.get_color() {
-                    continue;
-                }
+        let moving_pieces = match self.current_turn {
+            Color::White => self.bitboards.white_pieces,
+            Color::Black => self.bitboards.black_pieces,
+        };
 
-                all_moves.append(
-                    &mut piece
-                        .get_moveset(square, self)
-                        .into_iter()
-                        .map(|mut mv| {
-                            if mv.en_passant {
-                                mv.captured_piece = self.get_piece(Square {
-                                    rank: mv.start.rank,
-                                    file: mv.dest.file,
-                                });
-                            } else {
-                                mv.captured_piece = self.get_piece(mv.dest);
-                            }
-
-                            mv
-                        })
-                        .collect::<Vec<Ply>>(),
-                );
-            }
+        for square in moving_pieces {
+            let piece = self.get_piece(square).expect("No piece found at square");
+            all_moves.extend(piece.get_moveset(square, self));
         }
 
         all_moves
@@ -601,21 +585,30 @@ impl Board {
     /// ```
     fn get_attacked_squares(&self, color: Color) -> Bitboard {
         let attacking_pieces = match color {
-            Color::White => self.bitboards.black_pieces,
-            Color::Black => self.bitboards.white_pieces,
+            Color::White => [
+                (Kind::Pawn(Color::Black), self.bitboards.black_pawns),
+                (Kind::Knight(Color::Black), self.bitboards.black_knights),
+                (Kind::Bishop(Color::Black), self.bitboards.black_bishops),
+                (Kind::Rook(Color::Black), self.bitboards.black_rooks),
+                (Kind::Queen(Color::Black), self.bitboards.black_queens),
+                (Kind::King(Color::Black), self.bitboards.black_king),
+            ],
+            Color::Black => [
+                (Kind::Pawn(Color::White), self.bitboards.white_pawns),
+                (Kind::Knight(Color::White), self.bitboards.white_knights),
+                (Kind::Bishop(Color::White), self.bitboards.white_bishops),
+                (Kind::Rook(Color::White), self.bitboards.white_rooks),
+                (Kind::Queen(Color::White), self.bitboards.white_queens),
+                (Kind::King(Color::White), self.bitboards.white_king),
+            ],
         };
 
         let mut attacks = Bitboard::new(0);
-        for square in 0..64u8 {
-            if attacking_pieces & (1 << square) == Bitboard::new(0) {
-                continue;
+
+        for (kind, bitboard) in attacking_pieces {
+            for square in bitboard {
+                attacks |= kind.get_attacks(square, self);
             }
-
-            let piece = self
-                .get_piece(Square::from(square))
-                .expect("No piece found at square where bitboard claimed piece was!");
-
-            attacks |= piece.get_attacks(Square::from(square), self);
         }
 
         attacks
@@ -1637,7 +1630,7 @@ mod tests {
         let start = Square::from("a2"); // White Pawn
         let dest = Square::from("a7"); // Black Pawn
         let ply = Ply::builder(start, dest, Kind::Pawn(Color::White))
-            .captured(Kind::Pawn(Color::Black))
+            .captured(Some(Kind::Pawn(Color::Black)))
             .build();
         assert_eq!(board.current_turn, Color::White);
 
@@ -1664,28 +1657,28 @@ mod tests {
             Square::from("h8"),
             Kind::Rook(Color::White),
         )
-        .captured(Kind::Rook(Color::Black))
+        .captured(Some(Kind::Rook(Color::Black)))
         .build();
         let ply_capture_black_queenside_rook = Ply::builder(
             Square::from("b6"),
             Square::from("a8"),
             Kind::Rook(Color::White),
         )
-        .captured(Kind::Rook(Color::Black))
+        .captured(Some(Kind::Rook(Color::Black)))
         .build();
         let ply_capture_white_kingside_rook = Ply::builder(
             Square::from("g3"),
             Square::from("h1"),
             Kind::Rook(Color::Black),
         )
-        .captured(Kind::Rook(Color::White))
+        .captured(Some(Kind::Rook(Color::White)))
         .build();
         let ply_capture_white_queenside_rook = Ply::builder(
             Square::from("b3"),
             Square::from("a1"),
             Kind::Rook(Color::Black),
         )
-        .captured(Kind::Rook(Color::White))
+        .captured(Some(Kind::Rook(Color::White)))
         .build();
 
         board.make_move(ply_capture_black_kingside_rook);
@@ -1986,7 +1979,7 @@ mod tests {
         let start = Square::from("f7"); // White Pawn
         let dest = Square::from("g8"); // Black Knight
         let ply = Ply::builder(start, dest, Kind::Pawn(Color::White))
-            .captured(Kind::Knight(Color::Black))
+            .captured(Some(Kind::Knight(Color::Black)))
             .promoted_to(Kind::Queen(Color::White))
             .build();
 
@@ -2252,6 +2245,16 @@ mod tests {
             Board::from_fen("r3k2r/pbppqNb1/1n2pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/1R2K2R b Kkq - 2 2");
         let result = board.get_legal_moves().len();
         let correct = 44;
+
+        assert_eq!(result, correct);
+    }
+
+    #[test]
+    fn test_get_legal_moves_count_from_position_22() {
+        let mut board =
+            Board::from_fen("r3k2r/Pppp1ppp/1b3nbN/nPP5/BB2P3/q4N2/Pp1P2PP/R2Q1RK1 b kq - 0 1");
+        let result = board.get_legal_moves().len();
+        let correct = 43;
 
         assert_eq!(result, correct);
     }

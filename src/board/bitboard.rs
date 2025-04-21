@@ -328,3 +328,35 @@ impl Bitboard {
         63 - self.0.leading_zeros()
     }
 }
+
+impl IntoIterator for Bitboard {
+    type Item = Square;
+    type IntoIter = BitboardIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitboardIter::new(self)
+    }
+}
+
+pub struct BitboardIter {
+    bitboard: Bitboard,
+}
+
+impl BitboardIter {
+    const fn new(bitboard: Bitboard) -> Self {
+        Self { bitboard }
+    }
+}
+
+impl Iterator for BitboardIter {
+    type Item = Square;
+
+    #[allow(clippy::cast_possible_truncation)]
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.bitboard.is_empty() {
+            return None;
+        }
+
+        Some(Square::from(self.bitboard.drop_forward() as u8))
+    }
+}

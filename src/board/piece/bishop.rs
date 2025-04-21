@@ -25,11 +25,13 @@ impl Piece for Bishop {
         };
 
         let move_mask = Self::get_attacks(square, board.bitboards.all_pieces) & !same_pieces;
-        let squares: Vec<Square> = move_mask.into();
-
-        squares
+        move_mask
             .into_iter()
-            .map(|s| Ply::new(square, s, Kind::Bishop(color)))
+            .map(|dest| {
+                Ply::builder(square, dest, Kind::Bishop(color))
+                    .captured(board.get_piece(dest))
+                    .build()
+            })
             .collect()
     }
 }
