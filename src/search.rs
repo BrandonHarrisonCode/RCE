@@ -26,6 +26,7 @@ pub type NodeCount = u64;
 pub type Millisecond = u128;
 
 pub const CHECK_TERMINATION: u64 = 0x7FF; // 2.047 nodes
+pub const MAX_PLY: Depth = 100;
 
 /// The `Search` struct is responsible for performing the actual search on a board.
 /// It uses iterdeep with negamax to search the best move for the current player.
@@ -115,13 +116,17 @@ impl Search {
 
         self.limits.time_management_timer = match self.board.current_turn {
             Color::White => {
-                self.limits.white_time.unwrap_or(0) / 20
-                    + self.limits.white_increment.unwrap_or(0) / 2
+                (self.limits.white_time.unwrap_or(0) / 4).min(
+                    self.limits.white_time.unwrap_or(0) / 20
+                        + self.limits.white_increment.unwrap_or(0) / 2,
+                )
             }
             .into(),
             Color::Black => {
-                self.limits.black_time.unwrap_or(0) / 20
-                    + self.limits.black_increment.unwrap_or(0) / 2
+                (self.limits.black_time.unwrap_or(0) / 4).min(
+                    self.limits.black_time.unwrap_or(0) / 20
+                        + self.limits.black_increment.unwrap_or(0) / 2,
+                )
             }
             .into(),
         };
@@ -147,7 +152,7 @@ impl Search {
     /// ```
     fn iter_deep(&mut self, evaluator: &impl Evaluator, max_depth: Option<Depth>) {
         let start = Instant::now();
-        for depth in 1..=max_depth.unwrap_or(Depth::MAX) {
+        for depth in 1..=max_depth.unwrap_or(Depth::MAX).min(MAX_PLY) {
             self.alpha_beta_start(evaluator, depth, start);
 
             if !self.is_running() || self.limits_exceeded(start) {
@@ -198,6 +203,9 @@ impl Search {
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
             if self.board.is_legal_move(mv).is_err() {
                 continue; // Skip illegal moves
+            }
+            if self.info.best_move.is_none() {
+                self.info.best_move = Some(mv);
             }
             total_legal_moves += 1;
 
@@ -348,6 +356,10 @@ impl Search {
             }
         }
 
+        if self.info.depth >= MAX_PLY {
+            return evaluator.evaluate(&mut self.board);
+        }
+
         // Get out of check before entering quiescence
         if self.board.is_in_check(self.board.current_turn) {
             // Since this is called from alpha_beta_start, depth will always be at least (Depth::MAX - 1).
@@ -486,6 +498,10 @@ impl Search {
         let beta = beta_start;
 
         let score = evaluator.evaluate(&mut self.board);
+        if self.info.depth >= MAX_PLY {
+            return score;
+        }
+
         if score >= beta {
             return beta; // No need to search any further, beta cutoff
         }
@@ -861,6 +877,21 @@ mod tests {
             search_move == best_move_queen || search_move == best_move_bishop,
             "Search found {search_move} was the best move, but the best move was {best_move_queen} or {best_move_bishop}"
         );
+    }
+
+    #[test]
+    fn test_no_time_out_with_increment() {
+        let board = BoardBuilder::construct_starting_board().build();
+        let wtime = 150;
+        let limits = SearchLimits {
+            white_time: Some(wtime),
+            white_increment: Some(1000),
+            ..Default::default()
+        };
+        let mut search = Search::new(&board, Some(limits));
+        let start = Instant::now();
+        search.search(&SimpleEvaluator, None);
+        assert!(start.elapsed().as_millis() <= wtime)
     }
 
     #[test]
