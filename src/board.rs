@@ -18,7 +18,8 @@ pub use ply::Ply;
 use square::Square;
 use zkey::ZKey;
 
-use std::{collections::HashSet, fmt};
+use rustc_hash::FxHashSet;
+use std::fmt;
 
 /// A board object, representing all of the state of the game
 /// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
@@ -28,7 +29,7 @@ pub struct Board {
     pub fullmove_counter: u16,
     en_passant_file: Option<u8>,
     history: Vec<Ply>,
-    position_history: HashSet<ZKey>,
+    position_history: FxHashSet<ZKey>,
 
     bitboards: PieceBitboards,
     pub zkey: ZKey,
@@ -47,7 +48,7 @@ impl Default for Board {
             fullmove_counter: 1,
             en_passant_file: None,
             history: vec![Ply::default()],
-            position_history: HashSet::new(),
+            position_history: FxHashSet::default(),
 
             bitboards: PieceBitboards::default(),
             zkey: ZKey::new(),
