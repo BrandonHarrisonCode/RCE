@@ -1,3 +1,5 @@
+use arrayvec::ArrayVec;
+
 use super::square::Square;
 use std::fmt;
 use std::ops::{
@@ -224,15 +226,14 @@ impl From<Bitboard> for u64 {
 }
 
 #[allow(clippy::cast_possible_truncation)]
-impl From<Bitboard> for Vec<Square> {
+impl From<Bitboard> for ArrayVec<Square, 64> {
     fn from(bitboard: Bitboard) -> Self {
-        let mut squares = vec![];
+        let mut squares = Self::new();
 
-        let mut mask = bitboard.0;
-        while mask != 0 {
-            let idx = mask.trailing_zeros() as u8;
-            squares.push(Square::from(idx));
-            mask &= mask - 1;
+        let mut mask = bitboard;
+        while !mask.is_empty() {
+            let idx = mask.drop_forward();
+            squares.push(Square::from(idx as u8));
         }
 
         squares
