@@ -13,12 +13,17 @@ pub mod pawn;
 pub mod queen;
 pub mod rook;
 
+use arrayvec::ArrayVec;
 use bishop::Bishop;
 use king::King;
 use knight::Knight;
 use pawn::Pawn;
 use queen::Queen;
 use rook::Rook;
+
+const MAX_PLY_PER_PIECE: usize = 27;
+
+type PieceMoveset = ArrayVec<Ply, MAX_PLY_PER_PIECE>;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Display, Debug, Default, PartialOrd, Ord)]
 pub enum Color {
@@ -109,7 +114,7 @@ impl Kind {
         }
     }
 
-    pub fn get_moveset(self, square: Square, board: &Board) -> Vec<Ply> {
+    pub fn get_moveset(self, square: Square, board: &Board) -> PieceMoveset {
         match self {
             Self::Pawn(color) => Pawn::get_moveset(square, board, color),
             Self::King(color) => King::get_moveset(square, board, color),
@@ -143,7 +148,7 @@ pub trait Piece: Clone + PartialEq + Eq {
         }
     }
 
-    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply>;
+    fn get_moveset(square: Square, board: &Board, color: Color) -> PieceMoveset;
 }
 
 trait Precomputed {

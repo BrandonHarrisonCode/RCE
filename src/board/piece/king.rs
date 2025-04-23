@@ -1,5 +1,5 @@
 use super::super::bitboard::{Bitboard, File};
-use super::{Color, Kind, Piece, Ply, Precomputed, Square};
+use super::{Color, Kind, Piece, PieceMoveset, Ply, Precomputed, Square};
 use crate::board::Board;
 use crate::board::{CastlingKind, CastlingStatus};
 use std::sync::OnceLock;
@@ -15,14 +15,14 @@ impl Piece for King {
     const WHITE_SYMBOL: &'static str = "♚";
     const BLACK_SYMBOL: &'static str = "♔";
 
-    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, board: &Board, color: Color) -> PieceMoveset {
         let same_pieces = match color {
             Color::White => board.bitboards.white_pieces,
             Color::Black => board.bitboards.black_pieces,
         };
 
         let move_mask = Self::get_attacks(square) & !same_pieces;
-        let mut moveset: Vec<Ply> = move_mask
+        let mut moveset: PieceMoveset = move_mask
             .into_iter()
             .map(|dest| {
                 Ply::builder(square, dest, Kind::King(color))

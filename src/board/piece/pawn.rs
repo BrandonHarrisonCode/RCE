@@ -1,5 +1,5 @@
 use super::super::bitboard::{Bitboard, File};
-use super::{Color, Direction, Kind, Piece, Ply, PrecomputedColor, Square};
+use super::{Color, Direction, Kind, Piece, PieceMoveset, Ply, PrecomputedColor, Square};
 use crate::board::Board;
 use std::sync::OnceLock;
 
@@ -15,7 +15,7 @@ impl Piece for Pawn {
     const BLACK_SYMBOL: &'static str = "♙";
 
     #[allow(clippy::too_many_lines)]
-    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, board: &Board, color: Color) -> PieceMoveset {
         const NEXT_SQUARE_OFFSET: usize = 8;
         const DOUBLE_NEXT_SQUARE_OFFSET: usize = 2 * NEXT_SQUARE_OFFSET;
 
@@ -29,7 +29,7 @@ impl Piece for Pawn {
             Color::Black => board.bitboards.white_pieces,
         };
 
-        let mut moveset: Vec<Ply> = Vec::new();
+        let mut moveset: PieceMoveset = PieceMoveset::new();
 
         // Directional captures
         let move_mask = Self::get_attacks(square, color) & enemy_pieces;
