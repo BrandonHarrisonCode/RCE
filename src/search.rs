@@ -6,7 +6,7 @@ use super::evaluate::Evaluator;
 use crate::board::{
     piece::Color,
     transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
-    Board, Ply,
+    Board, MoveList, Ply,
 };
 
 use crate::logger::Logger;
@@ -512,7 +512,7 @@ impl Search {
 
         // We don't check for fifty move rule or three-fold because every move in quiescence is a capture
 
-        let moves: Vec<Ply> = self.board.get_filtered_moves(Ply::is_capture);
+        let moves: MoveList = self.board.get_filtered_moves(|ply| ply.is_capture());
 
         let killers = self.info.killers[usize::from(self.info.depth)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {

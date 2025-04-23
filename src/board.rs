@@ -8,6 +8,7 @@ pub mod square;
 pub mod transposition_table;
 pub mod zkey;
 
+use arrayvec::ArrayVec;
 use bitboard::Bitboard;
 #[allow(clippy::module_name_repetitions)]
 pub use boardbuilder::BoardBuilder;
@@ -21,7 +22,9 @@ use zkey::ZKey;
 use rustc_hash::FxHashSet;
 use std::fmt;
 
-const MAX_PLY_PER_POSITION: usize = 218;
+pub const MAX_PLY_PER_POSITION: usize = 256; // 218 is the maximum number of moves in a position, we extend this to include possible pseudolegal moves too
+
+pub type MoveList = ArrayVec<Ply, MAX_PLY_PER_POSITION>;
 
 /// A board object, representing all of the state of the game
 /// Starts at bottom left corner of a chess board (a1), wrapping left to right on each row
@@ -79,13 +82,13 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
-    pub fn get_legal_moves(&mut self) -> Vec<Ply> {
+    pub fn get_legal_moves(&mut self) -> MoveList {
         let mut moves = self.get_all_moves();
         moves.retain(|mv| self.is_legal_move(*mv).is_ok());
         moves
     }
 
-    pub fn get_filtered_moves(&self, predicate: fn(&Ply) -> bool) -> Vec<Ply> {
+    pub fn get_filtered_moves(&self, predicate: fn(&mut Ply) -> bool) -> MoveList {
         let mut moves = self.get_all_moves();
         moves.retain(predicate);
         moves
@@ -125,8 +128,8 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let movelist = board.get_all_moves(Square::new("a2"));
     /// ```
-    pub fn get_all_moves(&self) -> Vec<Ply> {
-        let mut all_moves = Vec::with_capacity(MAX_PLY_PER_POSITION);
+    pub fn get_all_moves(&self) -> MoveList {
+        let mut all_moves = ArrayVec::new();
 
         let moving_pieces = match self.current_turn {
             Color::White => self.bitboards.white_pieces,
