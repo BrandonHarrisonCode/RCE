@@ -1,15 +1,19 @@
 use std::sync::OnceLock;
 
-use crate::board::piece::Color;
-use crate::board::piece::Kind;
-use crate::board::transposition_table::TRANSPOSITION_TABLE;
-use crate::board::zkey::ZKey;
-use crate::board::Ply;
+use crate::board::{
+    piece::{Color, Kind},
+    transposition_table::TRANSPOSITION_TABLE,
+    zkey::ZKey,
+    Ply, MAX_PLY_PER_POSITION,
+};
 
 mod scored_ply;
+use arrayvec::ArrayVec;
 use scored_ply::ScoredPly;
 
 use super::info::MAX_KILLERS;
+
+pub type ScoredMoveList = ArrayVec<ScoredPly, MAX_PLY_PER_POSITION>;
 
 // Colors don't matter here, but we have to pick one
 const VICTIMS_VALUE_ASCENDING: [Kind; 5] = [
@@ -45,11 +49,11 @@ impl ScoreBonus {
 type MoveScore = u64;
 
 pub struct MoveOrderer {
-    scored_moves: Vec<ScoredPly>,
+    scored_moves: ScoredMoveList,
     index: usize,
 }
 
-fn score_moves(zkey: ZKey, moves: &[Ply], killers: &[Option<Ply>; MAX_KILLERS]) -> Vec<ScoredPly> {
+fn score_moves(zkey: ZKey, moves: &[Ply], killers: &[Option<Ply>; MAX_KILLERS]) -> ScoredMoveList {
     let best_ply = TRANSPOSITION_TABLE
         .read()
         .expect("Transposition table is poisoned! Unable to read entry.")
