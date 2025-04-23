@@ -18,9 +18,9 @@
 		},
 		{
 			"type": "cargo",
-			"command": "nextest",
+			"command": "test",
 			"args": [
-				"run"
+				"--release"
 			],
 			"problemMatcher": [
 				"$rustc"
@@ -29,7 +29,7 @@
 				"kind": "test",
 				"isDefault": true
 			},
-			"label": "rust: cargo nextest run"
+			"label": "rust: cargo test"
 		},
 		{
 			"type": "cargo",

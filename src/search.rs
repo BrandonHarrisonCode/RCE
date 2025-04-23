@@ -200,7 +200,7 @@ impl Search {
         let mut best_ply = moves[0];
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
-        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+        for mv in MoveOrderer::new(moves, self.board.zkey, &killers) {
             if self.board.is_legal_move(mv).is_err() {
                 continue; // Skip illegal moves
             }
@@ -377,7 +377,7 @@ impl Search {
         let mut best_ply = moves[0];
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
-        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+        for mv in MoveOrderer::new(moves, self.board.zkey, &killers) {
             if self.board.is_legal_move(mv).is_err() {
                 continue; // Skip illegal moves
             }
@@ -515,7 +515,7 @@ impl Search {
         let moves: MoveList = self.board.get_filtered_moves(|ply| ply.is_capture());
 
         let killers = self.info.killers[usize::from(self.info.depth)];
-        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+        for mv in MoveOrderer::new(moves, self.board.zkey, &killers) {
             if self.board.is_legal_move(mv).is_err() {
                 continue; // Skip illegal moves
             }
@@ -868,6 +868,7 @@ mod tests {
             .expect("Move not found in legal moves!");
 
         search = Search::new(&board, None);
+
         search.search(&SimpleEvaluator, Some(Depth::MAX));
         let search_move = search
             .info
