@@ -159,6 +159,66 @@ impl PieceBitboards {
         self.all_pieces = self.white_pieces | self.black_pieces;
     }
 
+    /// Returns the `Bitboard` of the specified piece kind
+    ///
+    /// # Arguments
+    ///
+    /// * `kind` - The piece kind to get the bitboard for.
+    ///
+    /// # Returns
+    ///
+    /// * `Bitboard` - The bitboard of the specified piece kind.
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::default();
+    /// assert_eq!(board.get_bitboard(Kind::Pawn(Color::White)), Bitboard::new(0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000));
+    /// assert_eq!(board.get_bitboard(Kind::Knight(Color::Black)), Bitboard::new(0b_01000010_00000000_00000000_00000000_00000000_00000000_00000000_00000000));
+    /// ```
+    pub const fn get_bitboard(&self, kind: Kind) -> Bitboard {
+        match kind {
+            Kind::Pawn(Color::White) => self.white_pawns,
+            Kind::Knight(Color::White) => self.white_knights,
+            Kind::Bishop(Color::White) => self.white_bishops,
+            Kind::Rook(Color::White) => self.white_rooks,
+            Kind::Queen(Color::White) => self.white_queens,
+            Kind::King(Color::White) => self.white_king,
+
+            Kind::Pawn(Color::Black) => self.black_pawns,
+            Kind::Knight(Color::Black) => self.black_knights,
+            Kind::Bishop(Color::Black) => self.black_bishops,
+            Kind::Rook(Color::Black) => self.black_rooks,
+            Kind::Queen(Color::Black) => self.black_queens,
+            Kind::King(Color::Black) => self.black_king,
+        }
+    }
+
+    /// Returns the bitboard for the specified color.
+    /// If the color is `None`, it returns the bitboard of all pieces.
+    ///
+    /// # Arguments
+    ///
+    /// * `color` - The color to get the bitboard for.
+    ///
+    /// # Returns
+    ///
+    /// * `Bitboard` - The bitboard of the specified color.
+    ///
+    /// # Examples
+    /// ```
+    /// let board = Board::default();
+    ///
+    /// assert_eq!(board.get_all_pieces(Some(Color::White)), Bitboard::new(0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_00010000));
+    /// assert_eq!(board.get_all_pieces(Some(Color::Black)), Bitboard::new(0b_00000000_11111111_00000000_00000000_00000000_00000000_00000000_00010000));
+    /// ```
+    pub const fn get_all_pieces(&self, color: Option<Color>) -> Bitboard {
+        match color {
+            Some(Color::White) => self.white_pieces,
+            Some(Color::Black) => self.black_pieces,
+            None => self.all_pieces,
+        }
+    }
+
     /// Returns a `PieceKind` Option of the piece currently occupying `square`
     ///
     /// # Arguments
@@ -305,5 +365,99 @@ impl PieceBitboards {
         }
 
         self.recompute_combinations(Some(kind.get_color()));
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::board::Board;
+    use pretty_assertions::assert_eq;
+
+    #[test]
+    fn test_get_bitboard() {
+        let board = Board::default();
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Pawn(Color::White)),
+            board.bitboards.white_pawns
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::King(Color::White)),
+            board.bitboards.white_king
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Queen(Color::White)),
+            board.bitboards.white_queens
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Rook(Color::White)),
+            board.bitboards.white_rooks
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Bishop(Color::White)),
+            board.bitboards.white_bishops
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Knight(Color::White)),
+            board.bitboards.white_knights
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Pawn(Color::Black)),
+            board.bitboards.black_pawns
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::King(Color::Black)),
+            board.bitboards.black_king
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Queen(Color::Black)),
+            board.bitboards.black_queens
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Rook(Color::Black)),
+            board.bitboards.black_rooks
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Bishop(Color::Black)),
+            board.bitboards.black_bishops
+        );
+
+        assert_eq!(
+            board.bitboards.get_bitboard(Kind::Knight(Color::Black)),
+            board.bitboards.black_knights
+        );
+    }
+
+    #[test]
+    fn test_get_all_pieces() {
+        let board = Board::default();
+
+        assert_eq!(
+            board.bitboards.get_all_pieces(Some(Color::White)),
+            board.bitboards.white_pieces
+        );
+
+        assert_eq!(
+            board.bitboards.get_all_pieces(Some(Color::Black)),
+            board.bitboards.black_pieces
+        );
+
+        assert_eq!(
+            board.bitboards.get_all_pieces(None),
+            board.bitboards.all_pieces
+        );
     }
 }

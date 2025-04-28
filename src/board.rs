@@ -563,22 +563,76 @@ impl Board {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// assert!(!board.is_in_check());
     /// ```
+    #[allow(clippy::cast_possible_truncation)]
     pub fn is_in_check(&self, color: Color) -> bool {
-        let attacks = self.get_attacked_squares(color);
+        let king_pos = Square::from(
+            match color {
+                Color::White => self.bitboards.white_king,
+                Color::Black => self.bitboards.black_king,
+            }
+            .drop_forward() as u8,
+        );
 
-        let king_pos = match color {
-            Color::White => self.bitboards.white_king,
-            Color::Black => self.bitboards.black_king,
-        };
+        self.is_square_attacked(king_pos, color.opposite())
+    }
 
-        !(king_pos & attacks).is_empty()
+    /// Returns a boolean representing whether or not the square is attacked
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square to check for attacks
+    ///
+    /// * `color` - The color of the attacking player.
+    ///
+    /// # Examples
+    /// ```
+    /// let board = BoardBuilder::construct_starting_board().build();
+    /// assert!(!board.is_square_attacked(Square::new("a1"), Color::White));
+    /// ```
+    pub fn is_square_attacked(&self, square: Square, attacking_color: Color) -> bool {
+        let rook_squares = Kind::Rook(attacking_color).get_attacks(square, self);
+
+        if !(rook_squares & self.bitboards.get_bitboard(Kind::Rook(attacking_color))).is_empty() {
+            return true;
+        }
+
+        let bishop_squares = Kind::Bishop(attacking_color).get_attacks(square, self);
+
+        if !(bishop_squares & self.bitboards.get_bitboard(Kind::Bishop(attacking_color))).is_empty()
+        {
+            return true;
+        }
+
+        let queen_squares = rook_squares | bishop_squares;
+        if !(queen_squares & self.bitboards.get_bitboard(Kind::Queen(attacking_color))).is_empty() {
+            return true;
+        }
+
+        let pawn_squares = Kind::Pawn(attacking_color.opposite()).get_attacks(square, self); // Pawn attacks are directional
+        if !(pawn_squares & self.bitboards.get_bitboard(Kind::Pawn(attacking_color))).is_empty() {
+            return true;
+        }
+
+        self.is_square_attacked_by(square, Kind::Knight(attacking_color))
+            || self.is_square_attacked_by(square, Kind::King(attacking_color))
+    }
+
+    /// Returns a boolean representing whether or not the square is attacked by a specific piece kind.
+    ///
+    /// # Arguments
+    ///
+    /// * `square` - The square to check for attacks
+    ///
+    /// * `kind` - The piece kind to check for attacks from
+    fn is_square_attacked_by(&self, square: Square, kind: Kind) -> bool {
+        !(kind.get_attacks(square, self) & self.bitboards.get_bitboard(kind)).is_empty()
     }
 
     /// Returns a bitboard representing all squares that are attacked from `color`'s perspective
     ///
     /// # Arguments
     ///
-    /// * `color` - The color of the player to calculate the attacked squares for
+    /// * `color` - The color of the player. The attacking pieces will be the opposite color.
     ///
     /// # Examples
     /// ```
@@ -586,6 +640,7 @@ impl Board {
     ///
     /// let attacked_squares = board.get_attacked_squares(Color::White);
     /// ```
+    #[allow(dead_code)]
     fn get_attacked_squares(&self, color: Color) -> Bitboard {
         let attacking_pieces = match color {
             Color::White => [
@@ -718,17 +773,17 @@ impl Board {
     /// assert!(board.no_checks_between(Square::new("a8"), Square::new("h8")).is_err());
     /// ```
     fn no_checks_castling(&self, kind: CastlingKind) -> Result<(), &'static str> {
-        let attacks = self.get_attacked_squares(self.current_turn);
-        if match kind {
-            CastlingKind::WhiteKingside => (attacks & 0x70).is_empty(),
-            CastlingKind::WhiteQueenside => (attacks & 0x1C).is_empty(),
-            CastlingKind::BlackKingside => (attacks & 0x_7000_0000_0000_0000).is_empty(),
-            CastlingKind::BlackQueenside => (attacks & 0x1C00_0000_0000_0000).is_empty(),
-        } {
-            Ok(())
-        } else {
-            Err("There are checks between the start and destination squares.")
-        }
+        let mask = Bitboard::new(match kind {
+            CastlingKind::WhiteKingside => 0x70,
+            CastlingKind::WhiteQueenside => 0x1C,
+            CastlingKind::BlackKingside => 0x_7000_0000_0000_0000,
+            CastlingKind::BlackQueenside => 0x1C00_0000_0000_0000,
+        });
+
+        mask.into_iter()
+            .all(|square| !self.is_square_attacked(square, self.current_turn.opposite()))
+            .then_some(())
+            .ok_or("There are checks between the start and destination squares.")
     }
 
     /// Switches the current turn to the other player
@@ -1174,6 +1229,82 @@ mod tests {
             board.get_attacked_squares(Color::Black),
             Bitboard::new(0b0000001011000100011111010010101000111101111111111111101101111110)
         );
+    }
+
+    #[test]
+    fn test_is_square_attacked_starting_board() {
+        let board = BoardBuilder::construct_starting_board().build();
+
+        for square in board.get_attacked_squares(Color::White) {
+            println!("Square: {square}");
+            assert!(board.is_square_attacked(square, Color::Black))
+        }
+
+        for square in !board.get_attacked_squares(Color::White) {
+            println!("Square: {square}");
+            assert!(!board.is_square_attacked(square, Color::Black))
+        }
+
+        for square in board.get_attacked_squares(Color::Black) {
+            println!("Square: {square}");
+            assert!(board.is_square_attacked(square, Color::White))
+        }
+
+        for square in !board.get_attacked_squares(Color::Black) {
+            println!("Square: {square}");
+            assert!(!board.is_square_attacked(square, Color::White))
+        }
+    }
+
+    #[test]
+    fn test_is_square_attacked_position_1() {
+        let board = Board::from_fen("r3kb1r/p2bqpp1/5n2/4Q1p1/3P4/8/PPP2PPP/RNB1K2R b KQkq - 0 13");
+
+        for square in board.get_attacked_squares(Color::White) {
+            println!("Square: {square}");
+            assert!(board.is_square_attacked(square, Color::Black))
+        }
+
+        for square in !board.get_attacked_squares(Color::White) {
+            println!("Square: {square}");
+            assert!(!board.is_square_attacked(square, Color::Black))
+        }
+
+        for square in board.get_attacked_squares(Color::Black) {
+            println!("Square: {square}");
+            assert!(board.is_square_attacked(square, Color::White))
+        }
+
+        for square in !board.get_attacked_squares(Color::Black) {
+            println!("Square: {square}");
+            assert!(!board.is_square_attacked(square, Color::White))
+        }
+    }
+
+    #[test]
+    fn test_is_square_attacked_position_2() {
+        let board =
+            Board::from_fen("r1bqkbnr/1p2pppp/p2p4/3Pn3/4PB2/8/PP3PPP/RN1QKBNR w KQkq - 1 7");
+
+        for square in board.get_attacked_squares(Color::White) {
+            println!("Square: {square}");
+            assert!(board.is_square_attacked(square, Color::Black))
+        }
+
+        for square in !board.get_attacked_squares(Color::White) {
+            println!("Square: {square}");
+            assert!(!board.is_square_attacked(square, Color::Black))
+        }
+
+        for square in board.get_attacked_squares(Color::Black) {
+            println!("Square: {square}");
+            assert!(board.is_square_attacked(square, Color::White))
+        }
+
+        for square in !board.get_attacked_squares(Color::Black) {
+            println!("Square: {square}");
+            assert!(!board.is_square_attacked(square, Color::White))
+        }
     }
 
     #[test]
