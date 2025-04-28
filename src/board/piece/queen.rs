@@ -1,5 +1,5 @@
 use super::super::bitboard::Bitboard;
-use super::{Bishop, Color, Kind, Piece, Ply, Rook, Square};
+use super::{Bishop, Color, Kind, Piece, PieceMoveset, Ply, Rook, Square};
 use crate::board::Board;
 
 #[derive(Clone, PartialEq, Debug)]
@@ -11,7 +11,7 @@ impl Piece for Queen {
     const WHITE_SYMBOL: &'static str = "♛";
     const BLACK_SYMBOL: &'static str = "♕";
 
-    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, board: &Board, color: Color) -> PieceMoveset {
         let same_pieces = match color {
             Color::White => board.bitboards.white_pieces,
             Color::Black => board.bitboards.black_pieces,

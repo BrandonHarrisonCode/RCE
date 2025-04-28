@@ -1,5 +1,5 @@
 use super::super::bitboard::{Bitboard, File, Rank};
-use super::{Color, Kind, Magic, Piece, Ply, Square};
+use super::{Color, Kind, Magic, Piece, PieceMoveset, Ply, Square};
 use crate::board::square::rays::RAYS;
 use crate::board::square::Direction;
 use crate::board::Board;
@@ -18,7 +18,7 @@ impl Piece for Rook {
     const WHITE_SYMBOL: &'static str = "♜";
     const BLACK_SYMBOL: &'static str = "♖";
 
-    fn get_moveset(square: Square, board: &Board, color: Color) -> Vec<Ply> {
+    fn get_moveset(square: Square, board: &Board, color: Color) -> PieceMoveset {
         let same_pieces = match color {
             Color::White => board.bitboards.white_pieces,
             Color::Black => board.bitboards.black_pieces,

@@ -56,7 +56,7 @@ pub mod tests {
     /// let rhs = vec![5, 4, 3, 2, 1];
     /// check_unique_equality(lhs, rhs);
     /// ```
-    pub fn check_unique_equality<T: Clone + Ord + std::fmt::Debug>(lhs: &Vec<T>, rhs: &Vec<T>) {
+    pub fn check_unique_equality<T: Clone + Ord + std::fmt::Debug>(lhs: &[T], rhs: &[T]) {
         let mut lhs = lhs.to_vec();
         let mut rhs = rhs.to_vec();
         sort_and_dedup(&mut lhs);
