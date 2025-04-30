@@ -124,6 +124,9 @@ impl UCICommand {
 
             #[allow(clippy::match_same_arms)]
             match token {
+                "perft" => {
+                    limits.perft = true;
+                }
                 "searchmoves" => {}
                 "ponder" => {}
                 "wtime" => {
