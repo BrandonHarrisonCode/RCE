@@ -3,6 +3,7 @@ use parking_lot::RwLock;
 use crate::board::{transposition_table::TranspositionTable, Board};
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
 use crate::search::{Depth, Search};
+use crate::uci::Config;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -83,7 +84,12 @@ pub fn bench() {
     let transposition_table = Arc::new(RwLock::new(TranspositionTable::with_size(8)));
 
     for fen in FENS {
-        let mut search = Search::new(&Board::from_fen(fen), None, transposition_table.clone());
+        let mut search = Search::new(
+            &Board::from_fen(fen),
+            None,
+            transposition_table.clone(),
+            Config::default(),
+        );
         let start = Instant::now();
         search.search(&SimpleEvaluator, Some(MAXDEPTH));
         total_ms += start.elapsed().as_millis();
