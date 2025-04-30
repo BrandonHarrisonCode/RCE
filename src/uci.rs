@@ -1,10 +1,12 @@
 mod uci_command;
 
 use build_time::build_time_utc;
+use parking_lot::RwLock;
 use std::io::BufRead;
 use std::sync::{atomic::AtomicBool, Arc};
 use std::thread::{self, JoinHandle};
 
+use crate::board::transposition_table::TranspositionTable;
 use crate::board::{Board, BoardBuilder};
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
 use crate::logger::Logger;
@@ -38,6 +40,8 @@ impl Uci {
     }
 
     fn uci_loop(&mut self, input: &mut impl BufRead) {
+        let transposition_table = Arc::new(RwLock::new(TranspositionTable::default()));
+
         loop {
             let mut line = String::new();
             input.read_line(&mut line).unwrap();
@@ -56,13 +60,18 @@ impl Uci {
                 break;
             }
 
-            self.execute_command(command).unwrap_or_else(|err| {
-                self.elog(format!("Failed to execute command: {err}"));
-            });
+            self.execute_command(command, &transposition_table)
+                .unwrap_or_else(|err| {
+                    self.elog(format!("Failed to execute command: {err}"));
+                });
         }
     }
 
-    fn execute_command(&mut self, command: UCICommand) -> Result<(), String> {
+    fn execute_command(
+        &mut self,
+        command: UCICommand,
+        transposition_table: &Arc<RwLock<TranspositionTable>>,
+    ) -> Result<(), String> {
         #[allow(clippy::match_same_arms)]
         match command {
             UCICommand::Uci => self.print_engine_info(),
@@ -77,7 +86,7 @@ impl Uci {
                         return Err("Search is already running".to_string());
                     }
                 }
-                self.go(limits);
+                self.go(limits, transposition_table);
             }
             UCICommand::Stop => {
                 if let Some(is_running) = &self.search_running {
@@ -134,11 +143,11 @@ impl Uci {
     }
 
     /// Runs a search using the specified limits.
-    fn go(&mut self, limits: SearchLimits) {
+    fn go(&mut self, limits: SearchLimits, transposition_table: &Arc<RwLock<TranspositionTable>>) {
         let max_depth: Option<Depth> = limits
             .depth
             .map(|d| Depth::try_from(d).unwrap_or(Depth::MAX));
-        let mut search = Search::new(&self.board, Some(limits));
+        let mut search = Search::new(&self.board, Some(limits), transposition_table.clone());
         self.search_running = Some(search.running.clone());
         self.join_handle = Some(thread::spawn(move || {
             search.search(&SimpleEvaluator, max_depth);
@@ -179,7 +188,8 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::Uci);
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -192,7 +202,8 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::IsReady);
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -205,7 +216,8 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::UCINewGame);
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -218,7 +230,8 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::Stop);
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -232,7 +245,8 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::Quit);
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -251,7 +265,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -275,7 +290,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -296,7 +312,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -324,7 +341,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -342,7 +360,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -370,7 +389,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -388,7 +408,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
     }
 
@@ -416,7 +437,8 @@ mod tests {
             }
         );
 
-        let result = uci.execute_command(command);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let result = uci.execute_command(command, &tt);
         assert!(result.is_ok());
 
         assert!(uci
