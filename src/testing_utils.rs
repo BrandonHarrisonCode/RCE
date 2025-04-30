@@ -1,3 +1,67 @@
+use crate::board::Board;
+use std::time::Instant;
+
+#[allow(clippy::cast_precision_loss)]
+pub fn perft(board: &mut Board, depth: u32) -> u64 {
+    let start = Instant::now();
+
+    let moves = board.get_all_moves();
+
+    let mut nodes = 0;
+    let mut output: Vec<String> = Vec::new();
+    for mv in moves {
+        board.make_move(mv);
+
+        if !board.is_in_check(board.current_turn.opposite()) {
+            let new_nodes = perft_helper(board, depth - 1);
+            output.push(format!("{mv}: {new_nodes}"));
+            nodes += new_nodes;
+        }
+        board.unmake_move();
+    }
+
+    let time_elapsed = start.elapsed().as_secs_f64();
+    let time_elapsed_in_ms = start.elapsed().as_millis();
+
+    assert!(time_elapsed > 0.0, "Zero time elapsed during perft!");
+
+    output.sort();
+    for line in output {
+        println!("{line}");
+    }
+
+    println!("==========================");
+    println!("Total time (ms) : {time_elapsed_in_ms}");
+    println!("Nodes searched  : {nodes}");
+    println!("Nodes / second  : {}", nodes as f64 / time_elapsed);
+
+    nodes
+}
+
+/// Runs perft and summarize the first level of moves.
+fn perft_helper(board: &mut Board, depth: u32) -> u64 {
+    if depth == 0 {
+        return 1;
+    }
+
+    let moves = board.get_all_moves();
+
+    let mut nodes = 0;
+    for mv in moves {
+        board.make_move(mv);
+
+        if !board.is_in_check(board.current_turn.opposite()) {
+            let new_nodes = perft_helper(board, depth - 1);
+            nodes += new_nodes;
+        }
+        board.unmake_move();
+    }
+
+    nodes
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 #[cfg(test)]
 pub mod tests {
     extern crate test;
@@ -7,8 +71,9 @@ pub mod tests {
     use crate::board::square::Square;
     use crate::board::{Board, Ply};
     use pretty_assertions::assert_eq;
-    use std::time::Instant;
     use test::Bencher;
+
+    use super::perft;
 
     /// Sorts and deduplicates a vector of elements.
     ///
@@ -70,55 +135,6 @@ pub mod tests {
     ///
     /// * `board` - The board to analyze.
     /// * `depth` - The depth to search.
-    pub fn perft(board: &mut Board, depth: u32) -> u64 {
-        let start = Instant::now();
-        let total_nodes = perft_helper(board, depth, depth);
-        let time_elapsed = start.elapsed().as_secs_f64();
-        let time_elapsed_in_ms = start.elapsed().as_millis();
-
-        assert!(time_elapsed > 0.0, "Zero time elapsed during perft!");
-
-        println!("==========================");
-        println!("Total time (ms) : {time_elapsed_in_ms}");
-        println!("Nodes searched  : {total_nodes}");
-        println!("Nodes / second  : {}", total_nodes as f64 / time_elapsed);
-
-        total_nodes
-    }
-
-    /// Runs perft and summarize the first level of moves.
-    fn perft_helper(board: &mut Board, depth: u32, max_depth: u32) -> u64 {
-        if depth == 0 {
-            return 1;
-        }
-
-        let moves = board.get_legal_moves();
-        if depth == 1 {
-            return moves.len() as u64;
-        }
-
-        let mut nodes = 0;
-        let mut output: Vec<String> = Vec::new();
-        for mv in moves {
-            board.make_move(mv);
-            let new_nodes = perft_helper(board, depth - 1, max_depth);
-            if depth == max_depth {
-                output.push(format!("{mv}: {new_nodes}"));
-            }
-            nodes += new_nodes;
-            board.unmake_move();
-        }
-
-        if depth == max_depth {
-            output.sort();
-            for line in output {
-                println!("{line}");
-            }
-        }
-
-        nodes
-    }
-
     #[test]
     fn test_sort_and_dedup_1() {
         let mut list = vec![3, 1, 2, 3, 4, 2];

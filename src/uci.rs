@@ -13,6 +13,7 @@ use crate::board::{Board, BoardBuilder};
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
 use crate::logger::Logger;
 use crate::search::{limits::SearchLimits, Depth, Search};
+use crate::testing_utils::perft;
 use uci_command::{PositionKind, UCICommand};
 
 const TITLE: &str = "Rust Chess Engine";
@@ -187,6 +188,18 @@ impl Uci {
         let max_depth: Option<Depth> = limits
             .depth
             .map(|d| Depth::try_from(d).unwrap_or(Depth::MAX));
+
+        if limits.perft {
+            let mut perft_board = self.board.clone();
+            self.join_handle = Some(thread::spawn(move || {
+                perft(
+                    &mut perft_board,
+                    max_depth.expect("Depth should be set for perft").into(),
+                );
+            }));
+            return;
+        }
+
         let mut search = Search::new(&self.board, Some(limits), transposition_table.clone());
         self.search_running = Some(search.running.clone());
         self.join_handle = Some(thread::spawn(move || {
@@ -441,6 +454,7 @@ mod tests {
             command,
             UCICommand::Go {
                 limits: SearchLimits {
+                    perft: false,
                     white_time: Some(1),
                     black_time: Some(2),
                     white_increment: Some(3),
