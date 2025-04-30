@@ -208,15 +208,18 @@ impl Search {
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
-            if self.board.is_legal_move(mv).is_err() {
-                continue; // Skip illegal moves
+            self.board.make_move(mv);
+
+            if self.board.is_in_check(self.board.current_turn.opposite()) {
+                self.board.unmake_move();
+                continue;
             }
+
             if self.info.best_move.is_none() {
                 self.info.best_move = Some(mv);
             }
-            total_legal_moves += 1;
 
-            self.board.make_move(mv);
+            total_legal_moves += 1;
             self.info.nodes += 1;
 
             let mut score;
@@ -376,12 +379,14 @@ impl Search {
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
-            if self.board.is_legal_move(mv).is_err() {
-                continue; // Skip illegal moves
-            }
-            total_legal_moves += 1;
-
             self.board.make_move(mv);
+
+            if self.board.is_in_check(self.board.current_turn.opposite()) {
+                self.board.unmake_move();
+                continue;
+            }
+
+            total_legal_moves += 1;
             self.info.nodes += 1;
 
             let mut score;
@@ -505,11 +510,13 @@ impl Search {
 
         let killers = self.info.killers[usize::from(self.info.depth)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
-            if self.board.is_legal_move(mv).is_err() {
-                continue; // Skip illegal moves
+            self.board.make_move(mv);
+
+            if self.board.is_in_check(self.board.current_turn.opposite()) {
+                self.board.unmake_move();
+                continue;
             }
 
-            self.board.make_move(mv);
             self.info.nodes += 1;
 
             self.info.depth += 1;
