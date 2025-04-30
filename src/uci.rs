@@ -33,9 +33,10 @@ struct Uci {
     transposition_table: Arc<RwLock<TranspositionTable>>,
 }
 
-struct Config {
+#[derive(Debug, Clone)]
+pub struct Config {
     pub hash_size: u64,
-    pub move_overhead: u32,
+    pub move_overhead: u128,
 }
 
 impl Default for Config {
@@ -200,7 +201,12 @@ impl Uci {
             return;
         }
 
-        let mut search = Search::new(&self.board, Some(limits), transposition_table.clone());
+        let mut search = Search::new(
+            &self.board,
+            Some(limits),
+            transposition_table.clone(),
+            self.config.clone(),
+        );
         self.search_running = Some(search.running.clone());
         self.join_handle = Some(thread::spawn(move || {
             search.search(&SimpleEvaluator, max_depth);
@@ -232,7 +238,7 @@ impl Uci {
                 // TODO: Pass this to the search thread
                 if let Some(v) = value {
                     if let Ok(move_overhead) = v.parse::<u32>() {
-                        self.config.move_overhead = move_overhead;
+                        self.config.move_overhead = u128::from(move_overhead);
                     } else {
                         return Err(format!("Invalid value for Move Overhead: {v}"));
                     }
