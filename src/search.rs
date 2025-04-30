@@ -5,7 +5,7 @@ mod move_orderer;
 use super::evaluate::Evaluator;
 use crate::board::{
     piece::Color,
-    transposition_table::{Bounds, TTEntry, TRANSPOSITION_TABLE},
+    transposition_table::{Bounds, TTEntry, TranspositionTable},
     Board, MoveList, Ply,
 };
 
@@ -13,6 +13,7 @@ use crate::logger::Logger;
 use info::Info;
 use limits::SearchLimits;
 use move_orderer::MoveOrderer;
+use parking_lot::RwLock;
 
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -59,6 +60,7 @@ pub struct Search {
     board: Board,
     original_board: Board,
     limits: SearchLimits,
+    transposition_table: Arc<RwLock<TranspositionTable>>,
 
     info: Info,
 }
@@ -83,12 +85,17 @@ impl Search {
     /// let board = BoardBuilder::construct_starting_board().build();
     /// let search = Search::new(&board, None);
     /// ```
-    pub fn new(board: &Board, limits: Option<SearchLimits>) -> Self {
+    pub fn new(
+        board: &Board,
+        limits: Option<SearchLimits>,
+        transposition_table: Arc<RwLock<TranspositionTable>>,
+    ) -> Self {
         Self {
             board: board.clone(),
             original_board: board.clone(),
             limits: limits.unwrap_or_default(),
             running: Arc::new(AtomicBool::new(true)),
+            transposition_table,
 
             info: Info::new(),
         }
@@ -200,7 +207,7 @@ impl Search {
         let mut best_ply = moves[0];
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
-        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
             if self.board.is_legal_move(mv).is_err() {
                 continue; // Skip illegal moves
             }
@@ -272,18 +279,10 @@ impl Search {
 
         // Don't save incomplete searches
         if self.is_running() && !self.limits_exceeded(start) {
-            TRANSPOSITION_TABLE
-                .write()
-                .expect("Transposition table is poisoned! Unable to write new entry.")
-                .insert(
-                    self.board.zkey,
-                    TTEntry {
-                        score: alpha,
-                        depth,
-                        bound: Bounds::Exact,
-                        best_ply,
-                    },
-                );
+            self.transposition_table.write().insert(
+                self.board.zkey,
+                TTEntry::new(alpha, depth, Bounds::Exact, best_ply),
+            );
 
             self.info.best_score = Some(alpha);
             self.info.best_move = Some(best_ply);
@@ -340,16 +339,13 @@ impl Search {
         }
 
         // Check if we have more information in the TTable than we have already reached in this search
-        if let Some(entry) = TRANSPOSITION_TABLE
-            .read()
-            .expect("Transposition table is poisoned! Unable to read entry.")
-            .get(&self.board.zkey)
-        {
+        if let Some(entry) = self.transposition_table.read().get(self.board.zkey) {
             if entry.depth >= depth {
                 match entry.bound {
                     Bounds::Exact => return entry.score,
                     Bounds::Lower => alpha = alpha.max(entry.score),
                     Bounds::Upper => beta = beta.min(entry.score),
+                    Bounds::Invalid => panic!("Transposition Table entry should not be invalid!"),
                 }
 
                 if alpha >= beta {
@@ -379,7 +375,7 @@ impl Search {
         let mut best_ply = moves[0];
         let mut pvs = false;
         let killers = self.info.killers[usize::from(self.info.depth)];
-        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
             if self.board.is_legal_move(mv).is_err() {
                 continue; // Skip illegal moves
             }
@@ -430,18 +426,10 @@ impl Search {
 
             // Move is too good, opponent will not allow the game to reach this position
             if score >= beta {
-                TRANSPOSITION_TABLE
-                    .write()
-                    .expect("Transposition table is poisoned! Unable to write new entry.")
-                    .insert(
-                        self.board.zkey,
-                        TTEntry {
-                            score,
-                            depth,
-                            bound: Bounds::Lower,
-                            best_ply: mv,
-                        },
-                    );
+                self.transposition_table.write().insert(
+                    self.board.zkey,
+                    TTEntry::new(score, depth, Bounds::Lower, mv),
+                );
 
                 self.store_killers(mv);
 
@@ -463,22 +451,19 @@ impl Search {
             return 0; // Stalemate
         }
 
-        TRANSPOSITION_TABLE
-            .write()
-            .expect("Transposition table is poisoned! Unable to write new entry.")
-            .insert(
-                self.board.zkey,
-                TTEntry {
-                    score: alpha,
-                    depth,
-                    bound: if alpha <= alpha_start {
-                        Bounds::Upper
-                    } else {
-                        Bounds::Exact
-                    },
-                    best_ply,
+        self.transposition_table.write().insert(
+            self.board.zkey,
+            TTEntry {
+                score: alpha,
+                depth,
+                bound: if alpha <= alpha_start {
+                    Bounds::Upper
+                } else {
+                    Bounds::Exact
                 },
-            );
+                best_ply,
+            },
+        );
 
         alpha
     }
@@ -519,7 +504,7 @@ impl Search {
         let moves: MoveList = self.board.get_filtered_moves(|ply| ply.is_capture());
 
         let killers = self.info.killers[usize::from(self.info.depth)];
-        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers) {
+        for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
             if self.board.is_legal_move(mv).is_err() {
                 continue; // Skip illegal moves
             }
@@ -647,8 +632,14 @@ impl Search {
         let pv_notation: Vec<String> = pv.iter().map(std::string::ToString::to_string).collect();
         let pv_string = pv_notation.join(" ");
 
+        let capacity_used = self.transposition_table.read().capacity_used();
+        let hashfull_str = match capacity_used {
+            0 => String::new(),
+            capacity_used => format!(" hashfull {capacity_used}"),
+        };
+
         self.log(
-            format!("info {depth_str} {node_str}{time_str}{nps_str} {score_str} pv {pv_string}")
+            format!("info {depth_str} {node_str}{time_str}{nps_str}{hashfull_str} {score_str} pv {pv_string}")
                 .as_str(),
         );
     }
@@ -693,13 +684,11 @@ impl Search {
     /// ```
     fn get_pv(&mut self, length: Depth) -> Vec<Ply> {
         let mut plys = Vec::new();
-        let tt = TRANSPOSITION_TABLE
-            .read()
-            .expect("Transposition table is poisoned! Unable to read entry.");
+        let tt = self.transposition_table.read();
         let original_zkey = self.original_board.zkey;
 
         for _ in 0..length {
-            if let Some(entry) = tt.get(&self.original_board.zkey) {
+            if let Some(entry) = tt.get(self.original_board.zkey) {
                 let best_ply = entry.best_ply;
                 if self.original_board.is_legal_move(best_ply).is_err() {
                     break;
@@ -804,7 +793,8 @@ mod tests {
     #[test]
     fn test_log_uci() {
         let board = BoardBuilder::construct_starting_board().build();
-        let search = Search::new(&board, None);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let search = Search::new(&board, None, tt);
         search.log_uci_info(3, Some(20000), &[Ply::default()]);
     }
 
@@ -812,7 +802,8 @@ mod tests {
     fn test_check_limits() {
         let board = BoardBuilder::construct_starting_board().build();
         let start = Instant::now();
-        let mut search = Search::new(&board, None);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let mut search = Search::new(&board, None, tt);
         assert!(!search.limits_exceeded(start));
         search.limits.nodes = Some(100);
         assert!(!search.limits_exceeded(start));
@@ -826,7 +817,8 @@ mod tests {
     #[test]
     fn test_search_no_legal_moves() {
         let board = Board::from_fen("4r2k/p2q1RQb/1p5p/2ppP3/3P4/2P5/P1P1B1PP/5RK1 b - - 0 22");
-        let mut search = Search::new(&board, None);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let mut search = Search::new(&board, None, tt);
         let best_move = search.alpha_beta_start(&SimpleEvaluator, 5, Instant::now());
         assert_eq!(best_move, Ply::default());
     }
@@ -835,7 +827,8 @@ mod tests {
     #[test]
     fn test_mate_in_2() {
         let mut board = Board::from_fen("8/1R6/2N2P2/2kP4/2P4P/3P4/8/6K1 w - - 1 94");
-        let mut search = Search::new(&board, None);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let mut search = Search::new(&board, None, tt.clone());
         search.search(&SimpleEvaluator, Some(6));
         let search_move = search
             .info
@@ -861,7 +854,7 @@ mod tests {
             .find_move("f7f8b")
             .expect("Move not found in legal moves!");
 
-        search = Search::new(&board, None);
+        search = Search::new(&board, None, tt);
         search.search(&SimpleEvaluator, Some(Depth::MAX));
         let search_move = search
             .info
@@ -882,7 +875,8 @@ mod tests {
             white_increment: Some(1000),
             ..Default::default()
         };
-        let mut search = Search::new(&board, Some(limits));
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let mut search = Search::new(&board, Some(limits), tt);
         let start = Instant::now();
         search.search(&SimpleEvaluator, None);
         assert!(start.elapsed().as_millis() <= wtime)
@@ -891,7 +885,8 @@ mod tests {
     #[test]
     fn test_alpha_beta() {
         let board = BoardBuilder::construct_starting_board().build();
-        let mut search = Search::new(&board, None);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let mut search = Search::new(&board, None, tt);
         let score = search.alpha_beta(&SimpleEvaluator, Score::MIN, Score::MAX, 4, Instant::now());
         assert_eq!(score, 0)
     }
@@ -901,55 +896,64 @@ mod tests {
     fn test_search_deep() {
         let board =
             Board::from_fen("2kr3r/ppp1qpp1/2n1b1n1/4p2p/4N3/1BNPP2P/PPP3PK/R2Q1R2 w - - 1 15");
-        let mut search = Search::new(&board, None);
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
+        let mut search = Search::new(&board, None, tt);
         search.iter_deep(&SimpleEvaluator, Some(10));
     }
 
     #[bench]
     fn bench_search_depth_3(bencher: &mut Bencher) {
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
         bencher.iter(|| {
-            Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(&SimpleEvaluator, Some(3));
-            TRANSPOSITION_TABLE
-                .write()
-                .expect("Transposition table is poisoned! Unable to write new entry.")
-                .clear();
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                None,
+                tt.clone(),
+            )
+            .search(&SimpleEvaluator, Some(3));
+            tt.write().clear();
         });
     }
 
     #[bench]
     fn bench_search_depth_4(bencher: &mut Bencher) {
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
         bencher.iter(|| {
-            Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(&SimpleEvaluator, Some(4));
-            TRANSPOSITION_TABLE
-                .write()
-                .expect("Transposition table is poisoned! Unable to write new entry.")
-                .clear();
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                None,
+                tt.clone(),
+            )
+            .search(&SimpleEvaluator, Some(4));
+            tt.write().clear();
         });
     }
 
     #[bench]
     fn bench_search_depth_5(bencher: &mut Bencher) {
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
         bencher.iter(|| {
-            Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(&SimpleEvaluator, Some(5));
-            TRANSPOSITION_TABLE
-                .write()
-                .expect("Transposition table is poisoned! Unable to write new entry.")
-                .clear();
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                None,
+                tt.clone(),
+            )
+            .search(&SimpleEvaluator, Some(5));
+            tt.write().clear();
         });
     }
 
     #[bench]
     fn bench_search_depth_6(bencher: &mut Bencher) {
+        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
         bencher.iter(|| {
-            Search::new(&BoardBuilder::construct_starting_board().build(), None)
-                .search(&SimpleEvaluator, Some(6));
-            TRANSPOSITION_TABLE
-                .write()
-                .expect("Transposition table is poisoned! Unable to write new entry.")
-                .clear();
+            Search::new(
+                &BoardBuilder::construct_starting_board().build(),
+                None,
+                tt.clone(),
+            )
+            .search(&SimpleEvaluator, Some(6));
+            tt.write().clear();
         });
     }
 }

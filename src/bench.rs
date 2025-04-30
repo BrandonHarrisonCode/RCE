@@ -1,7 +1,9 @@
-use crate::board::transposition_table::TRANSPOSITION_TABLE;
-use crate::board::Board;
+use parking_lot::RwLock;
+
+use crate::board::{transposition_table::TranspositionTable, Board};
 use crate::evaluate::simple_evaluator::SimpleEvaluator;
 use crate::search::{Depth, Search};
+use std::sync::Arc;
 use std::time::Instant;
 
 const MAXDEPTH: Depth = 6;
@@ -78,16 +80,15 @@ pub fn bench() {
     let mut total_nodes = 0;
     let mut total_ms = 0;
 
+    let transposition_table = Arc::new(RwLock::new(TranspositionTable::with_size(8)));
+
     for fen in FENS {
-        let mut search = Search::new(&Board::from_fen(fen), None);
+        let mut search = Search::new(&Board::from_fen(fen), None, transposition_table.clone());
         let start = Instant::now();
         search.search(&SimpleEvaluator, Some(MAXDEPTH));
         total_ms += start.elapsed().as_millis();
         total_nodes += search.get_nodes();
-        TRANSPOSITION_TABLE
-            .write()
-            .expect("Transposition table is poisoned! Unable to write new entry.")
-            .clear();
+        transposition_table.write().clear();
     }
 
     println!("Bench: {total_ms} ms",);
