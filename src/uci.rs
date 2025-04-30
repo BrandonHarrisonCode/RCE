@@ -1,10 +1,12 @@
 mod uci_command;
+mod uci_option;
 
 use build_time::build_time_utc;
 use parking_lot::RwLock;
 use std::io::BufRead;
 use std::sync::{atomic::AtomicBool, Arc};
 use std::thread::{self, JoinHandle};
+use uci_option::{OptionType, UCIOption};
 
 use crate::board::transposition_table::TranspositionTable;
 use crate::board::{Board, BoardBuilder};
@@ -26,6 +28,22 @@ struct Uci {
     board: Board,
     search_running: Option<Arc<AtomicBool>>,
     join_handle: Option<JoinHandle<()>>,
+    config: Config,
+    transposition_table: Arc<RwLock<TranspositionTable>>,
+}
+
+struct Config {
+    pub hash_size: u64,
+    pub move_overhead: u32,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            hash_size: crate::board::transposition_table::DEFAULT_SIZE_IN_MB,
+            move_overhead: 10,
+        }
+    }
 }
 
 impl Logger for Uci {}
@@ -36,12 +54,12 @@ impl Uci {
             board: BoardBuilder::construct_starting_board().build(),
             search_running: None,
             join_handle: None,
+            config: Config::default(),
+            transposition_table: Arc::new(RwLock::new(TranspositionTable::default())),
         }
     }
 
     fn uci_loop(&mut self, input: &mut impl BufRead) {
-        let transposition_table = Arc::new(RwLock::new(TranspositionTable::default()));
-
         loop {
             let mut line = String::new();
             input.read_line(&mut line).unwrap();
@@ -60,18 +78,13 @@ impl Uci {
                 break;
             }
 
-            self.execute_command(command, &transposition_table)
-                .unwrap_or_else(|err| {
-                    self.elog(format!("Failed to execute command: {err}"));
-                });
+            self.execute_command(command).unwrap_or_else(|err| {
+                self.elog(format!("Failed to execute command: {err}"));
+            });
         }
     }
 
-    fn execute_command(
-        &mut self,
-        command: UCICommand,
-        transposition_table: &Arc<RwLock<TranspositionTable>>,
-    ) -> Result<(), String> {
+    fn execute_command(&mut self, command: UCICommand) -> Result<(), String> {
         #[allow(clippy::match_same_arms)]
         match command {
             UCICommand::Uci => self.print_engine_info(),
@@ -86,7 +99,7 @@ impl Uci {
                         return Err("Search is already running".to_string());
                     }
                 }
-                self.go(limits, transposition_table);
+                self.go(limits, &self.transposition_table.clone());
             }
             UCICommand::Stop => {
                 if let Some(is_running) = &self.search_running {
@@ -108,12 +121,39 @@ impl Uci {
 
     /// Prints information about the engine like the name and options supported.
     fn print_engine_info(&self) {
+        let supported_options = [
+            UCIOption::new(
+                "Threads",
+                OptionType::Spin,
+                Some("1".to_string()),
+                Some("1".to_string()),
+                Some("1".to_string()),
+            ),
+            UCIOption::new(
+                "Hash",
+                OptionType::Spin,
+                Some("1".to_string()),
+                Some("32000".to_string()),
+                Some(format!("{}", self.config.hash_size)),
+            ),
+            UCIOption::new(
+                "Move Overhead",
+                OptionType::Spin,
+                Some("0".to_string()),
+                Some("5000".to_string()),
+                Some(format!("{}", self.config.move_overhead)),
+            ),
+            UCIOption::new("Clear Hash", OptionType::Button, None, None, None),
+        ];
+
         self.log(format!("id name {TITLE} {VERSION}"));
         self.log(format!("id author {AUTHOR}"));
+
         // Print options here
-        self.log("option name Threads type spin default 1 min 1 max 1");
-        self.log("option name Hash type spin default 1 min 1 max 1");
-        self.log("option name Move Overhead type spin default 10 min 0 max 5000");
+        for option in supported_options {
+            self.log(format!("{option}"));
+        }
+
         self.log("uciok");
     }
 
@@ -154,11 +194,46 @@ impl Uci {
         }));
     }
 
-    fn setoption(&self, name: &String, value: Option<&String>) -> Result<(), String> {
-        // Currently not implemented
-        self.log(name.to_string());
-        self.log(format!("{value:?}"));
-        Err("Setting options is not implemented yet".to_string())
+    fn setoption(&mut self, name: &String, value: Option<&String>) -> Result<(), String> {
+        match name.as_str() {
+            "threads" => {
+                if let Some(v) = value {
+                    if v.parse::<u32>().is_err() {
+                        return Err(format!("Invalid value for Threads: {v}"));
+                    }
+                }
+            }
+            "hash" => {
+                if let Some(v) = value {
+                    if let Ok(hash_size) = v.parse::<u64>() {
+                        self.config.hash_size = hash_size;
+                        self.transposition_table.write().resize(hash_size);
+                    } else {
+                        return Err(format!("Invalid value for Hash: {v}"));
+                    }
+                } else {
+                    return Err("Hash value is required".to_string());
+                }
+            }
+            "move overhead" => {
+                // TODO: Pass this to the search thread
+                if let Some(v) = value {
+                    if let Ok(move_overhead) = v.parse::<u32>() {
+                        self.config.move_overhead = move_overhead;
+                    } else {
+                        return Err(format!("Invalid value for Move Overhead: {v}"));
+                    }
+                } else {
+                    return Err("Move Overhead value is required".to_string());
+                }
+            }
+            "clear hash" => {
+                self.transposition_table.write().clear();
+            }
+            _ => return Err(format!("Unrecognized option: {name}")),
+        }
+
+        Ok(())
     }
 }
 
@@ -188,8 +263,7 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::Uci);
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -202,8 +276,7 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::IsReady);
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -216,8 +289,7 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::UCINewGame);
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -230,8 +302,7 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::Stop);
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -245,8 +316,7 @@ mod tests {
         let command = UCICommand::new(&fields).unwrap();
         assert_eq!(command, UCICommand::Quit);
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -265,8 +335,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -290,8 +359,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -312,8 +380,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -341,8 +408,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -360,8 +426,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -389,8 +454,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -408,8 +472,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
     }
 
@@ -437,8 +500,7 @@ mod tests {
             }
         );
 
-        let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let result = uci.execute_command(command, &tt);
+        let result = uci.execute_command(command);
         assert!(result.is_ok());
 
         assert!(uci

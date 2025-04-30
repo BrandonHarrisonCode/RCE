@@ -5,7 +5,7 @@ extern crate nohash_hasher;
 
 const BYTES_TO_MEGABYTES: u64 = 1024 * 1024;
 
-const DEFAULT_SIZE_IN_MB: u64 = 8;
+pub const DEFAULT_SIZE_IN_MB: u64 = 8;
 const BUCKET_SIZE: usize = 4;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -213,6 +213,26 @@ impl TranspositionTable {
             entry_count: 0,
             bucket_count,
         }
+    }
+
+    /// Resizes the transposition table to the specified size in megabytes.
+    /// This will clear the existing entries in the table.
+    ///
+    /// # Arguments
+    ///
+    /// * `megabytes` - The new size of the transposition table in megabytes.
+    ///
+    /// # Example
+    /// ```
+    /// let mut ttable = TranspositionTable::default();
+    /// ttable.resize(16);
+    /// ```
+    pub fn resize(&mut self, megabytes: u64) {
+        let bucket_count = Self::calculate_size(megabytes);
+
+        self.table = vec![Bucket::new(); bucket_count];
+        self.entry_count = 0;
+        self.bucket_count = bucket_count;
     }
 
     /// Calculates the size of the transposition table based on the specified size in megabytes.
