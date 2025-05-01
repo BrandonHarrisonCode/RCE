@@ -93,6 +93,12 @@ impl Hash for ZKey {
     }
 }
 
+impl From<ZKey> for u64 {
+    fn from(zkey: ZKey) -> Self {
+        zkey.0
+    }
+}
+
 impl std::fmt::Display for ZKey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)

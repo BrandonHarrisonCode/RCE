@@ -3,6 +3,7 @@ use super::{Depth, Millisecond, NodeCount};
 #[allow(clippy::module_name_repetitions)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SearchLimits {
+    pub perft: bool,
     pub depth: Option<Depth>,
     pub nodes: Option<NodeCount>,
     pub movetime: Option<Millisecond>,
@@ -23,6 +24,7 @@ impl Default for SearchLimits {
 impl SearchLimits {
     pub const fn new() -> Self {
         Self {
+            perft: false,
             depth: None,
             nodes: None,
             movetime: None,

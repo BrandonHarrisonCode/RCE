@@ -1,1 +1,7 @@
-disallowed-types = ["std::collections::HashMap", "std::collections::HashSet"]
+disallowed-types = [
+    "std::collections::HashMap",
+    "std::collections::HashSet",
+    "std::sync::RwLock",
+    "std::sync::LazyLock",
+    "std::sync::Mutex",
+]

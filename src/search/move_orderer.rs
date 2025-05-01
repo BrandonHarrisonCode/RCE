@@ -1,12 +1,14 @@
+use std::sync::Arc;
 use std::sync::OnceLock;
 
 use crate::board::piece::Color;
 use crate::board::piece::Kind;
-use crate::board::transposition_table::TRANSPOSITION_TABLE;
+use crate::board::transposition_table::TranspositionTable;
 use crate::board::zkey::ZKey;
 use crate::board::Ply;
 
 mod scored_ply;
+use parking_lot::RwLock;
 use scored_ply::ScoredPly;
 
 use super::info::MAX_KILLERS;
@@ -49,11 +51,15 @@ pub struct MoveOrderer {
     index: usize,
 }
 
-fn score_moves(zkey: ZKey, moves: &[Ply], killers: &[Option<Ply>; MAX_KILLERS]) -> Vec<ScoredPly> {
-    let best_ply = TRANSPOSITION_TABLE
+fn score_moves(
+    zkey: ZKey,
+    moves: &[Ply],
+    killers: &[Option<Ply>; MAX_KILLERS],
+    transposition_table: &Arc<RwLock<TranspositionTable>>,
+) -> Vec<ScoredPly> {
+    let best_ply = transposition_table
         .read()
-        .expect("Transposition table is poisoned! Unable to read entry.")
-        .get(&zkey)
+        .get(zkey)
         .map(|entry| entry.best_ply);
 
     moves
@@ -117,8 +123,13 @@ fn init_mvv_lva() -> [[MoveScore; VICTIMS_VALUE_ASCENDING.len()]; ATTACKERS_VALU
 }
 
 impl MoveOrderer {
-    pub fn new(moves: &[Ply], zkey: ZKey, killers: &[Option<Ply>; MAX_KILLERS]) -> Self {
-        let scored_moves = score_moves(zkey, moves, killers);
+    pub fn new(
+        moves: &[Ply],
+        zkey: ZKey,
+        killers: &[Option<Ply>; MAX_KILLERS],
+        transposition_table: &Arc<RwLock<TranspositionTable>>,
+    ) -> Self {
+        let scored_moves = score_moves(zkey, moves, killers, transposition_table);
 
         Self {
             scored_moves,
