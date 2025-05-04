@@ -365,7 +365,7 @@ mod tests {
     #[test]
     fn test_zkey_from_board_startpos() {
         let zkey = ZKey::from(&Board::default());
-        const START_POS_KEY: u64 = 8891004743231992090; // Current start position Zobrist key using the random seed
+        const START_POS_KEY: u64 = 11231819604289708919; // Current start position Zobrist key using the random seed
 
         assert_eq!(zkey.0, START_POS_KEY);
     }
@@ -398,7 +398,7 @@ mod tests {
         let original_zkey = ZKey::from(&board);
         let mut zkey = original_zkey.clone();
 
-        assert_eq!(zkey.0, 8891004743231992090); // Current start position Zobrist key using the random seed
+        assert_eq!(zkey.0, 11231819604289708919); // Current start position Zobrist key using the random seed
 
         let piece = Kind::Pawn(Color::White);
         let from_sq = Square::from("a2");
@@ -423,7 +423,7 @@ mod tests {
         let original_zkey = ZKey::from(&board);
         let mut zkey = original_zkey.clone();
 
-        assert_eq!(zkey.0, 8891004743231992090); // Current start position Zobrist key using the random seed
+        assert_eq!(zkey.0, 11231819604289708919); // Current start position Zobrist key using the random seed
 
         let piece = Kind::Pawn(Color::White);
         let from_sq = Square::from("a2");
@@ -452,7 +452,7 @@ mod tests {
         let original_zkey = ZKey::from(&board);
         let mut zkey = original_zkey.clone();
 
-        assert_eq!(zkey.0, 8891004743231992090); // Current start position Zobrist key using the random seed
+        assert_eq!(zkey.0, 11231819604289708919); // Current start position Zobrist key using the random seed
 
         let piece = Kind::Pawn(Color::White);
         let from_sq = Square::from("a2");
