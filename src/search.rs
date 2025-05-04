@@ -3,10 +3,13 @@ pub mod limits;
 mod move_orderer;
 
 use super::evaluate::Evaluator;
-use crate::board::{
-    piece::Color,
-    transposition_table::{Bounds, TTEntry, TranspositionTable},
-    Board, MoveList, Ply,
+use crate::{
+    board::{
+        piece::Color,
+        transposition_table::{Bounds, TTEntry, TranspositionTable},
+        Board, MoveList, Ply,
+    },
+    uci::Config,
 };
 
 use crate::logger::Logger;
@@ -61,6 +64,7 @@ pub struct Search {
     original_board: Board,
     limits: SearchLimits,
     transposition_table: Arc<RwLock<TranspositionTable>>,
+    config: Config,
 
     info: Info,
 }
@@ -89,6 +93,7 @@ impl Search {
         board: &Board,
         limits: Option<SearchLimits>,
         transposition_table: Arc<RwLock<TranspositionTable>>,
+        config: Config,
     ) -> Self {
         Self {
             board: board.clone(),
@@ -96,6 +101,7 @@ impl Search {
             limits: limits.unwrap_or_default(),
             running: Arc::new(AtomicBool::new(true)),
             transposition_table,
+            config,
 
             info: Info::new(),
         }
@@ -123,15 +129,37 @@ impl Search {
 
         self.limits.time_management_timer = match self.board.current_turn {
             Color::White => {
-                (self.limits.white_time.unwrap_or(0) / 4).min(
-                    self.limits.white_time.unwrap_or(0) / 20
+                ((self
+                    .limits
+                    .white_time
+                    .unwrap_or(0)
+                    .saturating_sub(self.config.move_overhead))
+                    / 4)
+                .min(
+                    (self
+                        .limits
+                        .white_time
+                        .unwrap_or(0)
+                        .saturating_sub(self.config.move_overhead))
+                        / 20
                         + self.limits.white_increment.unwrap_or(0) / 2,
                 )
             }
             .into(),
             Color::Black => {
-                (self.limits.black_time.unwrap_or(0) / 4).min(
-                    self.limits.black_time.unwrap_or(0) / 20
+                ((self
+                    .limits
+                    .black_time
+                    .unwrap_or(0)
+                    .saturating_sub(self.config.move_overhead))
+                    / 4)
+                .min(
+                    (self
+                        .limits
+                        .black_time
+                        .unwrap_or(0)
+                        .saturating_sub(self.config.move_overhead))
+                        / 20
                         + self.limits.black_increment.unwrap_or(0) / 2,
                 )
             }
@@ -571,9 +599,13 @@ impl Search {
         let time_elapsed_in_ms = duration.as_millis();
         if time_elapsed_in_ms >= self.limits.movetime.unwrap_or(Millisecond::MAX)
             || ([
-                self.limits.white_time,
+                self.limits
+                    .white_time
+                    .map(|t| t.saturating_sub(self.config.move_overhead)),
                 self.limits.white_increment,
-                self.limits.black_time,
+                self.limits
+                    .white_time
+                    .map(|t| t.saturating_sub(self.config.move_overhead)),
                 self.limits.black_increment,
             ]
             .iter()
@@ -801,7 +833,7 @@ mod tests {
     fn test_log_uci() {
         let board = BoardBuilder::construct_starting_board().build();
         let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let search = Search::new(&board, None, tt);
+        let search = Search::new(&board, None, tt, Config::default());
         search.log_uci_info(3, Some(20000), &[Ply::default()]);
     }
 
@@ -810,7 +842,7 @@ mod tests {
         let board = BoardBuilder::construct_starting_board().build();
         let start = Instant::now();
         let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let mut search = Search::new(&board, None, tt);
+        let mut search = Search::new(&board, None, tt, Config::default());
         assert!(!search.limits_exceeded(start));
         search.limits.nodes = Some(100);
         assert!(!search.limits_exceeded(start));
@@ -825,7 +857,7 @@ mod tests {
     fn test_search_no_legal_moves() {
         let board = Board::from_fen("4r2k/p2q1RQb/1p5p/2ppP3/3P4/2P5/P1P1B1PP/5RK1 b - - 0 22");
         let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let mut search = Search::new(&board, None, tt);
+        let mut search = Search::new(&board, None, tt, Config::default());
         let best_move = search.alpha_beta_start(&SimpleEvaluator, 5, Instant::now());
         assert_eq!(best_move, Ply::default());
     }
@@ -835,7 +867,7 @@ mod tests {
     fn test_mate_in_2() {
         let mut board = Board::from_fen("8/1R6/2N2P2/2kP4/2P4P/3P4/8/6K1 w - - 1 94");
         let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let mut search = Search::new(&board, None, tt.clone());
+        let mut search = Search::new(&board, None, tt.clone(), Config::default());
         search.search(&SimpleEvaluator, Some(6));
         let search_move = search
             .info
@@ -861,7 +893,7 @@ mod tests {
             .find_move("f7f8b")
             .expect("Move not found in legal moves!");
 
-        search = Search::new(&board, None, tt);
+        search = Search::new(&board, None, tt, Config::default());
         search.search(&SimpleEvaluator, Some(Depth::MAX));
         let search_move = search
             .info
@@ -883,7 +915,7 @@ mod tests {
             ..Default::default()
         };
         let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let mut search = Search::new(&board, Some(limits), tt);
+        let mut search = Search::new(&board, Some(limits), tt, Config::default());
         let start = Instant::now();
         search.search(&SimpleEvaluator, None);
         assert!(start.elapsed().as_millis() <= wtime)
@@ -893,7 +925,7 @@ mod tests {
     fn test_alpha_beta() {
         let board = BoardBuilder::construct_starting_board().build();
         let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let mut search = Search::new(&board, None, tt);
+        let mut search = Search::new(&board, None, tt, Config::default());
         let score = search.alpha_beta(&SimpleEvaluator, Score::MIN, Score::MAX, 4, Instant::now());
         assert_eq!(score, 0)
     }
@@ -904,7 +936,7 @@ mod tests {
         let board =
             Board::from_fen("2kr3r/ppp1qpp1/2n1b1n1/4p2p/4N3/1BNPP2P/PPP3PK/R2Q1R2 w - - 1 15");
         let tt = Arc::new(RwLock::new(TranspositionTable::default()));
-        let mut search = Search::new(&board, None, tt);
+        let mut search = Search::new(&board, None, tt, Config::default());
         search.iter_deep(&SimpleEvaluator, Some(10));
     }
 
@@ -916,6 +948,7 @@ mod tests {
                 &BoardBuilder::construct_starting_board().build(),
                 None,
                 tt.clone(),
+                Config::default(),
             )
             .search(&SimpleEvaluator, Some(3));
             tt.write().clear();
@@ -930,6 +963,7 @@ mod tests {
                 &BoardBuilder::construct_starting_board().build(),
                 None,
                 tt.clone(),
+                Config::default(),
             )
             .search(&SimpleEvaluator, Some(4));
             tt.write().clear();
@@ -944,6 +978,7 @@ mod tests {
                 &BoardBuilder::construct_starting_board().build(),
                 None,
                 tt.clone(),
+                Config::default(),
             )
             .search(&SimpleEvaluator, Some(5));
             tt.write().clear();
@@ -958,6 +993,7 @@ mod tests {
                 &BoardBuilder::construct_starting_board().build(),
                 None,
                 tt.clone(),
+                Config::default(),
             )
             .search(&SimpleEvaluator, Some(6));
             tt.write().clear();
