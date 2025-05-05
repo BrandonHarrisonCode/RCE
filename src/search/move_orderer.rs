@@ -136,7 +136,7 @@ impl MoveOrderer {
 impl Iterator for MoveOrderer {
     type Item = Ply;
 
-    /// Use selection sort instead of a faster sort because most entries will be beyond the cuttoff and will never be examined
+    /// Use selection sort instead of a faster sort because most entries will be beyond the cutoff and will never be examined
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.scored_moves.len() {
             return None;
