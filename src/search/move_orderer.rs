@@ -13,6 +13,8 @@ use scored_ply::ScoredPly;
 
 use super::info::MAX_KILLERS;
 
+const MAX_PIECE_USIZE: usize = 5; // 6-1 pieces in the game, usize::from(Kind::King(_))
+
 // Colors don't matter here, but we have to pick one
 const VICTIMS_VALUE_ASCENDING: [Kind; 5] = [
     Kind::Pawn(Color::White),
@@ -78,18 +80,11 @@ fn score_move(ply: Ply, best_ply: Option<Ply>, killers: &[Option<Ply>; MAX_KILLE
     }
     if ply.is_capture() {
         score += ScoreBonus::CAPTURE
-            + MVV_LVA_TABLE.get_or_init(init_mvv_lva)[ATTACKERS_VALUE_DESCENDING
-                .iter()
-                .position(|&attacker| attacker == ply.piece)
-                .unwrap_or(0)][VICTIMS_VALUE_ASCENDING
-                .iter()
-                .position(|&victim| {
-                    victim
-                        == ply
-                            .captured_piece
-                            .expect("Captured piece without setting a captured piece!")
-                })
-                .unwrap_or(0)];
+            + MVV_LVA_TABLE.get_or_init(init_mvv_lva)[MAX_PIECE_USIZE - usize::from(ply.piece)]
+                [usize::from(
+                    ply.captured_piece
+                        .expect("Captured piece should exist if move is a capture"),
+                )];
     }
     if ply.is_promotion() {
         score += ScoreBonus::PROMOTION;
@@ -141,7 +136,7 @@ impl MoveOrderer {
 impl Iterator for MoveOrderer {
     type Item = Ply;
 
-    /// Use selection sort instead of a faster sort because most entries will be beyond the cuttoff and will never be examined
+    /// Use selection sort instead of a faster sort because most entries will be beyond the cutoff and will never be examined
     fn next(&mut self) -> Option<Self::Item> {
         if self.index == self.scored_moves.len() {
             return None;

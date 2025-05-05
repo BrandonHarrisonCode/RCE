@@ -74,11 +74,11 @@ impl From<Kind> for usize {
     fn from(kind: Kind) -> Self {
         match kind {
             Kind::Pawn(_) => 0,
-            Kind::King(_) => 1,
-            Kind::Queen(_) => 2,
+            Kind::Knight(_) => 1,
+            Kind::Bishop(_) => 2,
             Kind::Rook(_) => 3,
-            Kind::Bishop(_) => 4,
-            Kind::Knight(_) => 5,
+            Kind::Queen(_) => 4,
+            Kind::King(_) => 5,
         }
     }
 }
