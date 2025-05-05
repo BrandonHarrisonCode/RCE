@@ -188,16 +188,19 @@ impl Search {
     fn iter_deep(&mut self, evaluator: &impl Evaluator, max_depth: Option<Depth>) {
         let start = Instant::now();
         for depth in 1..=max_depth.unwrap_or(Depth::MAX).min(MAX_PLY) {
+            self.info.depth = depth;
             self.alpha_beta_start(evaluator, depth, start);
 
             if !self.is_running() || self.limits_exceeded(start) {
                 break;
             }
 
-            let pv = self.get_pv(depth);
-            self.log_uci_info(depth, Some(start.elapsed().as_millis()), &pv);
+            let pv = self.get_pv(self.info.depth);
+            self.log_uci_info(self.info.depth, Some(start.elapsed().as_millis()), &pv);
         }
 
+        let pv = self.get_pv(self.info.depth);
+        self.log_uci_info(self.info.depth, Some(start.elapsed().as_millis()), &pv);
         self.log(format!("bestmove {}", self.info.best_move.unwrap()).as_str());
     }
 
@@ -234,7 +237,8 @@ impl Search {
         let beta = i16::MAX;
         let mut best_ply = moves[0];
         let mut pvs = false;
-        let killers = self.info.killers[usize::from(self.info.depth)];
+
+        let killers = self.info.killers[usize::from(self.info.ply_from_root)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
             self.board.make_move(mv);
 
@@ -251,7 +255,7 @@ impl Search {
             self.info.nodes += 1;
 
             let mut score;
-            self.info.depth += 1;
+            self.info.ply_from_root += 1;
             if pvs {
                 score = self
                     .alpha_beta(
@@ -285,7 +289,7 @@ impl Search {
                     )
                     .saturating_neg();
             }
-            self.info.depth -= 1;
+            self.info.ply_from_root -= 1;
 
             if !self.is_running() || self.limits_exceeded(start) {
                 // Don't throw out a partial search just because the current move was not searched
@@ -385,7 +389,7 @@ impl Search {
             }
         }
 
-        if self.info.depth >= MAX_PLY {
+        if self.info.ply_from_root >= MAX_PLY {
             return evaluator.evaluate(&mut self.board);
         }
 
@@ -405,7 +409,7 @@ impl Search {
 
         let mut best_ply = moves[0];
         let mut pvs = false;
-        let killers = self.info.killers[usize::from(self.info.depth)];
+        let killers = self.info.killers[usize::from(self.info.ply_from_root)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
             self.board.make_move(mv);
 
@@ -418,8 +422,8 @@ impl Search {
             self.info.nodes += 1;
 
             let mut score;
-            self.info.depth += 1;
-            self.info.seldepth = self.info.seldepth.max(self.info.depth);
+            self.info.ply_from_root += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.ply_from_root);
             if pvs {
                 score = self
                     .alpha_beta(
@@ -453,7 +457,7 @@ impl Search {
                     )
                     .saturating_neg();
             }
-            self.info.depth -= 1;
+            self.info.ply_from_root -= 1;
 
             self.board.unmake_move();
 
@@ -479,7 +483,7 @@ impl Search {
 
         if total_legal_moves == 0 {
             if self.board.is_in_check(self.board.current_turn) {
-                return Score::MIN + i16::from(self.info.depth); // Checkmate (with tiebreaker being shortest depth)
+                return Score::MIN + i16::from(self.info.ply_from_root); // Checkmate (with tiebreaker being shortest depth)
             }
             return 0; // Stalemate
         }
@@ -520,7 +524,7 @@ impl Search {
         let beta = beta_start;
 
         let score = evaluator.evaluate(&mut self.board);
-        if self.info.depth >= MAX_PLY {
+        if self.info.ply_from_root >= MAX_PLY {
             return score;
         }
 
@@ -536,7 +540,7 @@ impl Search {
 
         let moves: MoveList = self.board.get_filtered_moves(|ply| ply.is_capture());
 
-        let killers = self.info.killers[usize::from(self.info.depth)];
+        let killers = self.info.killers[usize::from(self.info.ply_from_root)];
         for mv in MoveOrderer::new(&moves, self.board.zkey, &killers, &self.transposition_table) {
             self.board.make_move(mv);
 
@@ -547,8 +551,8 @@ impl Search {
 
             self.info.nodes += 1;
 
-            self.info.depth += 1;
-            self.info.seldepth = self.info.seldepth.max(self.info.depth);
+            self.info.ply_from_root += 1;
+            self.info.seldepth = self.info.seldepth.max(self.info.ply_from_root);
             let score = self
                 .quiescence(
                     evaluator,
@@ -557,7 +561,7 @@ impl Search {
                     start,
                 )
                 .saturating_neg();
-            self.info.depth -= 1;
+            self.info.ply_from_root -= 1;
 
             self.board.unmake_move();
 
@@ -693,10 +697,10 @@ impl Search {
             return; // A killer move is a quiet move, we're already considering captures and promotions first
         }
 
-        if self.info.killers[usize::from(self.info.depth)][0] != Some(ply) {
-            self.info.killers[usize::from(self.info.depth)][1] =
-                self.info.killers[usize::from(self.info.depth)][0];
-            self.info.killers[usize::from(self.info.depth)][0] = Some(ply);
+        if self.info.killers[usize::from(self.info.ply_from_root)][0] != Some(ply) {
+            self.info.killers[usize::from(self.info.ply_from_root)][1] =
+                self.info.killers[usize::from(self.info.ply_from_root)][0];
+            self.info.killers[usize::from(self.info.ply_from_root)][0] = Some(ply);
         }
     }
 

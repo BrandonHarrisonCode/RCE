@@ -37,6 +37,7 @@ pub struct Info {
     pub nodes: u64,
     pub depth: Depth,
     pub seldepth: Depth,
+    pub ply_from_root: Depth,
     pub killers: KillerList,
 }
 
@@ -49,6 +50,7 @@ impl Info {
             nodes: 0,
             depth: 0,
             seldepth: 0,
+            ply_from_root: 0,
             killers: [[None; MAX_KILLERS]; Depth::MAX as usize + 1],
         }
     }
